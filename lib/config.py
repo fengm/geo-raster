@@ -1,4 +1,10 @@
-
+'''
+File: config.py
+Author: Min Feng
+Version: 0.1
+Create: 2014-03-18 02:02:29
+Description: help locate and read the configuration file
+'''
 import logging
 
 cfg = None
