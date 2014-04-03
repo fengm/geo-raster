@@ -123,7 +123,7 @@ def float_columns(cs, scale=1.0, min_v=None, max_v=None):
 def float_column(vs, scale=1.0, min_v=None, max_v=None):
 	return float_columns([vs], scale, min_v, max_v)[0]
 
-def load_columns(f, sep=',', has_header=True, columns=None):
+def load_columns(f, sep=',', has_header=True, columns=None, callback=None):
 	'''load the values from a text file. If the file include a header line, return a dict; otherwise, return a column list'''
 	_cs = None
 	_ts = None
@@ -155,6 +155,10 @@ def load_columns(f, sep=',', has_header=True, columns=None):
 				logging.warning('insufficent values at line %s' % _no)
 				continue
 
+			if callback:
+				if callback(_no, _ts, _vs) == False:
+					continue
+
 			for i in xrange(len(_vs)):
 				if (_ss == None) or (i in _ss):
 					_cs[i].append(_vs[i])
@@ -164,6 +168,13 @@ def load_columns(f, sep=',', has_header=True, columns=None):
 	if _cs == None:
 		logging.warning('no values loaded')
 		return None
+
+	if columns:
+		for _c in [_c for _c in _ts if _c not in columns]:
+			_id = _ts.index(_c)
+			assert(_id >= 0)
+
+			del _ts[_id], _cs[_id]
 
 	return dict(zip(_ts, _cs))
 
