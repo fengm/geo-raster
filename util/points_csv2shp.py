@@ -35,6 +35,14 @@ def proj_from_epsg(code=4326):
 
 	return _proj
 
+def proj_from_proj4(text):
+	from osgeo import osr
+
+	_proj = osr.SpatialReference()
+	_proj.ImportFromProj4(text)
+
+	return _proj
+
 def format_cols(cols):
 	_cols = []
 	for _c in cols:
@@ -48,7 +56,7 @@ def format_cols(cols):
 		_cols.append(_c)
 	return _cols
 
-def csv2shapefile(f_csv, f_out, proj=0, fld_x=None, fld_y=None):
+def csv2shapefile(f_csv, f_out, proj=None, fld_x=None, fld_y=None):
 	import csv_util
 
 	_cols, _typs, _vals = csv_util.read(f_csv)
@@ -68,13 +76,23 @@ def csv2shapefile(f_csv, f_out, proj=0, fld_x=None, fld_y=None):
 	for i in xrange(len(_cols)):
 		print '+', _cols[i], ':', _typs[i]
 
-	_proj = proj
-	if _proj == 0 and _fld_x == 'lon' and _fld_y == 'lat':
-		_proj = 4326
-
 	print 'geo columns:', _fld_x, ',', _fld_y
 
-	print 'proj:', _proj if _proj > 0 else 'none'
+	_proj = proj
+	if _proj != None:
+		if '+proj' in _proj:
+			_proj = proj_from_proj4(_proj)
+
+		else:
+			try:
+				_proj = proj_from_epsg(int(_proj))
+			except Exception:
+				raise Exception('failed to parse the proj text %s' % _proj)
+	else:
+		if _fld_x == 'lon' and _fld_y == 'lat':
+			_proj = proj_from_epsg(4326)
+
+	print 'proj:', _proj.ExportToProj4() if _proj else 'none'
 
 	from osgeo import ogr
 	import os
@@ -88,7 +106,7 @@ def csv2shapefile(f_csv, f_out, proj=0, fld_x=None, fld_y=None):
 	os.path.exists(f_out) and _drv.DeleteDataSource(f_out)
 
 	_shp = _drv.CreateDataSource(f_out)
-	_lyr = _shp.CreateLayer(os.path.basename(f_out)[:-4], proj_from_epsg(_proj) if _proj > 0 else None, ogr.wkbPoint)
+	_lyr = _shp.CreateLayer(os.path.basename(f_out)[:-4], _proj, ogr.wkbPoint)
 
 	for i in xrange(len(_cols)):
 		_lyr.CreateField(create_ogr_field(_cols[i].upper(), _typs[i]))
@@ -114,7 +132,7 @@ def usage():
 	_p = argparse.ArgumentParser()
 
 	_p.add_argument('-i', '--input-csv', dest='input', required=True)
-	_p.add_argument('--projection', dest='projection', type=int, default=0)
+	_p.add_argument('--projection', dest='projection')
 	_p.add_argument('--xy-columns', dest='columns', nargs=2, default=[None, None])
 	_p.add_argument('-o', '--output-shp', dest='output')
 
