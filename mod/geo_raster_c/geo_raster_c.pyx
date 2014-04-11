@@ -319,14 +319,14 @@ class geo_band_cache(geo_band_info):
 		write_raster(f, self.geo_transform, self.proj.ExportToWkt(),
 				self.data, nodata=self.nodata, pixel_type=_pixel_type, opts=opts)
 
-	def save(self, f, driver='GTiff', color_table=None):
+	def save(self, f, driver='GTiff', color_table=None, opts=[]):
 		'''write the raster to file'''
 		_pixel_type = self.pixel_type
 		if _pixel_type == None:
 			from osgeo import gdal
 			_pixel_type = gdal.GDT_Byte
 		write_raster(f, self.geo_transform, self.proj.ExportToWkt(),
-				self.data, nodata=self.nodata, pixel_type=_pixel_type, driver=driver, color_table=color_table)
+				self.data, nodata=self.nodata, pixel_type=_pixel_type, driver=driver, color_table=color_table, opts=opts)
 
 	def read_ext(self, ext):
 		if ext.proj != None and self.proj.ExportToProj4() != ext.proj.ExportToProj4():
