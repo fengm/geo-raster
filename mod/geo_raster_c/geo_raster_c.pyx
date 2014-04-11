@@ -946,9 +946,13 @@ def map_colortable(cs):
 def load_colortable(f):
 	_colors = {}
 	for _l in open(f).read().splitlines():
+		_l = _l.strip()
+		if not _l:
+			continue
+
 		_vs = re.split('\s+', _l)
 		if len(_vs) != 2:
-			print 'ignore', _l
+			logging.info('ignore color entry: %s' % _l)
 			continue
 
 		_colors[float(_vs[0])] = tuple([int(_v) for _v in _vs[1].split(',')])
