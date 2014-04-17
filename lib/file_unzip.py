@@ -204,7 +204,7 @@ class file_unzip:
 		self.pfolder = _fd_out
 		self.existed = os.path.exists(_fd_out)
 
-		_fd_out = generate_file(_fd_out, fd_out)
+		_fd_out = generate_file(_fd_out)
 		os.makedirs(_fd_out)
 
 		self.fd_out = _fd_out
