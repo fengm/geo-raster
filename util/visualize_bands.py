@@ -18,14 +18,14 @@ def search_threshold(vs, ls, sh):
 
 	raise Exception('failed to find threshold')
 
-def convert_band_sr(bnd, ref, sh=0.2):
+def convert_band_sr(bnd, row, line, ref, sh=0.2):
 	import numpy as np
 
 	if bnd.nodata == None:
 		bnd.nodata = 0
 
-	_bnd = bnd.cache()
-	_dat = _bnd.data
+	# _bnd = bnd.cache()
+	_dat = bnd.read_rows(row, line)
 
 	import math
 	_low = math.log(150)
@@ -36,17 +36,19 @@ def convert_band_sr(bnd, ref, sh=0.2):
 	_dat[_dat > 255] = 255
 	_dat[_dat < 0] = 0
 
-	return _bnd.from_grid(_dat, nodata=0)
+	return _dat
+	# return bnd.from_grid(_dat, nodata=0)
 
-def convert_band(bnd, ref, sh=0.2):
+def convert_band(bnd, row, line, ref, sh=0.2):
 	import numpy as np
 	import logging
 
 	if bnd.nodata == None:
 		bnd.nodata = 0
 
-	_bnd = bnd.cache()
-	_dat = _bnd.data_ma
+	# _bnd = bnd.cache()
+	bnd.read_rows(row, line)
+	_dat = bnd.data_ma
 
 	_ddd = _dat
 
@@ -72,7 +74,8 @@ def convert_band(bnd, ref, sh=0.2):
 	_dat[_dat > 255] = 255
 	_dat[_dat < 0] = 0
 
-	return _bnd.from_ma_grid(_dat, nodata=0)
+	return _dat
+	# return bnd.from_ma_grid(_dat, nodata=0)
 
 def main():
 	_opts = _init_env()
@@ -103,20 +106,30 @@ def main():
 		_bnd = _bnds[0]
 
 		_opt = []
-		if _opts.output.endswith('.tif'):
-			_opt.append('compress=lzw')
-		if _opts.output.endswith('.img'):
-			_opt.append('COMPRESS=YES')
+		if _opts.compress:
+			if _opts.output.endswith('.tif'):
+				_opt.append('compress=lzw')
+			if _opts.output.endswith('.img'):
+				_opt.append('COMPRESS=YES')
 
 		_img = ge.geo_raster.create(_opts.output, [len(_bnds), _bnd.height, _bnd.width],
 				_bnd.geo_transform, _bnd.proj, ge.pixel_type(), opts=_opt)
 
+		_line = 1024
 		for i in xrange(len(_bnds)):
-			print ' + band', _opts.bands[i]
+			print ' + band', _opts.bands[i], 'sr' if _opts.convert_sr else 'dn'
 
 			_bbb = _img.get_band(i + 1)
 			_fun = convert_band_sr if _opts.convert_sr else convert_band
-			_bbb.write(_fun(_bnds[i], _bnd).data)
+
+			import progress_percentage
+			_ppp = progress_percentage.progress_percentage(_bnd.height)
+
+			for _row in xrange(0, _bnd.height, _line):
+				_ppp.next(_line)
+				_bbb.write(_fun(_bnds[i], _row, _line, _bnd), 0, _row)
+
+			_ppp.done()
 
 		_img = None
 
@@ -132,6 +145,7 @@ def _usage():
 	_p.add_argument('-b', '--bands', dest='bands', required=True, nargs='+')
 	_p.add_argument('-o', '--output', dest='output', required=True)
 	_p.add_argument('-sr', '--convert-sr', dest='convert_sr', action='store_true')
+	_p.add_argument('-c', '--compress', dest='compress', action="store_true")
 
 	return _p.parse_args()
 

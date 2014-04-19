@@ -148,6 +148,20 @@ class geo_band_info(geo_raster_info):
 
 		return _nodata
 
+	def sub_band(self, col, row, width, height):
+		_geo = list(self.geo_transform)
+
+		_geo[0] += col * _geo[1] + row * _geo[2]
+		_geo[3] += col * _geo[4] + row * _geo[5]
+
+		_cols = min(width, self.width - col)
+		_rows = min(height, self.height - row)
+
+		if _cols <= 0 or _rows <= 0:
+			raise Exception('out of the band extent')
+
+		return geo_band_info(_geo, _cols, _rows, self.proj, self.nodata, self.pixel_type)
+
 	def align(self, ext, clip=False):
 		_geo = self.geo_transform
 
@@ -465,6 +479,8 @@ class geo_band(geo_band_info):
 		self.data = None
 		self.buf_row_start = -1
 		self.buf_row_end = -1
+		self.buf_col_start = -1
+		self.buf_col_end = -1
 		self.color_table = band.GetColorTable()
 		self.test = None
 		self.convert_list = convert_list
@@ -484,6 +500,7 @@ class geo_band(geo_band_info):
 		'''clean cached data'''
 		self.data = None
 		self.buf_row_start = -1
+		self.buf_col_start = -1
 
 	def read_location_cache(self, float x, float y):
 		'''Read a cell at given coordinate. the entire band is cached to avoid multiple IO'''
@@ -574,8 +591,26 @@ class geo_band(geo_band_info):
 		self.data = _d
 		self.buf_row_start = row
 		self.buf_row_end = row + _d.shape[0]
+		self.buf_col_start = col
+		self.buf_col_end = col + _d.shape[1]
 
 		return self.data
+
+	@property
+	def cached(self):
+		_dat = self.data
+		if _dat == None:
+			return None
+
+		_geo = list(self.geo_transform)
+
+		_col = self.buf_col_start
+		_row = self.buf_row_start
+		
+		_geo[0] += _col * _geo[1] + _row * _geo[2]
+		_geo[3] += _col * _geo[4] + _row * _geo[5]
+
+		return geo_band_cache(_dat, _geo, self.proj, self.nodata, self.pixel_type)
 
 	def read(self):
 		'''Read all the raster data'''
@@ -895,6 +930,9 @@ class geo_raster(geo_raster_info):
 	def flush(self):
 		"""Flush the cache for writting"""
 		self.raster.FlushCache()
+
+def open(f, update=False):
+	return geo_raster.open(f, update)
 
 def write_raster(f, geo_transform, proj, img, pixel_type=gdal.GDT_Byte, driver='GTiff', nodata=None, color_table=None, opts=[]):
 	if f.lower().endswith('.img'):
