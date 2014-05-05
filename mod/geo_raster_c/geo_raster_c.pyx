@@ -982,8 +982,10 @@ def map_colortable(cs):
 	return _color_tables
 
 def load_colortable(f):
+	import sys
+
 	_colors = {}
-	for _l in open(f).read().splitlines():
+	for _l in sys.modules['__builtin__'].open(f).read().splitlines():
 		_l = _l.strip()
 		if not _l:
 			continue

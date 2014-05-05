@@ -51,7 +51,7 @@ def from_dtype(dtype):
 	if dtype == numpy.float64:
 		return 7
 
-	raise Exception('unknown dtype' + dtype)
+	raise Exception('unknown dtype %s' % dtype)
 
 cdef to_cell(tuple g, float x, float y):
 	'''Convert coordinate to col and row'''

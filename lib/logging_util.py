@@ -34,7 +34,7 @@ def init(f=None):
 
 		_f = os.path.join(_d_log, _f + '.log')
 
-	# print 'logging file', _f
+	print 'logging file', _f
 	_handler = sync_file_log_handler(_f)
 	_handler.setLevel(logging.DEBUG)
 	_handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s:%(message)s'))
