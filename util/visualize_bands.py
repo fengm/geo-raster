@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 '''
 File: visualize_bands.py
 Author: Min Feng
@@ -48,7 +50,7 @@ def convert_band(bnd, row, line, ref, sh=0.2):
 
 	# _bnd = bnd.cache()
 	bnd.read_rows(row, line)
-	_dat = bnd.data_ma
+	_dat = bnd.cached.data_ma
 
 	_ddd = _dat
 
@@ -169,7 +171,17 @@ def _init_env():
 	return _opts
 
 if __name__ == '__main__':
-	main()
+	try:
+		main()
+	except KeyboardInterrupt:
+		print '\n\n* User stopped the program'
+	except Exception, err:
+		import traceback
+
+		logging.error(traceback.format_exc())
+		logging.error(str(err))
+
+		print '\n\n* Error:', err
 
 
 
