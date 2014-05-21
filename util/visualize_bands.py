@@ -8,6 +8,7 @@ Create: 2014-04-03 16:40:03
 Description: convert raster data to visualiable image
 '''
 
+import logging
 
 def search_threshold(vs, ls, sh):
 	_sum = int(sum(vs) * sh)
@@ -89,18 +90,21 @@ def main():
 		print 'loading', _opts.input
 
 		_bnds = []
-		_f_in = _zip.unzip(_opts.input)
-
-		if _f_in.endswith('hdf'):
+		if _opts.input.endswith('.hdf') or _opts.input.endswith('.hdf.gz'):
+			_f_in = _zip.unzip(_opts.input)
 			_img = ge.geo_raster.open(_f_in)
 
 			for _b in _opts.bands:
 				_bnds.append(_img.get_subdataset(_b).get_band())
 		else:
-			_img = ge.geo_raster.open(_f_in)
-
-			for _b in _opts.bands:
-				_bnds.append(_img.get_band(int(_b)))
+			if '%s' in _opts.input:
+				for _b in _opts.bands:
+					_img = ge.geo_raster.open(_zip.unzip(_f_in % _b))
+					_bnds.append(_img.get_band())
+			else:
+				_img = ge.geo_raster.open(_zip.unzip(_f_in))
+				for _b in _opts.bands:
+					_bnds.append(_img.get_band(int(_b)))
 
 		if len(_bnds) not in [1, 3]:
 			raise Exception('Incorrect band numbers %s' % len(_bnds))

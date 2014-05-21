@@ -55,7 +55,7 @@ def generate_shp(fs, proj, f_out, fzip):
 
 	# use projection of the first file if no target projection specified
 	_proj = (open_file(fs[0], fzip).projection_obj) if proj == None else geo_raster.proj_from_epsg(proj)
-	fzip.clean(False)
+	fzip.clean()
 
 	_drv = ogr.GetDriverByName('ESRI Shapefile')
 	os.path.exists(f_out) and _drv.DeleteDataSource(f_out)
@@ -83,7 +83,7 @@ def generate_shp(fs, proj, f_out, fzip):
 		_lyr.CreateFeature(_ftr)
 		_ftr.Destroy()
 
-		fzip.clean(False)
+		fzip.clean()
 
 	_perc.done()
 
