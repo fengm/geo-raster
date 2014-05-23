@@ -6,6 +6,7 @@ Create: 2014-03-18 02:02:29
 Description: help locate and read the configuration file
 '''
 import logging
+import collections
 
 cfg = None
 
@@ -32,11 +33,15 @@ def detect_file(f_cfg):
 
 	return None
 
-def load(f_cfg=None):
+def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_value=False):
 	global cfg
 
+	import sys
+	_defaults = {'root': sys.path[0]}
+	defaults != None and _defaults.update(defaults)
+
 	import ConfigParser
-	cfg = ConfigParser.ConfigParser()
+	cfg = ConfigParser.ConfigParser(_defaults, dict_type, allow_no_value)
 
 	_f_cfg = detect_file(f_cfg)
 	if _f_cfg:
