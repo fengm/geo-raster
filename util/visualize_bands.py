@@ -44,7 +44,6 @@ def convert_band_sr(bnd, row, line, ref, sh=0.2):
 
 def convert_band(bnd, row, line, ref, sh=0.2):
 	import numpy as np
-	import logging
 
 	if bnd.nodata == None:
 		bnd.nodata = 0
@@ -90,21 +89,18 @@ def main():
 		print 'loading', _opts.input
 
 		_bnds = []
-		if _opts.input.endswith('.hdf') or _opts.input.endswith('.hdf.gz'):
-			_f_in = _zip.unzip(_opts.input)
+		_f_in = _zip.unzip(_opts.input)
+
+		if _f_in.endswith('hdf'):
 			_img = ge.geo_raster.open(_f_in)
 
 			for _b in _opts.bands:
 				_bnds.append(_img.get_subdataset(_b).get_band())
 		else:
-			if '%s' in _opts.input:
-				for _b in _opts.bands:
-					_img = ge.geo_raster.open(_zip.unzip(_f_in % _b))
-					_bnds.append(_img.get_band())
-			else:
-				_img = ge.geo_raster.open(_zip.unzip(_f_in))
-				for _b in _opts.bands:
-					_bnds.append(_img.get_band(int(_b)))
+			_img = ge.geo_raster.open(_f_in)
+
+			for _b in _opts.bands:
+				_bnds.append(_img.get_band(int(_b)))
 
 		if len(_bnds) not in [1, 3]:
 			raise Exception('Incorrect band numbers %s' % len(_bnds))

@@ -11,7 +11,32 @@ Date: 2013-11-15 09:48:11
 Note: Added the function for detecting the polygon extent for a Landsat scene
 '''
 
-def rasterize_band(bnd, poly, f_img, f_shp):
+def rasterize_polygons(bnd, polys, f_img, f_shp):
+	'''rasterize ploygon to match a raster band'''
+	from osgeo import ogr, gdal
+	import os
+
+	_drv = ogr.GetDriverByName('ESRI Shapefile')
+
+	if os.path.exists(f_shp):
+		_drv.DeleteDataSource(f_shp)
+
+	_shp = _drv.CreateDataSource(f_shp)
+	_lyr = _shp.CreateLayer(f_shp[:-4], bnd.proj, ogr.wkbPolygon)
+
+	for _poly in polys:
+		_fea = ogr.Feature(_lyr.GetLayerDefn())
+		_fea.SetGeometry(polys.poly)
+		_lyr.CreateFeature(_fea)
+		_fea.Destroy()
+
+	import geo_raster_c as ge
+	_img = ge.geo_raster.create(f_img, [bnd.height, bnd.width], bnd.geo_transform, bnd.proj.ExportToWkt())
+
+	gdal.RasterizeLayer(_img.raster, [1], _lyr, burn_values=[1])
+	return _img
+
+def rasterize_polygon(bnd, poly, f_img, f_shp):
 	'''rasterize ploygon to match a raster band'''
 	from osgeo import ogr, gdal
 	import os
@@ -34,6 +59,9 @@ def rasterize_band(bnd, poly, f_img, f_shp):
 
 	gdal.RasterizeLayer(_img.raster, [1], _lyr, burn_values=[1])
 	return _img
+
+def rasterize_band(bnd, poly, f_img, f_shp):
+	return rasterize_polygon(bnd, poly, f_img, f_shp)
 
 def detect_corner_x(bnd, xd):
 	import geo_base_c as gb

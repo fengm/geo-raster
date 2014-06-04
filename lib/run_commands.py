@@ -5,8 +5,12 @@ def run_exe(cmd, shell=True):
 	import logging
 	logging.info('run cmd: ' + str(cmd))
 
+	_shell = shell
+	if type(cmd) == tuple or type(cmd) == list:
+		_shell = False
+
 	import subprocess
-	_p = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	_p = subprocess.Popen(cmd, shell=_shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	_rs = _p.communicate()
 
 	logging.info('return code: %s' % _p.returncode)
@@ -23,7 +27,12 @@ def run_exe(cmd, shell=True):
 
 def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exception=True):
 	import logging
-	logging.info('run %scmd: "%s"' % ('shell ' if shell else '', str(cmd)))
+
+	_shell = shell
+	if type(cmd) == tuple or type(cmd) == list:
+		_shell = False
+
+	logging.info('run %scmd: "%s"' % ('shell ' if _shell else '', str(cmd)))
 
 	import subprocess
 	_stdout = stdout if stdout else subprocess.PIPE
@@ -34,7 +43,7 @@ def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exc
 	if env:
 		logging.info('env: %s' % str(env))
 
-	_p = subprocess.Popen(cmd, shell=shell, stdout=_stdout, stderr=_stderr, cwd=cwd, env=env)
+	_p = subprocess.Popen(cmd, shell=_shell, stdout=_stdout, stderr=_stderr, cwd=cwd, env=env)
 	_rs = list(_p.communicate())
 
 	if _rs == None:
