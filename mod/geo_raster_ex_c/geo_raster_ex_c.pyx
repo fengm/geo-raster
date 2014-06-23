@@ -289,6 +289,7 @@ class geo_extent:
 				geo_point(self.maxx, self.miny),
 				]
 		return geo_polygon.from_pts(_pts, self.proj)
+
 class geo_polygon:
 
 	def __init__(self, poly):
@@ -367,7 +368,11 @@ class geo_polygon:
 			return self
 
 		_poly = self.poly.Clone()
-		_poly.TransformTo(proj)
+		_err = _poly.TransformTo(proj)
+
+		if _err != 0:
+			logging.error('failed to project polygon to (%s)' % (proj.ExportToProj4(), ))
+			return None
 
 		return geo_polygon(_poly)
 
@@ -412,6 +417,7 @@ class geo_polygon:
 		_pt.SetPoint_2D(0, _loc.x, _loc.y)
 
 		return self.poly.Contains(_pt)
+
 class projection_transform:
 	''' Build a grid for transforming raster pixels'''
 
@@ -513,6 +519,7 @@ class projection_transform:
 		cdef float _y = _pos_y0 + (_pos_y1 - _pos_y0) * _del_x
 
 		return _x, _y
+
 class geo_point:
 	@classmethod
 	def from_raster(cls, raster, col, row):
@@ -564,6 +571,7 @@ class geo_point:
 			return False
 
 		return (self.x == pt.x and self.y == pt.y and (self.proj == None or self.proj.IsSame(pt.proj) == 1))
+
 class band_file:
 
 	def __init__(self, f, band_idx=1, dataset_name=None, file_unzip=None):
@@ -604,6 +612,7 @@ class band_file:
 
 	def clean(self):
 		self.band = None
+
 class geo_band_obj:
 
 	def __init__(self, poly, bnd_f):
@@ -627,6 +636,7 @@ class geo_band_obj:
 			self.band.band.clean()
 			self.band_file.clean()
 			self.band = None
+
 class geo_band_stack_zip:
 
 	def __init__(self, bands, proj=None, check_layers=False, nodata=None):
@@ -661,10 +671,15 @@ class geo_band_stack_zip:
 	@classmethod
 	def from_list(cls, f_list, band_idx=1, dataset_name=None, \
 			file_unzip=None, check_layers=False, nodata=None):
+		import geo_base_c as gb
+
 		_bnds = []
 		_proj = None
 		for _f in f_list:
-			_file = _f
+			_file = _f.strip() if _f else None
+			if not _file:
+				continue
+
 			# support dataset name from the file path
 			_name = dataset_name
 			if (not _name) and '#' in _file:
@@ -679,7 +694,7 @@ class geo_band_stack_zip:
 			if _proj == None:
 				_proj = _bbb.proj
 
-			_poly = geo_polygon.from_raster(_bbb)
+			_poly = gb.geo_polygon.from_raster(_bbb)
 			_bnds.append(geo_band_obj(_poly, _bnd))
 
 		if len(_bnds) == 0:
@@ -692,6 +707,7 @@ class geo_band_stack_zip:
 	def from_shapefile(cls, f_list, band_idx=1, dataset_name=None, \
 			file_unzip=None, check_layers=False, nodata=None):
 		from osgeo import ogr
+		import geo_base_c as gb
 
 		_bnds = []
 		_shp = ogr.Open(f_list)
@@ -709,8 +725,11 @@ class geo_band_stack_zip:
 			raise Exception('failed to find the FILE column in the shapefile (%s)' % ','.join([_col.name for _col in _lyr.schema]))
 
 		for _f in _lyr:
-			_poly = geo_polygon(_f.geometry().Clone())
+			_poly = gb.geo_polygon(_f.geometry().Clone())
 			_file = _f.items()[_file_columns[0]]
+			_file = _file.strip() if _file else None
+			if not _file:
+				continue
 
 			if not (_file[0] == '/' or _file[1] == ':'):
 				# handle relative path
@@ -820,7 +839,22 @@ class geo_band_stack_zip:
 
 		return _ls
 
-	def read_block(self, bnd):
+	def get_bands_pts(self, pts):
+		if len(pts) == 0:
+			logging.warning('no point provided')
+			return None
+
+		_ls = []
+		for i in xrange(len(self.bands)):
+			for _pt in pts:
+				if self.bands[i].poly.is_contain(_pt):
+					logging.info('add band %s' % self.bands[i].band_file.file)
+					_ls.append(self.bands[i])
+					break
+
+		return _ls
+
+	def read_block(self, bnd, use_pts=False):
 		_default_nodata = {1: 255, 2: 65535, 3: -9999, 4: (2 ** 32) - 1, 5: -9999, 6: -9999}
 		if self.pixel_type not in _default_nodata.keys():
 			raise Exception('Unsupport data type %s' % self.pixel_type)
@@ -840,13 +874,23 @@ class geo_band_stack_zip:
 
 		_prj = projection_transform.from_band(bnd, self.proj)
 
-		_pol_t1 = geo_polygon.from_raster(bnd, div=100)
+		import geo_base_c as gb
+		_pol_t1 = gb.geo_polygon.from_raster(bnd, div=100)
 		_pol_t2 = _pol_t1.project_to(self.proj)
 
-		_bnds = self.get_bands(_pol_t2)
+		if use_pts:
+			logging.info('enable using PTS')
+
+			_pts_t1 = _pol_t1.get_points(self.proj)
+			_bnds = self.get_bands_pts(_pts_t1)
+		else:
+			_bnds = self.get_bands(_pol_t2)
+
+		logging.info('found %s bands' % len(_bnds))
+
 		for _bnd_info in _bnds:
 			_bnd = _bnd_info.get_band().band
-			_pol_s = geo_polygon.from_raster(_bnd, div=100)
+			_pol_s = gb.geo_polygon.from_raster(_bnd, div=100)
 
 			# calculate the intersection area for both data sets
 			_pol_c_s = _pol_s.intersect(_pol_t2)
@@ -917,7 +961,9 @@ class geo_band_reader:
 		self.name = name
 		self.band = band
 		self.raster = band.raster
-		self.poly = geo_polygon.from_raster(self.raster)
+
+		import geo_base_c as gb
+		self.poly = gb.geo_polygon.from_raster(self.raster)
 
 	def read(self, float x, float y, cache=False):
 		_val = self.band.read_location_cache(x, y) if cache else self.band.read_location(x, y)
@@ -983,7 +1029,8 @@ def collect_samples(bnd_landsat, proj, interval=3000):
 	_img_landsat = bnd_landsat.raster
 	_read_landsat = geo_band_reader(bnd_landsat)
 
-	_poly_union = geo_polygon.from_raster(_img_landsat).project_to(proj)
+	import geo_base_c as gb
+	_poly_union = gb.geo_polygon.from_raster(_img_landsat).project_to(proj)
 	_ext_union = _poly_union.extent()
 
 	_vs = []

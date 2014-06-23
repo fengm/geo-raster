@@ -374,12 +374,19 @@ class geo_polygon:
 	def from_pts(cls, pts, proj=None):
 		from osgeo import ogr
 
+		if len(pts) <= 2:
+			raise Exception('need at least 3 points (%s) to create a polygon' % len(pts))
+
 		_proj = proj
 		_ring = ogr.Geometry(ogr.wkbLinearRing)
 		for _pt in pts:
 			_ring.AddPoint(_pt.x, _pt.y)
 			if _proj != None and _pt.proj != None:
 				_proj = _pt.proj
+
+		if pts[-1].x != pts[0].x or pts[-1].y != pts[0].y:
+			_ring.AddPoint(pts[0].x, pts[0].y)
+
 		_ring.CloseRings()
 
 		_poly = ogr.Geometry(ogr.wkbPolygon)
@@ -398,7 +405,7 @@ class geo_polygon:
 			logging.error('failed to project polygon to (%s)' % (proj.ExportToProj4(), ))
 			return None
 
-		return geo_polygon(_poly)
+		return geo_polygon(_poly.Simplify(0.000000001))
 
 	def set_proj(self, proj):
 		self.poly.AssignSpatialReference(proj)
@@ -538,6 +545,24 @@ class geo_polygon:
 
 		import geo_base_c as gx
 		return gx.geo_polygon(_poly)
+
+	def get_points(self, proj=None):
+		import geo_base_c as gb
+
+		_ps = []
+		for i in xrange(self.poly.GetGeometryCount()):
+			_g = self.poly.GetGeometryRef(i)
+			for _p in _g.GetPoints():
+				_pt = gb.geo_point(_p[0], _p[1], self.proj)
+				if proj != None:
+					_pt = _pt.project_to(proj)
+				
+				if _pt == None:
+					continue
+
+				_ps.append(_pt)
+		
+		return _ps
 
 class geo_point:
 	@classmethod

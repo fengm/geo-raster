@@ -148,6 +148,34 @@ class geo_band_info(geo_raster_info):
 
 		return _nodata
 
+	def from_ma_grid(self, grid, update_type=True, nodata=None):
+		logging.info('updating the band with masked array')
+
+		_nodata = nodata
+		if _nodata == None:
+			_nodata = self.nodata
+
+		if _nodata == None:
+			raise Exception('nodata is required')
+
+		_dat = grid.filled(_nodata)
+		return self.from_grid(_dat, update_type, _nodata)
+
+	def from_grid(self, grid, update_type=True, nodata=None):
+		logging.info('updating the band with masked array')
+
+		if not (self.height == grid.shape[0] and self.width == grid.shape[1]):
+			raise Exception('grid size does not match')
+
+		_nodata = nodata
+		if _nodata == None:
+			_nodata = self.nodata
+
+		_dat = grid
+
+		import geo_base_c as gb
+		return geo_band_cache(_dat, list(self.geo_transform), self.proj, _nodata, gb.from_dtype(grid.dtype))
+
 	def sub_band(self, col, row, width, height):
 		_geo = list(self.geo_transform)
 
@@ -218,34 +246,6 @@ class geo_band_cache(geo_band_info):
 		if self.nodata == None:
 			raise Exception('nodata is required')
 		return np.ma.masked_equal(self.data, self.nodata)
-
-	def from_ma_grid(self, grid, update_type=True, nodata=None):
-		logging.info('updating the band with masked array')
-
-		_nodata = nodata
-		if _nodata == None:
-			_nodata = self.nodata
-
-		if _nodata == None:
-			raise Exception('nodata is required')
-
-		_dat = grid.filled(_nodata)
-		return self.from_grid(_dat, update_type, _nodata)
-
-	def from_grid(self, grid, update_type=True, nodata=None):
-		logging.info('updating the band with masked array')
-
-		if not (self.height == grid.shape[0] and self.width == grid.shape[1]):
-			raise Exception('grid size does not match')
-
-		_nodata = nodata
-		if _nodata == None:
-			_nodata = self.nodata
-
-		_dat = grid
-
-		import geo_base_c as gb
-		return geo_band_cache(_dat, list(self.geo_transform), self.proj, _nodata, gb.from_dtype(grid.dtype))
 
 	def read_location(self, float x, float y):
 		'''Read a cell at given coordinate'''
