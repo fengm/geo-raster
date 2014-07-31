@@ -990,12 +990,16 @@ def load_colortable(f):
 		if not _l:
 			continue
 
-		_vs = re.split('\s+', _l)
+		_vs = re.split('\s+', _l, maxsplit=1)
 		if len(_vs) != 2:
 			logging.info('ignore color entry: %s' % _l)
 			continue
 
-		_colors[float(_vs[0])] = tuple([int(_v) for _v in _vs[1].split('\D+')])
+		_cs = tuple([int(_v) for _v in re.split('\W+', _vs[1])])
+		if len(_cs) < 3:
+			raise Exception('insufficent color values %s' % len(_cs))
+
+		_colors[float(_vs[0])] = _cs
 
 	return map_colortable(_colors)
 
