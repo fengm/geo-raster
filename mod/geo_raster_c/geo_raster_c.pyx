@@ -995,7 +995,7 @@ def load_colortable(f):
 			logging.info('ignore color entry: %s' % _l)
 			continue
 
-		_colors[float(_vs[0])] = tuple([int(_v) for _v in _vs[1].split(',')])
+		_colors[float(_vs[0])] = tuple([int(_v) for _v in _vs[1].split('\D+')])
 
 	return map_colortable(_colors)
 

@@ -78,8 +78,15 @@ def main():
 		_d_log = os.path.join(_d_base, 'log', 'pro')
 		_log_std = os.path.join(_d_log, 'note_%02d.log' % _hosts[i])
 
-		os.path.exists(_d_log) or os.makedirs(_d_log)
-		os.path.exists(_log_std) and os.remove(_log_std)
+		try:
+			os.path.exists(_d_log) or os.makedirs(_d_log)
+		except Exception:
+			pass
+
+		try:
+			os.path.exists(_log_std) and os.remove(_log_std)
+		except Exception:
+			pass
 
 		_cmd = 'ssh %s "cd %s;python %s --logging %s -ts %d -in %d -ip %d" > %s &' % (_host, _d_envi, ' '.join(_f_prg), log_file(_f_prg[0], _hosts[i]), _task_num, len(_hosts), i, _log_std)
 
