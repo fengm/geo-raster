@@ -61,10 +61,9 @@ def main():
 	for _e in _opts.excludes if _opts.excludes else []:
 		del _hosts[_hosts.index(_e)]
 
-	import subprocess
 	import os, sys
 
-	_d_envi = os.getcwd()
+	_d_envi = format_path(os.getcwd())
 
 	_d_base = format_path(sys.path[0])
 	_f_prg = format_command(_opts.command)
@@ -93,7 +92,8 @@ def main():
 		if _opts.print_cmd:
 			print _cmd
 		else:
-			subprocess.Popen(_cmd, shell=True)
+			import run_commands
+			run_commands.run(_cmd)
 
 def init_env():
 	import os, sys

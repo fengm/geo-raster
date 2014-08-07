@@ -52,13 +52,15 @@ def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exc
 	for i in xrange(2 - len(_rs)):
 		_rs.append(None)
 
+	import logging
+	logging.error('Output message:%s\n' % _rs[0])
+	logging.error('Error message:%s' % _rs[1])
+
 	logging.info('return code: %s' % _p.returncode)
-	if raise_exception and _p.returncode != 0:
-		import logging
+	if _p.returncode != 0:
 		logging.error('Failed running cmd: %s %s\n' % (cmd, _p.returncode))
-		logging.error('Output message:%s\n' % _rs[0])
-		logging.error('Error message:%s' % _rs[1])
-		# raise Exception('Failed with cmd:' + str(cmd))
+		if raise_exception:
+			raise Exception('Failed with cmd:' + str(cmd))
 
 	return _p.returncode, _rs[0], _rs[1]
 

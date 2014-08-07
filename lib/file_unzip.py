@@ -196,7 +196,7 @@ def clean(fd_out, remove_root=False):
 			shutil.rmtree(os.path.join(_root, _dir), True)
 
 class file_unzip:
-	def __init__(self, fd_out='', exclusive=True):
+	def __init__(self, fd_out='', exclusive=True, debug=False):
 		import os
 
 		_fd_out = default_dir(fd_out)
@@ -210,13 +210,17 @@ class file_unzip:
 		self.fd_out = _fd_out
 		self.files = []
 		self.exclusive = exclusive
+		self._debug = debug
 
 	# support with statement
 	def __enter__(self):
 		return self
 
 	def __exit__(self, type, value, traceback):
-		self.clean()
+		if self._debug:
+			logging.info('remain the temporary files in debug mode')
+		else:
+			self.clean()
 
 	def generate_file(self, prefix='', subfix=''):
 		return generate_file(self.fd_out, prefix, subfix)

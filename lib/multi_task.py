@@ -14,6 +14,9 @@ def add_task_opts(p):
 	p.add_argument('-ip', '--instance-pos', dest='instance_pos', type=int, default=0)
 	p.add_argument('-ts', '--task-num', dest='task_num', type=int, default=1)
 
+def load_from_list(f_ls, opts):
+	return load_list(f_ls, opts.instance_num, opts.instance_pos)
+
 def load_list(f_ls, num, pos):
 	logging.debug('loading ' + f_ls)
 
@@ -24,6 +27,10 @@ def load_list(f_ls, num, pos):
 		logging.debug('select %s from %s' % (len(_ls_s), len(_ls_a)))
 
 		return _ls_s
+
+def load_ids(size, num, pos):
+	logging.debug('loading ids %d' % size)
+	return xrange(pos, size, num)
 
 def text(t):
 	import sys
