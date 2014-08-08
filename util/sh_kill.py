@@ -54,8 +54,8 @@ class process(threading.Thread):
 
 			_cmd = 'ssh %s kill -9 %s &' % (self.host, ' '.join(_ts))
 			try:
-				subprocess.Popen(_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				_p.communicate()
+				import run_commands
+				run_commands.run(_cmd)
 			except:
 				pass
 		finally:

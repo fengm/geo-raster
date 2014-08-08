@@ -49,33 +49,73 @@ def print_percent(nu, tn, perc_step, end=False):
 
 	if _p1 < _p2:
 		if end:
-			text('\r\t\t\t|  %3.f%%(%d/%d)     ' % (_p2 * perc_step, nu, tn))
+			text('\r+ \t\t\t|  %3.1f%%(%d/%d)     ' % (_p2 * perc_step, nu, tn))
 		else:
-			text('\r%3.f%%(%d/%d)     ' % (_p2 * perc_step, nu, tn))
+			text('\r+ %3.1f%%(%d/%d)     ' % (_p2 * perc_step, nu, tn))
 		# if end:
 		# 	print '--> %3d/%d,%3d%%\r' % (nu, tn, _p2 * perc_step)
 		# else:
 		# 	print '<-- %3d/%d,%3d%%\r' % (nu, tn, _p2 * perc_step)
 
-def work_function(obj, job_queue, result_queue, vs):
+def work_function(obj, job_queue, vs, mag, res, t_lock):
 	signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-	while not job_queue.empty():
+	while (not job_queue.empty()) and (mag['num_done'] <= len(obj.args)):
 		try:
-			_nu = len(obj.args) - job_queue.qsize()
-			print_percent(_nu, len(obj.args), obj.perc_step)
+			if mag['stop']:
+				return
 
-			_ps = tuple(job_queue.get(block=False)) + tuple(vs)
-			logging.info('params:' + ','.join([str(_v) for _v in _ps]))
+			with t_lock:
+				mag['num_load'] += 1
 
-			result_queue.put(obj.func(*_ps))
+				_nu = mag['num_load']
+				print_percent(_nu, len(obj.args), obj.perc_step)
+
+				_ts = job_queue.get(block=False)
+
+			_ps = tuple(_ts) + tuple(vs)
+			logging.info('task (%s) params: %s' % (_nu, ','.join([str(_v) for _v in _ps])))
+
+			if mag['stop']:
+				return
+
+			_rs = None
+			try:
+				_rs = obj.func(*_ps)
+			except KeyboardInterrupt:
+				mag['stop'] = True
+				print '\n\n* User stopped the program'
+				return
+			except Exception, err:
+				if not obj.continue_exception:
+					mag['stop'] = True
+					return
+
+				import traceback
+
+				logging.error(traceback.format_exc())
+				logging.error('Error (%s): %s' % (_nu, str(err)))
+
+				print '\n\n* Error:', err
+				continue
+
+			if mag['stop']:
+				return
+
+			res.append(_rs)
+			logging.info('task (%s) end' % _nu)
+
 			# print the progress percentage
-			print_percent(_nu, len(obj.args), obj.perc_step, end=True)
+			with t_lock:
+				_nu = mag['num_done'] + 1
+				mag['num_done'] = _nu
+				print_percent(_nu, len(obj.args), obj.perc_step, end=True)
+
 		except Queue.Empty:
-			pass
+			break
 
 class Pool:
-	def __init__(self, func, args, t_num, perc_step=0.1):
+	def __init__(self, func, args, t_num, continue_exception=False, perc_step=0.1):
 		assert t_num > 0
 
 		self.func = func
@@ -85,6 +125,14 @@ class Pool:
 
 	def run(self, vs=()):
 		logging.info('process tasks (%d, %d)' % (len(self.args), self.t_num))
+
+		_mag = multiprocessing.Manager().dict()
+		_mag['stop'] = False
+		_mag['num_load'] = 0
+		_mag['num_done'] = 0
+		_mag['out'] = []
+		_out = multiprocessing.Manager().list()
+		_lock = self.create_lock()
 
 		# exit if there is no task
 		if len(self.args) <= 0:
@@ -98,34 +146,68 @@ class Pool:
 		for _arg in self.args:
 			_jobs.put(_arg if isinstance(_arg, list) or isinstance(_arg, tuple) else (_arg,))
 
-		_results = multiprocessing.Queue()
+		_jobs_num = len(self.args)
 		_procs = []
+
 		for i in range(self.t_num):
+			if _mag['stop']:
+				break
+
 			_proc = multiprocessing.Process(target=work_function,
-											args=(self, _jobs, _results, vs))
+						args=(self, _jobs, vs, _mag, _out, _lock))
 			_proc.start()
 			_procs.append(_proc)
 
 			import time
 			time.sleep(0.1)
-		try:
-			for _proc in _procs:
-				_proc.join()
 
-			print_percent(len(self.args), len(self.args), True)
+		try:
+			_task_num = 0
+			while True:
+				# _pos = 0
+				_task_tmp = len([_p for _p in _procs if _p != None])
+				if _task_num != _task_tmp:
+					logging.info('Alive tasks num: %s' % _task_tmp)
+					_task_num = _task_tmp
+
+					if _task_num <= 0:
+						break
+
+				for _idx in xrange(len(_procs)):
+					_proc = _procs[_idx]
+					if _proc == None:
+						continue
+
+					_proc.join(0.1)
+					if _proc.is_alive() == False:
+						_procs[_idx] = None
+
+				if _mag['stop'] or (len(_out) >= _jobs_num and _jobs.empty()):
+					for _proc in _procs:
+						if _proc == None:
+							continue
+						_proc.terminate()
+					break
+
+			# print_percent(len(self.args), len(self.args), True)
 			print ''
 
 			_rs = []
-			while not _results.empty():
-				_rs.append(_results.get(block=False))
+			for _oo in _out:
+				_rs.append(_oo)
+
+			# while not _results.empty():
+			# 	_rs.append(_results.get())
 			return _rs
 
 		except KeyboardInterrupt:
 			logging.warning('terminated by user')
 			print 'parent received ctrl-c'
 			for _proc in _procs:
+				if _proc == None:
+					continue
 				_proc.terminate()
-				_proc.join()
+				# _proc.join()
 
 		except Exception, err:
 			import traceback
@@ -142,6 +224,8 @@ class Pool:
 
 	def run_single(self, vs=()):
 		logging.info('process tasks (%d) without parallel' % (len(self.args)))
+
+		self.reset_count()
 
 		_rs = []; _pos = 0
 		for _arg in self.args:
