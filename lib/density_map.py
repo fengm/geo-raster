@@ -187,10 +187,10 @@ def create(title, xlabel, ylabel, width=15, height=9, title_fontsize=14, label_f
 
 	return _fig
 
-def save(fig, out):
+def save(fig, out, dpi=150):
 	from matplotlib.backends.backend_agg import FigureCanvasAgg
 	_cav = FigureCanvasAgg(fig)
-	_cav.print_png(out, dpi=150)
+	_cav.print_png(out, dpi=dpi)
 
 def draw_bands(fig, vals, density=True, is_log=True, vmin=None, vmax=None, bins=400):
 	_pos = 0

@@ -47,11 +47,11 @@ def print_percent(nu, tn, perc_step, end=False):
 	else:
 		logging.info('<-- start task %d %d' % (nu, tn))
 
-	if _p1 < _p2:
+	if _p1 < _p2 or nu >= tn:
 		if end:
-			text('\r+ \t\t\t|  %3.1f%%(%d/%d)     ' % (_p2 * perc_step, nu, tn))
+			text('\r+ \t\t\t|  %3.1f%%(%d/%d)     ' % ((_p2 * perc_step) if nu < tn else 100.0, nu, tn))
 		else:
-			text('\r+ %3.1f%%(%d/%d)     ' % (_p2 * perc_step, nu, tn))
+			text('\r+ %3.1f%%(%d/%d)     ' % ((_p2 * perc_step) if nu < tn else 100.0, nu, tn))
 		# if end:
 		# 	print '--> %3d/%d,%3d%%\r' % (nu, tn, _p2 * perc_step)
 		# else:
@@ -65,6 +65,7 @@ def work_function(obj, job_queue, vs, mag, res, t_lock):
 			if mag['stop']:
 				return
 
+			# with t_lock:
 			with t_lock:
 				mag['num_load'] += 1
 
@@ -80,24 +81,22 @@ def work_function(obj, job_queue, vs, mag, res, t_lock):
 				return
 
 			_rs = None
+
 			try:
 				_rs = obj.func(*_ps)
-			except KeyboardInterrupt:
-				mag['stop'] = True
-				print '\n\n* User stopped the program'
-				return
-			except Exception, err:
-				if not obj.continue_exception:
-					mag['stop'] = True
-					return
-
+			except KeyboardInterrupt, _err:
+				raise _err
+			except Exception, _err:
 				import traceback
 
-				logging.error(traceback.format_exc())
-				logging.error('Error (%s): %s' % (_nu, str(err)))
+				logging.error('Error (%s): %s' % (_nu, traceback.format_exc()))
+				logging.error('Error (%s): %s' % (_nu, str(_err)))
 
-				print '\n\n* Error:', err
-				continue
+				if obj.continue_exception:
+					continue
+				else:
+					mag['stop'] = True
+					raise _err
 
 			if mag['stop']:
 				return
@@ -105,23 +104,28 @@ def work_function(obj, job_queue, vs, mag, res, t_lock):
 			res.append(_rs)
 			logging.info('task (%s) end' % _nu)
 
+			# _nu = mag['num_done'] + 1
+			# mag['num_done'] = _nu
+			# print_percent(_nu, len(obj.args), obj.perc_step, end=True)
+
+		except Queue.Empty:
+			return
+		finally:
 			# print the progress percentage
 			with t_lock:
 				_nu = mag['num_done'] + 1
 				mag['num_done'] = _nu
 				print_percent(_nu, len(obj.args), obj.perc_step, end=True)
 
-		except Queue.Empty:
-			break
-
 class Pool:
-	def __init__(self, func, args, t_num, continue_exception=False, perc_step=0.1):
+	def __init__(self, func, args, t_num, error_continue=False, perc_step=0.1):
 		assert t_num > 0
 
 		self.func = func
 		self.args = args
 		self.t_num = min(int(t_num), len(args))
 		self.perc_step = perc_step
+		self.continue_exception = error_continue
 
 	def run(self, vs=()):
 		logging.info('process tasks (%d, %d)' % (len(self.args), self.t_num))
@@ -167,8 +171,10 @@ class Pool:
 				# _pos = 0
 				_task_tmp = len([_p for _p in _procs if _p != None])
 				if _task_num != _task_tmp:
-					logging.info('Alive tasks num: %s' % _task_tmp)
 					_task_num = _task_tmp
+
+					logging.info('Alive tasks num: %s' % _task_num)
+					text('\r\t\t\t\t\t\t(%-3d)' % _task_num)
 
 					if _task_num <= 0:
 						break
@@ -196,36 +202,44 @@ class Pool:
 			for _oo in _out:
 				_rs.append(_oo)
 
-			# while not _results.empty():
-			# 	_rs.append(_results.get())
 			return _rs
 
 		except KeyboardInterrupt:
 			logging.warning('terminated by user')
+			print ''
 			print 'parent received ctrl-c'
+
 			for _proc in _procs:
 				if _proc == None:
 					continue
 				_proc.terminate()
-				# _proc.join()
+				_proc.join(5)
 
-		except Exception, err:
+			while not _jobs.empty():
+				_jobs.get(block=False)
+
+		except Exception, _err:
 			import traceback
 
 			logging.error(traceback.format_exc())
-			logging.error(str(err))
+			logging.error(str(_err))
 
-			print '\n\n* error:', err
-			# for _proc in _procs:
-			# 	_proc.terminate()
-			# 	_proc.join()
+			print ''
+			print '* error:', _err
 
-		return None
+			for _proc in _procs:
+				if _proc == None:
+					continue
+				_proc.terminate()
+				_proc.join(5)
+
+			while not _jobs.empty():
+				_jobs.get(block=False)
+
+		raise Exception('failed with the processing')
 
 	def run_single(self, vs=()):
 		logging.info('process tasks (%d) without parallel' % (len(self.args)))
-
-		self.reset_count()
 
 		_rs = []; _pos = 0
 		for _arg in self.args:
