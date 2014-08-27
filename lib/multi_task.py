@@ -174,7 +174,7 @@ class Pool:
 					_task_num = _task_tmp
 
 					logging.info('Alive tasks num: %s' % _task_num)
-					text('\r\t\t\t\t\t\t(%-3d)' % _task_num)
+					text('\r\t\t\t\t\t\t(%3d)' % _task_num)
 
 					if _task_num <= 0:
 						break
