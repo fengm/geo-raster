@@ -174,7 +174,14 @@ def default_dir(fd_out):
 	import os, sys
 
 	# use 'tmp' folder at the root of the code when no folder specified
-	return fd_out if fd_out else os.path.join(sys.path[0], 'tmp')
+	if fd_out:
+		return fd_out
+
+	import config
+	if config.cfg.has_option('conf', 'temp'):
+		return config.cfg.get('conf', 'temp')
+
+	return os.path.join(sys.path[0], 'tmp')
 
 def clean(fd_out, remove_root=False):
 	'''force to clean the folder'''
@@ -211,6 +218,10 @@ class file_unzip:
 		self.files = []
 		self.exclusive = exclusive
 		self._debug = debug
+
+		logging.info('temp: %s' % self.fd_out)
+		if self._debug:
+			print 'temp:', self.fd_out
 
 	# support with statement
 	def __enter__(self):
