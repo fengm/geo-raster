@@ -17,13 +17,10 @@ class sync_file_log_handler(logging.FileHandler):
 				logging.FileHandler.emit(self, record)
 
 def init(f=None):
+	import sys, os, re
+
 	_f = f
 	if not _f:
-		import sys, os, re
-
-		_d_log = os.path.join(sys.path[0], 'log')
-		os.path.exists(_d_log) or os.makedirs(_d_log)
-
 		_f = os.path.basename(sys.argv[0])
 		_m = re.match('(.+)\.[^\.]+$', _f)
 		if _m:
@@ -32,7 +29,10 @@ def init(f=None):
 		# import datetime
 		# _f += '_%s.log' % datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
 
-		_f = os.path.join(_d_log, _f + '.log')
+		_f = os.path.join(sys.path[0], 'log', _f + '.log')
+
+	_d_log = os.path.dirname(_f)
+	os.path.exists(_d_log) or os.makedirs(_d_log)
 
 	print 'logging file', _f
 	_handler = sync_file_log_handler(_f)

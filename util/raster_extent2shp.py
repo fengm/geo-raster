@@ -158,9 +158,30 @@ def generate_shp_from_folder(fd, dataset, proj, f_out, absp, d_tmp):
 	finally:
 		_zip.clean()
 
-def usage():
+def main():
+	_opts = _init_env()
+
+	if _opts.inputfile:
+		generate_shp_from_file(_opts.inputfile, _opts.dataset, _opts.projection,
+				_opts.output, _opts.absolutepath, _opts.temp_path)
+	elif _opts.inputlist:
+		generate_shp_from_list(_opts.inputlist, _opts.dataset, _opts.projection,
+				_opts.output, _opts.absolutepath, _opts.temp_path)
+	elif _opts.inputfolder:
+		generate_shp_from_folder(_opts.inputfolder, _opts.dataset,
+				_opts.projection, _opts.output, _opts.absolutepath,
+				_opts.temp_path)
+	else:
+		print 'unknown inputs'
+
+def _usage():
 	import argparse
+
 	_p = argparse.ArgumentParser()
+	_p.add_argument('--logging', dest='logging')
+	_p.add_argument('--config', dest='config')
+	_p.add_argument('--temp', dest='temp')
+
 	_g_input = _p.add_mutually_exclusive_group(required=True)
 	_g_input.add_argument('-i', '--input-file', dest='inputfile', nargs='*')
 	_g_input.add_argument('-l', '--input-list', dest='inputlist')
@@ -175,17 +196,27 @@ def usage():
 
 	return _p.parse_args()
 
+def _init_env():
+	import os, sys
+
+	_dirs = ['lib', 'libs']
+	_d_ins = [os.path.join(sys.path[0], _d) for _d in _dirs if \
+			os.path.exists(os.path.join(sys.path[0], _d))]
+	sys.path = [sys.path[0]] + _d_ins + sys.path[1:]
+
+	_opts = _usage()
+
+	import logging_util
+	logging_util.init(_opts.logging)
+
+	import config
+	config.load(_opts.config)
+
+	import file_unzip as fz
+	fz.clean(fz.default_dir(_opts.temp))
+
+	return _opts
+
 if __name__ == '__main__':
-	_opts = usage()
-	if _opts.inputfile:
-		generate_shp_from_file(_opts.inputfile, _opts.dataset, _opts.projection,
-				_opts.output, _opts.absolutepath, _opts.temp_path)
-	elif _opts.inputlist:
-		generate_shp_from_list(_opts.inputlist, _opts.dataset, _opts.projection,
-				_opts.output, _opts.absolutepath, _opts.temp_path)
-	elif _opts.inputfolder:
-		generate_shp_from_folder(_opts.inputfolder, _opts.dataset,
-				_opts.projection, _opts.output, _opts.absolutepath,
-				_opts.temp_path)
-	else:
-		print 'unknown inputs'
+	main()
+

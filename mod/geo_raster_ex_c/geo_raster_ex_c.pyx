@@ -900,6 +900,10 @@ class geo_band_stack_zip:
 			_pol_c_s.set_proj(_bnd.proj)
 			_pol_c_t = _pol_c_s.project_to(bnd.proj)
 
+			if _pol_c_t == None or _pol_c_t.poly == None:
+				logging.info('failed to reproject the extent')
+				continue
+
 			#_pol_c_t = _pol_c_t.buffer(bnd.geo_transform[1])
 			#print _pol_c_t.proj.ExportToProj4()
 			#_pol_c_s = _pol_c_t.project_to(_bnd.proj)
