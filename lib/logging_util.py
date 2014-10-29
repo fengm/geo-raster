@@ -34,7 +34,7 @@ def init(f=None):
 	_d_log = os.path.dirname(_f)
 	os.path.exists(_d_log) or os.makedirs(_d_log)
 
-	print 'logging file', _f
+	# print 'logging file', _f
 	_handler = sync_file_log_handler(_f)
 	_handler.setLevel(logging.DEBUG)
 	_handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s:%(message)s'))

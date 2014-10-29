@@ -584,6 +584,8 @@ class band_file:
 	def get_band(self):
 		import geo_raster_c
 
+		logging.info('loading %s' % self.file)
+
 		if self.band:
 			return self.band
 
@@ -865,14 +867,12 @@ class geo_band_stack_zip:
 		if _nodata == None:
 			_nodata = _default_nodata[self.pixel_type]
 			logging.warning('No nodata value provided, using default value (%s)' % _nodata)
-
+	
 		_dat_out.fill(_nodata)
 
 		logging.info('reading block from "%s" to "%s"' % (\
 			self.proj.ExportToProj4(),
 			bnd.proj.ExportToProj4()))
-
-		_prj = projection_transform.from_band(bnd, self.proj)
 
 		import geo_base_c as gb
 		_pol_t1 = gb.geo_polygon.from_raster(bnd, div=100)
@@ -893,7 +893,7 @@ class geo_band_stack_zip:
 			_pol_s = gb.geo_polygon.from_raster(_bnd, div=100)
 
 			# calculate the intersection area for both data sets
-			_pol_c_s = _pol_s.intersect(_pol_t2)
+			_pol_c_s = _pol_s.intersect(_pol_t1.project_to(_bnd.proj))
 			if _pol_c_s.poly == None:
 				continue
 
@@ -915,6 +915,12 @@ class geo_band_stack_zip:
 			_col_s_s, _row_s_s = _bnd.to_cell(_ext_s.minx, _ext_s.maxy)
 			_col_s_e, _row_s_e = _bnd.to_cell(_ext_s.maxx, _ext_s.miny)
 
+			if _row_s_s > _row_s_e:
+				_row_s_s, _row_s_e = _row_s_e, _row_s_s
+
+			if _row_s_s >= _row_s_e:
+				continue
+
 			# _col_s_s, _col_s_e = max(0, _col_s_s-1), min(_bnd.width, _col_s_e+1)
 			# _row_s_s, _row_s_e = max(0, _row_s_s-1), min(_bnd.height,_row_s_e+1)
 
@@ -922,6 +928,7 @@ class geo_band_stack_zip:
 
 			# only load the intersection area to reduce memory use
 			_row_s_s = max(0, _row_s_s - 1)
+
 			_dat = _bnd.read_rows(_row_s_s,
 					min(_row_s_e + 2, _bnd.height) - _row_s_s)
 
@@ -933,6 +940,8 @@ class geo_band_stack_zip:
 			#_col_t_s, _col_t_e = max(0, _col_t_s-1), min(bnd.width, _col_t_e+1)
 			#_row_t_s, _row_t_e = max(0, _row_t_s-1), min(bnd.height,_row_t_e+1)
 			_ext_t_cs = geo_extent(_col_t_s, _row_t_s, _col_t_e, _row_t_e)
+
+			_prj = projection_transform.from_band(bnd, _bnd.proj)
 
 			if self.pixel_type == 1:
 				read_block_uint8(_dat, _ext_t_cs, _prj, _bnd.geo_transform,

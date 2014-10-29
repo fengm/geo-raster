@@ -766,8 +766,10 @@ class geo_raster(geo_raster_info):
 		if not raster:
 			raise Exception('failed to load raster')
 
+		self.projection = raster.GetProjection()
+
 		_proj = osr.SpatialReference()
-		_proj.ImportFromWkt(raster.GetProjection())
+		_proj.ImportFromWkt(self.projection)
 
 		_cols = raster.RasterXSize
 		_rows = raster.RasterYSize
@@ -787,6 +789,7 @@ class geo_raster(geo_raster_info):
 	def __del__(self):
 		geo_raster_info.__del__(self)
 
+		self.projection = None
 		self.projection_obj = None
 		self.filepath = None
 		self.raster = None
