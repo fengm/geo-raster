@@ -27,6 +27,7 @@ def usage():
 	_p.add_argument('-c', '--command', dest='command', required=True)
 	_p.add_argument('-r', '--nodes', dest='nodes', required=True, type=int, nargs=2)
 	_p.add_argument('-e', '--excludes', dest='excludes', type=int, nargs='*')
+	_p.add_argument('-i', '--include', dest='include', type=int, nargs='*', help='Only nodes listed in the param will be run. Used for reruning jobs for specified nodes.')
 	_p.add_argument('-p', '--print', dest='print_cmd', default=False, action='store_true')
 	_p.add_argument('--task-num', dest='task_num', type=int, nargs=2, default=[6, 15], help='number of task on lower and higer nodes')
 
@@ -68,8 +69,16 @@ def main():
 	_d_base = format_path(sys.path[0])
 	_f_prg = format_command(_opts.command)
 
+	# only include nodes for processing
+	_n_inc = None if ((_opts.include == None) or (len(_opts.include) == 0)) else _opts.include
+
 	for i in xrange(len(_hosts)):
 		_host = 'glcfpro%02d' % _hosts[i]
+
+		if _n_inc != None and (_hosts[i] not in _n_inc):
+			print ' - skip', _host
+			continue
+
 		print '>>', _host
 
 		_task_num = _opts.task_num[0] if _hosts[i] <= 10 else _opts.task_num[1]
@@ -92,8 +101,8 @@ def main():
 		if _opts.print_cmd:
 			print _cmd
 		else:
-			import run_commands
-			run_commands.run(_cmd)
+			import subprocess
+			subprocess.Popen(_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 def init_env():
 	import os, sys
