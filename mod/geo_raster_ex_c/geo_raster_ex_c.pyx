@@ -876,7 +876,12 @@ class geo_band_stack_zip:
 
 		import geo_base_c as gb
 		_pol_t1 = gb.geo_polygon.from_raster(bnd, div=100)
+		if _pol_t1 == None or _pol_t1.poly == None:
+			return None
+
 		_pol_t2 = _pol_t1.project_to(self.proj)
+		if _pol_t2 == None or _pol_t2.poly == None:
+			return None
 
 		if use_pts:
 			logging.info('enable using PTS')
@@ -890,11 +895,36 @@ class geo_band_stack_zip:
 
 		for _bnd_info in _bnds:
 			_bnd = _bnd_info.get_band().band
+			logging.info('loading file %s' % _bnd_info.band_file.file)
 			_pol_s = gb.geo_polygon.from_raster(_bnd, div=100)
 
+			if _pol_s == None:
+				logging.info('skip file #1 %s' % _bnd_info.band_file.file)
+				continue
+
 			# calculate the intersection area for both data sets
-			_pol_c_s = _pol_s.intersect(_pol_t1.project_to(_bnd.proj))
+			_pol_t1_proj = _pol_t1.project_to(_bnd.proj)
+			if _pol_t1_proj == None or _pol_t1_proj.poly == None:
+				logging.info('skip file #2 %s' % _bnd_info.band_file.file)
+				continue
+
+			# if 'p166r061_20000223' in _bnd_info.band_file.file:
+			# 	import geo_base_c as gb
+			# 	_ttt = _pol_s.buffer(0.00000001).intersect(_pol_t1_proj)
+			# 	print _ttt
+			# 	print _ttt.poly
+			# 	gb.output_polygons([_pol_s, _pol_t1_proj], 
+			# 			'/data/glcf-nx-002/data/PALSAR/water/region/country3/raw4/test2.shp')
+
+			if not _pol_s.extent().is_intersect(_pol_t1_proj.extent()):
+				continue
+
+			_pol_c_s = _pol_s.intersect(_pol_t1_proj)
 			if _pol_c_s.poly == None:
+				_pol_c_s = _pol_s.buffer(0.000000001).intersect(_pol_t1_proj)
+
+			if _pol_c_s.poly == None:
+				logging.info('skip file #3 %s' % _bnd_info.band_file.file)
 				continue
 
 			_pol_c_s.set_proj(_bnd.proj)
