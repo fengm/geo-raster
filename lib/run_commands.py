@@ -25,7 +25,7 @@ def run_exe(cmd, shell=True):
 		return None
 	return _rs
 
-def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exception=True):
+def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exception=True, debug=False):
 	import logging
 
 	_shell = shell
@@ -53,8 +53,9 @@ def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exc
 		_rs.append(None)
 
 	import logging
-	logging.error('Output message:%s\n' % _rs[0])
-	logging.error('Error message:%s' % _rs[1])
+	if debug:
+		logging.info('Output message:%s\n' % _rs[0])
+		logging.info('Error message:%s' % _rs[1])
 
 	logging.info('return code: %s' % _p.returncode)
 	if _p.returncode != 0:

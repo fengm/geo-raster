@@ -114,7 +114,17 @@ def main():
 			if _opts.output.endswith('.img'):
 				_opt.append('COMPRESS=YES')
 
-		_img = ge.geo_raster.create(_opts.output, [len(_bnds), _bnd.height, _bnd.width],
+		_f_out = _opts.output
+
+		import os
+		if os.path.isdir(_f_out):
+			import landsat
+			_f_out = os.path.join(_f_out, '%s_%s_%s.tif' % (landsat.parse(os.path.basename(_opts.input)),
+				'sr' if _opts.convert_sr else 'dn',
+				''.join(map(str, _opts.bands))
+				))
+
+		_img = ge.geo_raster.create(_f_out, [len(_bnds), _bnd.height, _bnd.width],
 				_bnd.geo_transform, _bnd.proj, ge.pixel_type(), opts=_opt)
 
 		_line = 1024
@@ -182,9 +192,4 @@ if __name__ == '__main__':
 		logging.error(str(err))
 
 		print '\n\n* Error:', err
-
-
-
-
-
 

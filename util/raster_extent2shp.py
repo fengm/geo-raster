@@ -54,7 +54,10 @@ def generate_shp(fs, proj, f_out, fzip):
 	import os
 
 	# use projection of the first file if no target projection specified
-	_proj = (open_file(fs[0], fzip).projection_obj) if proj == None else geo_raster.proj_from_epsg(proj)
+	_proj = open_file(fs[0], fzip).projection_obj
+	print _proj
+
+	_proj = (_proj) if proj == None else geo_raster.proj_from_epsg(proj)
 	fzip.clean()
 
 	_drv = ogr.GetDriverByName('ESRI Shapefile')
@@ -62,13 +65,18 @@ def generate_shp(fs, proj, f_out, fzip):
 	_shp = _drv.CreateDataSource(f_out)
 	_lyr = _shp.CreateLayer(filter(lambda x: x[:-4] if x.lower().endswith('.shp') else x, os.path.basename(f_out)[:-4]), _proj, ogr.wkbPolygon)
 
-	_fld = ogr.FieldDefn('file', ogr.OFTString)
+	_fld = ogr.FieldDefn('FILE', ogr.OFTString)
 	_fld.SetWidth(254)
 	_lyr.CreateField(_fld)
 
+	import re
 	_perc = progress_percentage(len(fs))
 	for _f in fs:
 		_perc.next()
+
+		_re = re.match('/a/[^/]+(/.+)', _f)
+		if _re:
+			_f = _re.group(1)
 
 		_img = open_file(_f, fzip)
 		_bnd = _img.get_band()

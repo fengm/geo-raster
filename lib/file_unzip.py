@@ -27,6 +27,8 @@ def uncompress_file(f, d_ot):
 			os.path.exists(_do) or os.makedirs(_do)
 
 	_ft = _fo + '.tmp'
+
+	logging.info('unzipping %s: %s' % (f, _ft))
 	try:
 		with gzip.open(f, 'rb') as _f_in:
 			with open(_ft, 'wb') as _f_ot:
