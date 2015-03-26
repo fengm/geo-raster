@@ -57,6 +57,12 @@ def parseLandsatId(id):
 		_date = datetime.datetime.strptime(_m.group(4), '%Y%j')
 		return int(_m.group(1)), 'p%sr%s' % (_m.group(2), _m.group(3)), _date.strftime('%Y%m%d')
 
+	_m = re.search('w2p(\d{3})r(\d{3})_(\d{7})L(\d)', id)
+	if _m:
+		import datetime
+		_date = datetime.datetime.strptime(_m.group(3), '%Y%j')
+		return int(_m.group(4)), 'p%sr%s' % (_m.group(1), _m.group(2)), _date.strftime('%Y%m%d')
+
 	_m = re.search('L\w(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
 	if _m:
 		_year = int(_m.group(4))
