@@ -17,7 +17,7 @@ show=True
 
 class progress_percentage:
 
-	def __init__(self, size, title=None, step=100, txt_format='%(p)3d%%', bar=False):
+	def __init__(self, size, title=None, step=100, txt_format='%(p)3d%%', bar=False, max_msg=70):
 		self.pos = -1
 		self.cur = -1
 		self.size = size
@@ -26,10 +26,11 @@ class progress_percentage:
 		self.time_s = datetime.datetime.now()
 		self.title = title
 		self.bar = bar
+		self.max_msg = 70
 
 		logging.debug('+ start process :' + title if title != None \
 				else '<no name>')
-		if title != None:
+		if title != None and show:
 			print '>', title
 
 	def print_prog(self, pos):
@@ -51,8 +52,13 @@ class progress_percentage:
 			_txt += '-' * _len_r
 			print _txt,
 
-		print self.txt_format % {'p': _pos},
-		print '(%s)' % (datetime.datetime.now() - self.time_s),
+		_msg = self.txt_format % {'p': _pos} + ' ' + \
+					'(%s)' % (datetime.datetime.now() - self.time_s)
+
+		if len(_msg) > self.max_msg:
+			_msg = _msg[:self.max_msg]
+
+		print ('%-' + str(self.max_msg) + 's') % _msg,
 		sys.stdout.flush()
 
 	def next(self, step=1, count=False, message=None):
@@ -60,8 +66,13 @@ class progress_percentage:
 
 		if count:
 			if show:
-				print '\r %s/%s: %s' % (self.cur, self.size, message if message else ''),
-				print '(%s)' % (datetime.datetime.now() - self.time_s), ' ',
+				print '\r',
+				_msg = '%s/%s: %s' % (self.cur, self.size, message if message else '') + ' ' + \
+							'(%s)' % (datetime.datetime.now() - self.time_s)
+				if len(_msg) > self.max_msg:
+					_msg = _msg[:self.max_msg]
+
+				print ('%-' + str(self.max_msg) + 's') % _msg,
 				import sys
 				sys.stdout.flush()
 		else:
