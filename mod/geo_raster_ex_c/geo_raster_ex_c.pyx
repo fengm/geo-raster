@@ -657,12 +657,14 @@ class geo_band_stack_zip:
 		self.nodata = nodata
 		self.estimate_params_from_band()
 
+		logging.info('build geo_band_stack (bands: %s, nodata: %s -> %s)' % (len(bands), nodata, self.nodata))
+
 	def estimate_params_from_band(self):
 		if len(self.bands) == 0:
 			raise Exception('No band loaded')
 
 		_bnd = self.bands[0].get_band()
-		if self.nodata != None:
+		if self.nodata == None:
 			self.nodata = _bnd.band.nodata
 
 		self.pixel_type = _bnd.band.pixel_type
@@ -670,7 +672,7 @@ class geo_band_stack_zip:
 		self.cell_size_y = _bnd.band.geo_transform[5]
 		self.bands[0].clean()
 
-	@classmethod
+	@staticmethod
 	def from_list(cls, f_list, band_idx=1, dataset_name=None, \
 			file_unzip=None, check_layers=False, nodata=None):
 		import geo_base_c as gb
@@ -703,10 +705,10 @@ class geo_band_stack_zip:
 			logging.error('No images found')
 			return None
 
-		return cls(_bnds, _proj, check_layers, nodata)
+		return geo_band_stack_zip(_bnds, _proj, check_layers, nodata)
 
-	@classmethod
-	def from_shapefile(cls, f_list, band_idx=1, dataset_name=None, \
+	@staticmethod
+	def from_shapefile(f_list, band_idx=1, dataset_name=None, \
 			file_unzip=None, check_layers=False, nodata=None):
 		from osgeo import ogr
 		import geo_base_c as gb
@@ -724,7 +726,8 @@ class geo_band_stack_zip:
 
 		_file_columns = [_col.name for _col in _lyr.schema if _col.name.lower() == 'file']
 		if len(_file_columns) != 1:
-			raise Exception('failed to find the FILE column in the shapefile (%s)' % ','.join([_col.name for _col in _lyr.schema]))
+			raise Exception('failed to find the FILE column in the shapefile (%s)' % \
+					','.join([_col.name for _col in _lyr.schema]))
 
 		for _f in _lyr:
 			_poly = gb.geo_polygon(_f.geometry().Clone())
@@ -751,7 +754,7 @@ class geo_band_stack_zip:
 			logging.error('No images found')
 			return None
 
-		return cls(_bnds, _lyr.GetSpatialRef(), check_layers, nodata)
+		return geo_band_stack_zip(_bnds, _lyr.GetSpatialRef(), check_layers, nodata)
 
 	def clean(self):
 		for _b in self.bands:

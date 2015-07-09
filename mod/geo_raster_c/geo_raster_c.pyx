@@ -243,7 +243,7 @@ class geo_band_cache(geo_band_info):
 
 	@property
 	def data_ma(self):
-		if self.nodata == None:
+		if None == self.nodata:
 			raise Exception('nodata is required')
 		return np.ma.masked_equal(self.data, self.nodata)
 
@@ -599,7 +599,7 @@ class geo_band(geo_band_info):
 	@property
 	def cached(self):
 		_dat = self.data
-		if _dat == None:
+		if type(_dat) == type(None):
 			return None
 
 		_geo = list(self.geo_transform)
