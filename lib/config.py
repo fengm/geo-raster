@@ -55,3 +55,14 @@ def get_attr(section, name):
 def get_at(section, name):
 	return get_attr(section, name)
 
+def items(section):
+	global cfg
+
+	_ns = cfg.defaults()
+	for _n, _v in cfg.items(section):
+
+		if _n in _ns:
+			continue
+
+		yield _n, _v
+

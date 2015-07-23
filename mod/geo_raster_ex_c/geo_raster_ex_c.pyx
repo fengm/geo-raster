@@ -670,6 +670,7 @@ class geo_band_stack_zip:
 		self.pixel_type = _bnd.band.pixel_type
 		self.cell_size = _bnd.band.geo_transform[1]
 		self.cell_size_y = _bnd.band.geo_transform[5]
+		self.color_table = _bnd.band.color_table
 		self.bands[0].clean()
 
 	@staticmethod
