@@ -14,6 +14,8 @@ Note: add the function for calculating STD for each averaged pixel
 import numpy as np
 import geo_raster_c as ge
 import math
+import logging
+
 cimport numpy as np
 cimport cython
 
@@ -361,4 +363,145 @@ cdef np.ndarray[np.int16_t, ndim=2] dominated_pixels(np.ndarray[np.int16_t, ndim
 
 	return _dat
 
+
+def perc(bnd_in, bnd_ot, val, valid_values=None, excluded_values=None, nodata=255, \
+			exclude_nodata=False, scale=100, pixel_type='byte'):
+	'''aggregate the values to percentage of the pixels'''
+
+	_geo_in = list(bnd_in.geo_transform)
+	_geo_ot = list(bnd_ot.geo_transform)
+
+	cdef float _cell_in = _geo_in[1]
+	cdef float _cell_ot = _geo_ot[1]
+
+	cdef float _dive = _cell_ot / _cell_in
+	_size = [bnd_ot.height, bnd_ot.width]
+	_offs = [(_geo_ot[3] - _geo_in[3]) / _geo_in[5],
+				(_geo_ot[0] - _geo_in[0]) / _geo_in[1]]
+
+	_dat = bnd_in.data
+
+	if bnd_in.data.dtype != np.uint8:
+		_dat = _dat.astype(np.uint8)
+
+	_dat = perc_pixels(_dat,
+			_offs[0], _offs[1], _dive, val, valid_values, excluded_values,
+			bnd_in.nodata, nodata, _size[0], _size[1], 1 if exclude_nodata else 0, int(scale))
+
+	import geo_raster_c as ge
+	import geo_base_c as gb
+
+	_pt = ge.pixel_type(pixel_type)
+	return ge.geo_band_cache(_dat.astype(gb.to_dtype(_pt)), _geo_ot, bnd_ot.proj, 
+				nodata, _pt)
+
+cdef np.ndarray[np.float32_t, ndim=2] perc_pixels(np.ndarray[np.uint8_t, ndim=2] dat,
+		float off_y, float off_x, float scale, int val, valid_values, excluded_values,
+		int s_nodata, int t_nodata, unsigned int rows, unsigned int cols, int exclude_nodata, int scale_val):
+
+	cdef unsigned int _rows_o, _cols_o
+	cdef unsigned int _rows_n, _cols_n
+
+	_rows_o = dat.shape[0]
+	_cols_o = dat.shape[1]
+
+	_rows_n = rows
+	_cols_n = cols
+
+	cdef unsigned int _row_o, _col_o
+	cdef unsigned int _row_n, _col_n
+
+	cdef int _row_min, _row_max
+	cdef int _col_min, _col_max
+
+	cdef float _row_min_f, _row_max_f
+	cdef float _col_min_f, _col_max_f
+
+	cdef double _vs
+	cdef double _ns
+	cdef double _as
+	cdef float _a
+
+	cdef int _v
+	cdef float _vv
+
+	_dat = np.empty([_rows_n, _cols_n], np.float32)
+	logging.info('aggregating nodata: %s, %s' % (s_nodata, t_nodata))
+	_dat.fill(t_nodata)
+
+	_row_min_f = off_y - scale
+	for _row_n from 0<=_row_n<_rows_n:
+		_row_min_f = _row_min_f + scale
+		_row_max_f = _row_min_f + scale
+
+		_col_min_f = off_x - scale
+		for _col_n from 0<=_col_n<_cols_n:
+			_col_min_f = _col_min_f + scale
+			_col_max_f = _col_min_f + scale
+
+			if _row_max_f <= 0 or _col_max_f <= 0 or \
+					_row_min_f >= _rows_o or _col_min_f >= _cols_o:
+				continue
+
+			_row_min = int(math.floor(_row_min_f))
+			_row_min = max(0, _row_min)
+
+			_col_min = int(math.floor(_col_min_f))
+			_col_min = max(0, _col_min)
+
+			_row_max = int(math.ceil(_row_max_f))
+			_row_max = min(_rows_o, _row_max)
+
+			_col_max = int(math.ceil(_col_max_f))
+			_col_max = min(_cols_o, _col_max)
+
+			_vs = 0
+			_ns = 0
+			_as = 0
+			for _row_o from _row_min<=_row_o<_row_max:
+				for _col_o from _col_min<=_col_o<_col_max:
+					_a = (min(_row_o + 1, _row_max_f) - \
+							max(_row_o, _row_min_f)) * \
+							(min(_col_o + 1, _col_max_f) - \
+							(max(_col_o, _col_min_f)))
+
+					_as += _a
+
+					_v = dat[_row_o, _col_o]
+					if _v == None:
+						continue
+
+					# if exclude_nodata == 1 and (_v > 10 or _v == s_nodata):
+					# if _v > 10 or _v == s_nodata:
+					if _v == s_nodata:
+						continue
+
+					if valid_values != None and len(valid_values) > 0:
+						if _v not in valid_values:
+							continue
+
+					if excluded_values != None and len(excluded_values) > 0:
+						if _v in excluded_values:
+							continue
+
+					_z = 1 if (_v == val or _v == 100) else 0
+
+					_vs += _z * _a
+					_ns += _a
+
+			if _ns <= 0:
+				continue
+
+			if _ns < 0.5 * _as:
+				continue
+
+			_vv = (scale_val * _vs) / _ns
+			if _vv > scale_val:
+				_vv = scale_val
+			if _vv < 0:
+				_vv = 0
+
+			_dat[_row_n, _col_n] = _vv
+
+	return _dat
 
