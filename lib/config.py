@@ -10,18 +10,28 @@ import collections
 
 cfg = None
 
-def detect_file(f_cfg):
-	import os, sys, re
+def _detect_file(f):
+	_f = f
 
-	if f_cfg:
-		return f_cfg
+	import os
+	import re
+	import sys
 
-	_f = os.path.basename(sys.argv[0])
-	_m = re.match('(.+)\.[^\.]+$', _f)
+	if not _f:
+		_f = os.path.basename(sys.argv[0])
+		_m = re.match('(.+)\.[^\.]+$', _f)
 
-	if _m:
-		_f = _m.group(1)
-	_f += '.conf'
+		if _m:
+			_f = _m.group(1)
+	else:
+		if os.path.exists(_f):
+			return _f
+
+	if not os.path.splitext(_f)[1]:
+		_f += '.conf'
+
+		if os.path.exists(_f):
+			return _f
 
 	_f_cfg = os.path.join(sys.argv[0], _f)
 	if os.path.exists(_f_cfg):
@@ -43,10 +53,16 @@ def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_
 	import ConfigParser
 	cfg = ConfigParser.ConfigParser(_defaults, dict_type, allow_no_value)
 
-	_f_cfg = detect_file(f_cfg)
-	if _f_cfg:
-		logging.info('loading config file ' + _f_cfg)
-		cfg.read(_f_cfg)
+	_fs = []
+	for _f in (f_cfg if (isinstance(f_cfg, list) or isinstance(f_cfg, tuple)) else [f_cfg]):
+		_l = _detect_file(_f)
+		if _l == None:
+			continue
+
+		logging.info('loading config file ' + _l)
+		_fs.append(_l)
+
+	cfg.read(_fs)
 
 def get_attr(section, name):
 	global cfg
