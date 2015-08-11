@@ -100,7 +100,7 @@ def generate_shp_from_file(fs, dataset, proj, f_out, absp, d_tmp):
 
 	_fs = []
 	for i in xrange(len(fs)):
-		_p = os.path.abspath(_fs[i])
+		_p = os.path.abspath(fs[i])
 		if absp:
 			_p = os.path.abspath(_p)
 
