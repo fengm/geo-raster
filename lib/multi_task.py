@@ -13,9 +13,21 @@ def add_task_opts(p):
 	p.add_argument('-in', '--instance-num', dest='instance_num', type=int, default=1)
 	p.add_argument('-ip', '--instance-pos', dest='instance_pos', type=int, default=0)
 	p.add_argument('-ts', '--task-num', dest='task_num', type=int, default=1)
+	p.add_argument('-se', '--skip-error', dest='skip_error', default=False, action='store_true')
 
 def load_from_list(f_ls, opts):
 	return load_list(f_ls, opts.instance_num, opts.instance_pos)
+
+def load(ls, opts):
+	import os
+
+	if isinstance(ls, str) and os.path.exists(ls):
+		return load_list(ls, opts.instance_num, opts.instance_pos)
+
+	if isinstance(ls, list) or isinstance(ls, tuple):
+		return [ls[i] for i in xrange(opts.instance_pos, len(ls), opts.instance_num)]
+
+	raise Exception('unsupported list type %r' % ls)
 
 def load_list(f_ls, num, pos):
 	logging.debug('loading ' + f_ls)
@@ -27,6 +39,9 @@ def load_list(f_ls, num, pos):
 		logging.debug('select %s from %s' % (len(_ls_s), len(_ls_a)))
 
 		return _ls_s
+
+def run(func, ps, opts):
+	Pool(func, ps, opts.task_num, opts.skip_error).run()
 
 def load_ids(size, num, pos):
 	logging.debug('loading ids %d' % size)
