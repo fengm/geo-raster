@@ -41,7 +41,7 @@ def load_list(f_ls, num, pos):
 		return _ls_s
 
 def run(func, ps, opts):
-	Pool(func, ps, opts.task_num, opts.skip_error).run()
+	return Pool(func, ps, opts.task_num, opts.skip_error).run()
 
 def load_ids(size, num, pos):
 	logging.debug('loading ids %d' % size)
