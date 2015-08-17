@@ -24,7 +24,7 @@ class landsat_info:
 		self.ac_date_obj = datetime.datetime.strptime(ac_date, '%Y%m%d')
 
 	def __str__(self):
-		return '%s%s_%s_%s' % (self.sensor, self.mission, self.tile, self.ac_date)
+		return 'L%s%s_%s_%s' % (self.mission, self.sensor, self.tile, self.ac_date)
 
 def parse(code):
 	_vs = parseLandsatId(code)
@@ -48,17 +48,16 @@ def parseLandsatId(id):
 	if _m:
 		return '', _m.group(2), _m.group(3), int(_m.group(1))
 
-	_m = re.search('[(lL\w)](\d)_(p\d{3}r\d{3})_(\d{8})', id)
+	_m = re.search('[lL](\d)(\D)_(p\d{3}r\d{3})_(\d{8})', id)
 	if _m:
-		return _m.group(1), _m.group(3), _m.group(4), int(_m.group(2))
+		return _m.group(2), _m.group(3), _m.group(4), int(_m.group(1))
 
-	_m = re.search('(L\d)\d?(\d{3})(\d{3})_\d{3}(\d{8})', id)
+	_m = re.search('L(\d)\d?(\d{3})(\d{3})_\d{3}(\d{8})', id)
 	if _m:
 		return '', 'p%sr%s' % (_m.group(2), _m.group(3)), _m.group(4), int(_m.group(1))
 
-	_m = re.search('(L\w)(\d)(\d{3})(\d{3})(\d{7})', id)
+	_m = re.search('L(\w)(\d)(\d{3})(\d{3})(\d{7})', id)
 	if _m:
-		print _m.group(1)
 		import datetime
 		_date = datetime.datetime.strptime(_m.group(5), '%Y%j')
 		return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _date.strftime('%Y%m%d'), int(_m.group(2))
@@ -69,7 +68,7 @@ def parseLandsatId(id):
 		_date = datetime.datetime.strptime(_m.group(3), '%Y%j')
 		return int(_m.group(4)), 'p%sr%s' % (_m.group(1), _m.group(2)), _date.strftime('%Y%m%d'), ''
 
-	_m = re.search('(L\w)(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
+	_m = re.search('L(\w)(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
 	if _m:
 		_year = int(_m.group(4))
 		_day = int(_m.group(5))
@@ -117,4 +116,22 @@ def getSensorName(d):
 
 def normalizeId(sensor, pathrow, date):
 	return 'L%s_%s_%s' % (sensor, pathrow, date)
+
+def main():
+	_ts = ['L2M_p059r008_19760831_dat']
+
+	assert all(map(parse, _ts))
+
+
+def _init_env():
+	import os, sys
+
+	_dirs = ['lib', 'libs']
+	_d_ins = [os.path.join(sys.path[0], _d) for _d in _dirs if \
+			os.path.exists(os.path.join(sys.path[0], _d))]
+	sys.path = [sys.path[0]] + _d_ins + sys.path[1:]
+
+if __name__ == '__main__':
+	_init_env()
+	main()
 
