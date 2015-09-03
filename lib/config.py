@@ -10,28 +10,11 @@ import collections
 
 cfg = None
 
-def _detect_file(f):
-	_f = f
-
+def _detect_sys(f, ext):
 	import os
-	import re
 	import sys
 
-	if not _f:
-		_f = os.path.basename(sys.argv[0])
-		_m = re.match('(.+)\.[^\.]+$', _f)
-
-		if _m:
-			_f = _m.group(1)
-	else:
-		if os.path.exists(_f):
-			return _f
-
-	if not os.path.splitext(_f)[1]:
-		_f += '.conf'
-
-		if os.path.exists(_f):
-			return _f
+	_f = f + (ext if ext.startswith('.') else ('.' + ext))
 
 	_f_cfg = os.path.join(sys.argv[0], _f)
 	if os.path.exists(_f_cfg):
@@ -41,7 +24,27 @@ def _detect_file(f):
 	if os.path.exists(_f_cfg):
 		return _f_cfg
 
+	_f_cfg = os.path.join(sys.path[0], 'etc', _f)
+	if os.path.exists(_f_cfg):
+		return _f_cfg
+
 	return None
+
+def detect_file(f_cfg):
+	import os, sys, re
+
+	if f_cfg:
+		return f_cfg
+
+	_f = os.path.basename(sys.argv[0])
+	_m = re.match('(.+)\.[^\.]+$', _f)
+
+	if _m:
+		_f = _m.group(1)
+
+	_f = _detect_sys(_f, 'conf') or _detect_sys(_f, 'ini')
+	print _f
+	return _f
 
 def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_value=False):
 	global cfg
@@ -53,16 +56,10 @@ def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_
 	import ConfigParser
 	cfg = ConfigParser.ConfigParser(_defaults, dict_type, allow_no_value)
 
-	_fs = []
-	for _f in (f_cfg if (isinstance(f_cfg, list) or isinstance(f_cfg, tuple)) else [f_cfg]):
-		_l = _detect_file(_f)
-		if _l == None:
-			continue
-
-		logging.info('loading config file ' + _l)
-		_fs.append(_l)
-
-	cfg.read(_fs)
+	_f_cfg = detect_file(f_cfg)
+	if _f_cfg:
+		logging.info('loading config file ' + _f_cfg)
+		cfg.read(_f_cfg)
 
 def get_attr(section, name):
 	global cfg

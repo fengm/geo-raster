@@ -1,4 +1,3 @@
-
 '''Module for process Landsat file information'''
 
 import re
@@ -48,7 +47,11 @@ def parseLandsatId(id):
 	if _m:
 		return '', _m.group(2), _m.group(3), int(_m.group(1))
 
-	_m = re.search('[lL](\d)(\D)_(p\d{3}r\d{3})_(\d{8})', id)
+	_m = re.search('[lL](\w)(\d)_(p\d{3}r\d{3})_(\d{8})', id)
+	if _m:
+		return _m.group(1), _m.group(3), _m.group(4), int(_m.group(2))
+
+	_m = re.search('[lL](\d)(\w)_(p\d{3}r\d{3})_(\d{8})', id)
 	if _m:
 		return _m.group(2), _m.group(3), _m.group(4), int(_m.group(1))
 
@@ -116,22 +119,3 @@ def getSensorName(d):
 
 def normalizeId(sensor, pathrow, date):
 	return 'L%s_%s_%s' % (sensor, pathrow, date)
-
-def main():
-	_ts = ['L2M_p059r008_19760831_dat']
-
-	assert all(map(parse, _ts))
-
-
-def _init_env():
-	import os, sys
-
-	_dirs = ['lib', 'libs']
-	_d_ins = [os.path.join(sys.path[0], _d) for _d in _dirs if \
-			os.path.exists(os.path.join(sys.path[0], _d))]
-	sys.path = [sys.path[0]] + _d_ins + sys.path[1:]
-
-if __name__ == '__main__':
-	_init_env()
-	main()
-
