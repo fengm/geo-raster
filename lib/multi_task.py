@@ -40,8 +40,8 @@ def load_list(f_ls, num, pos):
 
 		return _ls_s
 
-def run(func, ps, opts):
-	return Pool(func, ps, opts.task_num, opts.skip_error).run()
+def run(func, ps, opts, vs=[]):
+	return Pool(func, ps, opts.task_num, opts.skip_error).run(vs)
 
 def load_ids(size, num, pos):
 	logging.debug('loading ids %d' % size)
@@ -51,6 +51,9 @@ def text(t):
 	import sys
 	sys.stdout.write(t)
 	sys.stdout.flush()
+
+def create_lock():
+	return multiprocessing.Lock()
 
 def print_percent(nu, tn, perc_step, end=False):
 	_ss = 100.0
@@ -142,7 +145,7 @@ class Pool:
 		self.perc_step = perc_step
 		self.continue_exception = error_continue
 
-	def run(self, vs=()):
+	def run(self, vs=[]):
 		logging.info('process tasks (%d, %d)' % (len(self.args), self.t_num))
 
 		_mag = multiprocessing.Manager().dict()
@@ -253,7 +256,7 @@ class Pool:
 
 		raise Exception('failed with the processing')
 
-	def run_single(self, vs=()):
+	def run_single(self, vs=[]):
 		logging.info('process tasks (%d) without parallel' % (len(self.args)))
 
 		_rs = []; _pos = 0

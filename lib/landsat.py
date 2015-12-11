@@ -19,11 +19,20 @@ class landsat_info:
 		self.note = note
 		self.mission = mission
 
+		self.path = -1
+		self.row = -1
+		if tile:
+			self.path = int(tile[1:4])
+			self.row = int(tile[5:])
+
 		import datetime
 		self.ac_date_obj = datetime.datetime.strptime(ac_date, '%Y%m%d')
 
 	def __str__(self):
-		return 'L%s%s_%s_%s' % (self.mission, self.sensor, self.tile, self.ac_date)
+		_cd = '%s%s' % (self.mission if self.mission else '', self.sensor if self.sensor else '')
+		_id = [_cd] if _cd else []
+		_id.extend([self.tile, self.ac_date])
+		return '_'.join(_id)
 
 def parse(code):
 	_vs = parseLandsatId(code)
@@ -91,6 +100,10 @@ def parseLandsatId(id):
 		_date = datetime.datetime.strptime('%04d-%03d' % (_year, _day), '%Y-%j')
 
 		return int(_m.group(2)), 'p%sr%s' % (_m.group(3), _m.group(4)), _date.strftime('%Y%m%d'), _m.group(1)
+
+	_m = re.search('(p\d{3}r\d{3})_(\d{8})', id)
+	if _m:
+		return None, _m.group(1), _m.group(2), None
 
 	return None
 

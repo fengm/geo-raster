@@ -6,7 +6,7 @@ Create: 2015-07-28 18:30:01
 Description:
 '''
 
-class metadata:
+class metadata(object):
 
 	def __init__(self):
 		import collections
@@ -29,6 +29,16 @@ class metadata:
 			print '[%s] = %s' % (idx, val)
 
 		self._meta[idx] = val
+
+	def __setattr__(self, name, val):
+		if name.startswith('_'):
+			return super(metadata, self).__setattr__(name, val)
+		return self.__setitem__(name, val)
+
+	def __getattr__(self, name):
+		if name.startswith('_'):
+			return super(metadata, self).__getattr__(name)
+		return self.__getitem__(name)
 
 	def _str(self, lev):
 		if self._meta == None:
@@ -61,6 +71,7 @@ def main():
 	_m['test1']['test3'] = 22
 	_m['test1']['test4'] = 'test'
 	_m['test1']['test5']['test2'] = 'test'
+	_m.test2.test3 = 'tttt'
 
 	_m.save('test1.txt')
 

@@ -75,11 +75,12 @@ def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, unsigned
 	cdef int _row_min = max(0, ext.miny)
 	cdef int _row_max = min(_rows_ot, ext.maxy + 1)
 
+	_geo = tuple(geo)
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
 			_x, _y = prj.project(_col, _row)
 
-			_c, _r = to_cell(geo, _x, _y)
+			_c, _r = to_cell(_geo, _x, _y)
 			_r -= row_start
 
 			if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
@@ -109,11 +110,12 @@ def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int no
 	cdef int _row_min = max(0, ext.miny)
 	cdef int _row_max = min(_rows_ot, ext.maxy + 1)
 
+	_geo = tuple(geo)
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
 			_x, _y = prj.project(_col, _row)
 
-			_c, _r = to_cell(geo, _x, _y)
+			_c, _r = to_cell(_geo, _x, _y)
 			_r -= row_start
 
 			if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
@@ -143,11 +145,12 @@ def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int noda
 	cdef int _row_min = max(0, ext.miny)
 	cdef int _row_max = min(_rows_ot, ext.maxy + 1)
 
+	_geo = tuple(geo)
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
 			_x, _y = prj.project(_col, _row)
 
-			_c, _r = to_cell(geo, _x, _y)
+			_c, _r = to_cell(_geo, _x, _y)
 			_r -= row_start
 
 			if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
@@ -177,11 +180,12 @@ def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int no
 	cdef int _row_min = max(0, ext.miny)
 	cdef int _row_max = min(_rows_ot, ext.maxy + 1)
 
+	_geo = tuple(geo)
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
 			_x, _y = prj.project(_col, _row)
 
-			_c, _r = to_cell(geo, _x, _y)
+			_c, _r = to_cell(_geo, _x, _y)
 			_r -= row_start
 
 			if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
@@ -211,11 +215,12 @@ def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int noda
 	cdef int _row_min = max(0, ext.miny)
 	cdef int _row_max = min(_rows_ot, ext.maxy + 1)
 
+	_geo = tuple(geo)
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
 			_x, _y = prj.project(_col, _row)
 
-			_c, _r = to_cell(geo, _x, _y)
+			_c, _r = to_cell(_geo, _x, _y)
 			_r -= row_start
 
 			if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
@@ -245,11 +250,12 @@ def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, floa
 	cdef int _row_min = max(0, ext.miny)
 	cdef int _row_max = min(_rows_ot, ext.maxy + 1)
 
+	_geo = tuple(geo)
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
 			_x, _y = prj.project(_col, _row)
 
-			_c, _r = to_cell(geo, _x, _y)
+			_c, _r = to_cell(_geo, _x, _y)
 			_r -= row_start
 
 			if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):

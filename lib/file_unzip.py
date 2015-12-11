@@ -122,7 +122,7 @@ def check_prefix(f, exts):
 
 	return False
 
-def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None):
+def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include_exts=None):
 	'''compress files in the folder to the target folder'''
 	import shutil
 	import os
@@ -143,6 +143,9 @@ def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None):
 		_f_ot = os.path.join(fd_ot, _file)
 
 		if exclude_exts and check_prefix(_file, exclude_exts):
+			continue
+
+		if include_exts and not check_prefix(_file, include_exts):
 			continue
 
 		if check_prefix(_file, compress_exts):
