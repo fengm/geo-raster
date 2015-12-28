@@ -11,13 +11,20 @@ band_gain_high = [[-6.2, 191.6], [-6.4, 196.5], [-5.0, 152.9], [-5.1, 157.4], [-
 
 class landsat_info:
 
-	def __init__(self, sensor, tile, ac_date, full_name=None, note=None, mission=''):
-		self.sensor = sensor
+	def __init__(self, sensor, tile, ac_date, full_name=None, note=None, mission=None):
+		self.sensor = sensor.upper() if sensor else None
 		self.tile = tile
 		self.ac_date = ac_date
 		self.full_name = full_name
 		self.note = note
-		self.mission = mission
+		self.mission = int(mission) if mission else None
+
+		if self.sensor and len(self.sensor) == 1 and self.sensor.startswith('L'):
+			if self.mission:
+				if self.mission == 5:
+					self.sensor = 'LT'
+				if self.mission == 7:
+					self.sensor = 'LE'
 
 		self.path = -1
 		self.row = -1
@@ -29,7 +36,7 @@ class landsat_info:
 		self.ac_date_obj = datetime.datetime.strptime(ac_date, '%Y%m%d')
 
 	def __str__(self):
-		_cd = '%s%s' % (self.mission if self.mission else '', self.sensor if self.sensor else '')
+		_cd = '%s%s' % (self.sensor if self.sensor else '', self.mission if self.mission else '')
 		_id = [_cd] if _cd else []
 		_id.extend([self.tile, self.ac_date])
 		return '_'.join(_id)
@@ -54,33 +61,37 @@ def parseLandsatId(id):
 
 	_m = re.search('[lL](\d)_(p\d{3}r\d{3})_(\d{8})', id)
 	if _m:
-		return '', _m.group(2), _m.group(3), int(_m.group(1))
+		return 'L', _m.group(2), _m.group(3), int(_m.group(1))
 
-	_m = re.search('[lL](\w)(\d)_(p\d{3}r\d{3})_(\d{8})', id)
+	_m = re.search('(\w+)(\d)_(p\d{3}r\d{3})_(\d{8})', id)
 	if _m:
 		return _m.group(1), _m.group(3), _m.group(4), int(_m.group(2))
 
-	_m = re.search('[lL](\d)(\w)_(p\d{3}r\d{3})_(\d{8})', id)
-	if _m:
-		return _m.group(2), _m.group(3), _m.group(4), int(_m.group(1))
-
 	_m = re.search('L(\d)\d?(\d{3})(\d{3})_\d{3}(\d{8})', id)
 	if _m:
-		return '', 'p%sr%s' % (_m.group(2), _m.group(3)), _m.group(4), int(_m.group(1))
+		return 'L', 'p%sr%s' % (_m.group(2), _m.group(3)), _m.group(4), int(_m.group(1))
 
-	_m = re.search('L(\w)(\d)(\d{3})(\d{3})(\d{7})', id)
+	_m = re.search('(L\w)(\d)(\d{3})(\d{3})(\d{7})', id)
 	if _m:
 		import datetime
 		_date = datetime.datetime.strptime(_m.group(5), '%Y%j')
 		return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _date.strftime('%Y%m%d'), int(_m.group(2))
 
+	_m = re.search('(L)(\d)(\w?)_(p\d{3}r\d{3})_(\d{8})', id)
+	if _m:
+		return _m.group(1) + _m.group(3), _m.group(4), _m.group(5), int(_m.group(2))
+
+	_m = re.search('(\d)(\w?)_(p\d{3}r\d{3})_(\d{8})', id)
+	if _m:
+		return 'L' + _m.group(2), _m.group(3), _m.group(4), int(_m.group(1))
+
 	_m = re.search('w2p(\d{3})r(\d{3})_(\d{7})L(\d)', id)
 	if _m:
 		import datetime
 		_date = datetime.datetime.strptime(_m.group(3), '%Y%j')
-		return int(_m.group(4)), 'p%sr%s' % (_m.group(1), _m.group(2)), _date.strftime('%Y%m%d'), ''
+		return 'L', _m.group(1), _m.group(2), _date.strftime('%Y%m%d'), '', int(_m.group(4))
 
-	_m = re.search('L(\w)(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
+	_m = re.search('(L\w)(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
 	if _m:
 		_year = int(_m.group(4))
 		_day = int(_m.group(5))
@@ -99,7 +110,7 @@ def parseLandsatId(id):
 		import datetime
 		_date = datetime.datetime.strptime('%04d-%03d' % (_year, _day), '%Y-%j')
 
-		return int(_m.group(2)), 'p%sr%s' % (_m.group(3), _m.group(4)), _date.strftime('%Y%m%d'), _m.group(1)
+		return _m.group(1), _m.group(3), _m.group(4), _date.strftime('%Y%m%d'), _m.group(2)
 
 	_m = re.search('(p\d{3}r\d{3})_(\d{8})', id)
 	if _m:
