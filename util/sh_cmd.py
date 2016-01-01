@@ -29,7 +29,10 @@ def usage():
 	_p.add_argument('-e', '--excludes', dest='excludes', type=int, nargs='*')
 	_p.add_argument('-i', '--include', dest='include', type=int, nargs='*', help='Only nodes listed in the param will be run. Used for reruning jobs for specified nodes.')
 	_p.add_argument('-p', '--print', dest='print_cmd', default=False, action='store_true')
-	_p.add_argument('--task-num', dest='task_num', type=int, nargs=2, default=[6, 15], help='number of task on lower and higer nodes')
+	_p.add_argument('-ts', '--task-num', dest='task_num', type=int, nargs=2, default=[5, 12], \
+			help='number of task on lower and higer nodes')
+	_p.add_argument('-se', '--skip-error', dest='skip_error', action='store_true')
+	_p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=0)
 
 	return _p.parse_args()
 
@@ -86,6 +89,15 @@ def main():
 		_d_log = os.path.join(_d_base, 'log', 'pro')
 		_log_std = os.path.join(_d_log, 'note_%02d.log' % _hosts[i])
 
+		_cmd = 'ssh %s "cd %s;python %s --logging %s -ts %d -in %d -ip %d %s %s" > %s &' % \
+				(_host, _d_envi, ' '.join(_f_prg), log_file(_f_prg[0], _hosts[i]), _task_num, len(_hosts), \
+				i, '-se' if _opts.skip_error else '', ('-tw %s' % _opts.time_wait) if _opts.time_wait > 0 else '', \
+				_log_std)
+
+		if _opts.print_cmd:
+			print _cmd
+			continue
+
 		try:
 			os.path.exists(_d_log) or os.makedirs(_d_log)
 		except Exception:
@@ -96,13 +108,8 @@ def main():
 		except Exception:
 			pass
 
-		_cmd = 'ssh %s "cd %s;python %s --logging %s -ts %d -in %d -ip %d" > %s &' % (_host, _d_envi, ' '.join(_f_prg), log_file(_f_prg[0], _hosts[i]), _task_num, len(_hosts), i, _log_std)
-
-		if _opts.print_cmd:
-			print _cmd
-		else:
-			import subprocess
-			subprocess.Popen(_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		import subprocess
+		subprocess.Popen(_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 def init_env():
 	import os, sys

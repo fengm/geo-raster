@@ -14,6 +14,7 @@ def add_task_opts(p):
 	p.add_argument('-ip', '--instance-pos', dest='instance_pos', type=int, default=0)
 	p.add_argument('-ts', '--task-num', dest='task_num', type=int, default=1)
 	p.add_argument('-se', '--skip-error', dest='skip_error', default=False, action='store_true')
+	p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=0)
 
 def load_from_list(f_ls, opts):
 	return load_list(f_ls, opts.instance_num, opts.instance_pos)
@@ -41,7 +42,7 @@ def load_list(f_ls, num, pos):
 		return _ls_s
 
 def run(func, ps, opts, vs=[]):
-	return Pool(func, ps, opts.task_num, opts.skip_error).run(vs)
+	return Pool(func, ps, opts.task_num, opts.skip_error, opts.time_wait).run(vs)
 
 def load_ids(size, num, pos):
 	logging.debug('loading ids %d' % size)
@@ -75,8 +76,12 @@ def print_percent(nu, tn, perc_step, end=False):
 		# else:
 		# 	print '<-- %3d/%d,%3d%%\r' % (nu, tn, _p2 * perc_step)
 
-def work_function(obj, job_queue, vs, mag, res, t_lock):
+def work_function(obj, job_queue, vs, mag, res, t_lock, pos):
 	signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+	import time
+	if obj.time_wait > 0:
+		time.sleep(obj.time_wait * pos)
 
 	while (not job_queue.empty()) and (mag['num_done'] <= len(obj.args)):
 		try:
@@ -136,13 +141,14 @@ def work_function(obj, job_queue, vs, mag, res, t_lock):
 				print_percent(_nu, len(obj.args), obj.perc_step, end=True)
 
 class Pool:
-	def __init__(self, func, args, t_num, error_continue=False, perc_step=0.1):
+	def __init__(self, func, args, t_num, error_continue=False, time_wait=0, perc_step=0.1):
 		assert t_num > 0
 
 		self.func = func
 		self.args = args
 		self.t_num = min(int(t_num), len(args))
 		self.perc_step = perc_step
+		self.time_wait = time_wait
 		self.continue_exception = error_continue
 
 	def run(self, vs=[]):
@@ -176,7 +182,7 @@ class Pool:
 				break
 
 			_proc = multiprocessing.Process(target=work_function,
-						args=(self, _jobs, vs, _mag, _out, _lock))
+						args=(self, _jobs, vs, _mag, _out, _lock, i))
 			_proc.start()
 			_procs.append(_proc)
 
