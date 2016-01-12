@@ -190,6 +190,18 @@ class geo_band_info(geo_raster_info):
 
 		return geo_band_info(_geo, _cols, _rows, self.proj, self.nodata, self.pixel_type)
 
+	def scale(self, ratio, ceil=False):
+		_cols = math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio)
+		_rows = math.ceil(self.height * ratio) if ceil else math.floor(self.height * ratio)
+
+		_geo = list(self.geo_transform)
+		_geo[1] /= ratio
+		_geo[2] /= ratio
+		_geo[4] /= ratio
+		_geo[5] /= ratio
+
+		return geo_band_info(_geo, _cols, _rows, self.proj, self.nodata, self.pixel_type)
+
 	def align(self, ext, clip=False):
 		_geo = self.geo_transform
 
