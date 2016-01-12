@@ -85,11 +85,11 @@ def parseLandsatId(id):
 	if _m:
 		return 'L' + _m.group(2), _m.group(3), _m.group(4), int(_m.group(1))
 
-	_m = re.search('w2p(\d{3})r(\d{3})_(\d{7})L(\d)', id)
+	_m = re.search('w2(p\d{3}r\d{3})_(\d{7})(\w{2})(\d)', id)
 	if _m:
 		import datetime
-		_date = datetime.datetime.strptime(_m.group(3), '%Y%j')
-		return 'L', _m.group(1), _m.group(2), _date.strftime('%Y%m%d'), '', int(_m.group(4))
+		_date = datetime.datetime.strptime(_m.group(2), '%Y%j')
+		return _m.group(3), _m.group(1), _date.strftime('%Y%m%d'), int(_m.group(4))
 
 	_m = re.search('(L\w)(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
 	if _m:
@@ -110,7 +110,7 @@ def parseLandsatId(id):
 		import datetime
 		_date = datetime.datetime.strptime('%04d-%03d' % (_year, _day), '%Y-%j')
 
-		return _m.group(1), _m.group(3), _m.group(4), _date.strftime('%Y%m%d'), _m.group(2)
+		return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _date.strftime('%Y%m%d'), _m.group(2)
 
 	_m = re.search('(p\d{3}r\d{3})_(\d{8})', id)
 	if _m:
