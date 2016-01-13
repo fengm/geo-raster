@@ -26,6 +26,14 @@ class landsat_info:
 				if self.mission == 7:
 					self.sensor = 'LE'
 
+		if not self.mission and self.sensor:
+			if self.sensor == 'LC':
+				self.mission = 8
+			if self.sensor == 'LE':
+				self.mission = 7
+			if self.sensor == 'LT' and int(self.ac_date[:4]) > 1993:
+				self.mission = 5
+
 		self.path = -1
 		self.row = -1
 		if tile:
@@ -91,6 +99,13 @@ def parseLandsatId(id):
 		_date = datetime.datetime.strptime(_m.group(2), '%Y%j')
 		return _m.group(3), _m.group(1), _date.strftime('%Y%m%d'), int(_m.group(4))
 
+	_m = re.search('w2(p\d{3}r\d{3})_(\d{7})L(\w{2})', id)
+	if _m:
+		import datetime
+		_date = datetime.datetime.strptime(_m.group(2), '%Y%j')
+
+		return _m.group(3), _m.group(1), _date.strftime('%Y%m%d'), None
+
 	_m = re.search('(L\w)(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
 	if _m:
 		_year = int(_m.group(4))
@@ -143,3 +158,20 @@ def getSensorName(d):
 
 def normalizeId(sensor, pathrow, date):
 	return 'L%s_%s_%s' % (sensor, pathrow, date)
+
+def main():
+	_f = '/export/data/bessie1/fengm/prog/vct/test1/w2p048r022_2002192LLE_sr'
+	print parse(_f)
+
+def _init_env():
+	import os, sys
+
+	_dirs = ['lib', 'libs']
+	_d_ins = [os.path.join(sys.path[0], _d) for _d in _dirs if \
+			os.path.exists(os.path.join(sys.path[0], _d))]
+	sys.path = [sys.path[0]] + _d_ins + sys.path[1:]
+
+if __name__ == '__main__':
+	_init_env()
+	main()
+

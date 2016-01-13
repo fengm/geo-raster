@@ -8,9 +8,9 @@ Description:
 
 class metadata(object):
 
-	def __init__(self):
+	def __init__(self, meta=None):
 		import collections
-		self._meta = collections.OrderedDict()
+		self._meta = collections.OrderedDict() if not meta else meta
 
 	def __getitem__(self, idx):
 		import config
@@ -57,10 +57,35 @@ class metadata(object):
 		return _ls
 
 	def save(self, f_out):
+		import json
+		with open(f_out, 'w') as _fo:
+			_fo.write(json.dumps(self, indent=4, default=_convert))
+		return
+
+	def save_txt(self, f_out):
+		'''save to a customized format'''
 		_ls = self._str(0)
 
 		with open(f_out, 'w') as _fo:
 			_fo.write('\n'.join(_ls))
+
+def load(f):
+	with open(f) as _fi:
+		import json
+		_obj = json.load(_fi, object_hook=_to_obj)
+		return _obj
+
+def _to_obj(obj):
+	print 'teststeest', obj
+	if isinstance(obj, dict):
+		return metadata(obj)
+
+	return obj
+
+def _convert(obj):
+	if isinstance(obj, metadata):
+		return obj._meta
+	return obj
 
 def main():
 	_opts = _init_env()
@@ -74,6 +99,10 @@ def main():
 	_m.test2.test3 = 'tttt'
 
 	_m.save('test1.txt')
+
+	_m = load('test1.txt')
+	print _m.test1.test4
+	print _m['test1']['test4']
 
 def _usage():
 	import argparse
