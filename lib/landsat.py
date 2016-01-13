@@ -49,6 +49,15 @@ class landsat_info:
 		_id.extend([self.tile, self.ac_date])
 		return '_'.join(_id)
 
+	def __hash__(self):
+		return hash(str(self))
+
+	def __eq__(self, obj):
+		return str(obj) == str(self)
+
+	def __cmp__(self, obj):
+		return cmp(str(self), str(obj))
+
 def parse(code):
 	_vs = parseLandsatId(code)
 	if _vs == None:
