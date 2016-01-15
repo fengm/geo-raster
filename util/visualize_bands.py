@@ -85,105 +85,127 @@ def convert_band(bnd, row, line, ref, sh=0.2, met={}):
 	return _dat
 	# return bnd.from_ma_grid(_dat, nodata=0)
 
+def get_band_hdf(img, b):
+	import re
+
+	_bs = {}
+	for _b, _k in img.sub_datasets():
+		_m = re.search('B(\d)0', _k) or re.search('band(\d)', _k)
+		if _m:
+			_bs[int(_m.group(1))] = _b
+
+	return img.get_subdataset(_bs[int(b)])
+
+def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
+	import geo_raster_c as ge
+	import os
+
+	print 'loading', f_inp
+
+	_bnds = []
+	if f_inp.endswith('.tar.gz'):
+		print 'processing tar.gz'
+		import tarfile
+		import re
+
+		_t = tarfile.open(f_inp)
+
+		_bs = {}
+		for _l in _t.getmembers():
+			_m = re.search('_b(\d+)\.tif', _l.name.lower())
+			if _m:
+				_bs[_m.group(1)] = _l
+
+		_d_tmp = fzip.generate_file()
+		os.makedirs(_d_tmp)
+
+		_fs = []
+		for _b in bands:
+			_fs.append(_bs[_b])
+
+		_t.extractall(_d_tmp, _fs)
+
+		for _b in _fs:
+			_bnds.append(ge.open(os.path.join(_d_tmp, _b.name)).get_band())
+	else:
+		_f_in = fzip.unzip(f_inp)
+
+		if _f_in.endswith('hdf'):
+			_img = ge.geo_raster.open(_f_in)
+
+			for _b in bands:
+				_bnds.append(get_band_hdf(_img, _b).get_band())
+		else:
+			_img = ge.geo_raster.open(_f_in)
+
+			for _b in bands:
+				_bnds.append(_img.get_band(int(_b)))
+
+	if len(_bnds) not in [1, 3]:
+		raise Exception('Incorrect band numbers %s' % len(_bnds))
+
+	_bnd = _bnds[0]
+
+	_opt = []
+	if compress:
+		if f_out.endswith('.tif'):
+			_opt.append('compress=lzw')
+		if f_out.endswith('.img'):
+			_opt.append('COMPRESS=YES')
+
+	_img = ge.geo_raster.create(f_out, [len(_bnds), _bnd.height, _bnd.width],
+			_bnd.geo_transform, _bnd.proj, ge.pixel_type(), opts=_opt)
+
+	_met = {}
+	if convert_sr == 'sr':
+		_line = 5024
+		for i in xrange(len(_bnds)):
+			print ' + band', bands[i], 'sr' if convert_sr else 'dn'
+
+			_bbb = _img.get_band(i + 1)
+			_fun = convert_band_sr if convert_sr else convert_band
+
+			import progress_percentage
+			_ppp = progress_percentage.progress_percentage(_bnd.height)
+
+			for _row in xrange(0, _bnd.height, _line):
+				_ppp.next(_line)
+				_bbb.write(_fun(_bnds[i], _row, _line, _bnd, 0.2, _met), 0, _row)
+
+			_ppp.done()
+	else:
+		for i in xrange(len(_bnds)):
+			print ' + band', bands[i], 'sr' if convert_sr else 'dn'
+
+			_bbb = _img.get_band(i + 1)
+			_fun = convert_band_sr if convert_sr else convert_band
+			_bbb.write(_fun(_bnds[i], 0, _bbb.height, _bnd, 0.2, _met), 0, 0)
+
+	_img = None
+
 def main():
 	_opts = _init_env()
 
+	import os
 	import file_unzip
-	with file_unzip.file_unzip(_opts.temp) as _zip:
-		import geo_raster_c as ge
-		print 'loading', _opts.input
-
-		_bnds = []
-		if _opts.input.endswith('.tar.gz'):
-			print 'processing tar.gz'
-			import tarfile
-			import re
-			import os
-
-			_t = tarfile.open(_opts.input)
-
-			_bs = {}
-			for _l in _t.getmembers():
-				_m = re.search('_b(\d+)\.tif', _l.name.lower())
-				if _m:
-					_bs[_m.group(1)] = _l
-
-			_d_tmp = _zip.generate_file()
-			os.makedirs(_d_tmp)
-
-			_fs = []
-			for _b in _opts.bands:
-				_fs.append(_bs[_b])
-
-			_t.extractall(_d_tmp, _fs)
-
-			for _b in _fs:
-				_bnds.append(ge.open(os.path.join(_d_tmp, _b.name)).get_band())
-		else:
-			_f_in = _zip.unzip(_opts.input)
-
-			if _f_in.endswith('hdf'):
-				_img = ge.geo_raster.open(_f_in)
-
-				for _b in _opts.bands:
-					_bnds.append(_img.get_subdataset(_b).get_band())
-			else:
-				_img = ge.geo_raster.open(_f_in)
-
-				for _b in _opts.bands:
-					_bnds.append(_img.get_band(int(_b)))
-
-		if len(_bnds) not in [1, 3]:
-			raise Exception('Incorrect band numbers %s' % len(_bnds))
-
-		_bnd = _bnds[0]
-
-		_opt = []
-		if _opts.compress:
-			if _opts.output.endswith('.tif'):
-				_opt.append('compress=lzw')
-			if _opts.output.endswith('.img'):
-				_opt.append('COMPRESS=YES')
-
+	with file_unzip.file_unzip() as _zip:
+		_f_inp = _opts.input
 		_f_out = _opts.output
 
-		import os
 		if os.path.isdir(_f_out):
 			import landsat
-			_f_out = os.path.join(_f_out, '%s_%s_%s.tif' % (landsat.parse(os.path.basename(_opts.input)),
+			_f_out = os.path.join(_f_out, '%s_%s_%s.tif' % (landsat.parse(os.path.basename(_f_inp)),
 				'sr' if _opts.convert_sr else 'dn',
 				''.join(map(str, _opts.bands))
 				))
 
-		_img = ge.geo_raster.create(_f_out, [len(_bnds), _bnd.height, _bnd.width],
-				_bnd.geo_transform, _bnd.proj, ge.pixel_type(), opts=_opt)
+		_d_tmp = _zip.generate_file()
+		os.makedirs(_d_tmp)
 
-		_met = {}
-		if _opts.convert_sr == 'sr':
-			_line = 5024
-			for i in xrange(len(_bnds)):
-				print ' + band', _opts.bands[i], 'sr' if _opts.convert_sr else 'dn'
+		visualize_bands(_f_inp, _opts.bands, _opts.compress, _opts.convert_sr,
+				os.path.join(_d_tmp, os.path.basename(_f_out)), _zip)
 
-				_bbb = _img.get_band(i + 1)
-				_fun = convert_band_sr if _opts.convert_sr else convert_band
-
-				import progress_percentage
-				_ppp = progress_percentage.progress_percentage(_bnd.height)
-
-				for _row in xrange(0, _bnd.height, _line):
-					_ppp.next(_line)
-					_bbb.write(_fun(_bnds[i], _row, _line, _bnd, 0.2, _met), 0, _row)
-
-				_ppp.done()
-		else:
-			for i in xrange(len(_bnds)):
-				print ' + band', _opts.bands[i], 'sr' if _opts.convert_sr else 'dn'
-
-				_bbb = _img.get_band(i + 1)
-				_fun = convert_band_sr if _opts.convert_sr else convert_band
-				_bbb.write(_fun(_bnds[i], 0, _bbb.height, _bnd, 0.2, _met), 0, 0)
-
-		_img = None
+		file_unzip.compress_folder(_d_tmp, os.path.dirname(_f_out), [])
 
 def _usage():
 	import argparse

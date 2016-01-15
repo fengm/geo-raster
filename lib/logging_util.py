@@ -1,3 +1,10 @@
+'''
+File: logging_util.py
+Author: Min Feng
+Version: 0.1
+Create: 2013-06-14 15:11:29
+Description: initilize the logging module
+'''
 
 import logging
 
