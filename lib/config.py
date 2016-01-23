@@ -57,7 +57,6 @@ def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_
 	_fs = []
 	for _f in (f_cfg if (isinstance(f_cfg, list) or isinstance(f_cfg, tuple)) else [f_cfg]):
 		_l = _detect_file(_f)
-		print _l
 		if _l == None:
 			continue
 
