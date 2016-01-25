@@ -655,6 +655,7 @@ class geo_band_stack_zip:
 		self.proj = _proj
 		self.check_layers = check_layers
 		self.nodata = nodata
+		self.color_table = None
 		self.estimate_params_from_band()
 
 		logging.info('build geo_band_stack (bands: %s, nodata: %s -> %s)' % (len(bands), nodata, self.nodata))
