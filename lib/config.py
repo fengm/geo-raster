@@ -82,4 +82,79 @@ def items(section):
 			continue
 
 		yield _n, _v
+def get(section, name, val=None):
+	"""get config param
+
+	:section: section
+	:name: option name
+	:val: default value
+	:returns: config value
+
+	"""
+	global cfg
+
+	if not cfg.has_option(section, name):
+		return val
+
+	return cfg.get(section, name)
+
+def getint(section, name, val=None):
+	"""get config param
+
+	:section: section
+	:name: option name
+	:val: default value
+	:returns: config value
+
+	"""
+	global cfg
+
+	if not cfg.has_option(section, name):
+		return val
+
+	return cfg.getint(section, name)
+
+def getfloat(section, name, val=None):
+	"""get config param
+
+	:section: section
+	:name: option name
+	:val: default value
+	:returns: config value
+
+	"""
+	global cfg
+
+	if not cfg.has_option(section, name):
+		return val
+
+	return cfg.getfloat(section, name)
+
+def getboolean(section, name, val=None):
+	"""get config param
+
+	:section: section
+	:name: option name
+	:val: default value
+	:returns: config value
+
+	"""
+	global cfg
+
+	if not cfg.has_option(section, name):
+		return val
+
+	return cfg.getboolean(section, name)
+
+def has_option(section, name):
+	"""get config param
+
+	:section: section
+	:name: option name
+	:val: default value
+	:returns: config value
+
+	"""
+	global cfg
+	return cfg.has_option(section, name)
 
