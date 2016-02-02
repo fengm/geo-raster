@@ -32,7 +32,7 @@ def convert_band_sr(bnd, row, line, ref, sh=0.2, met={}):
 
 	import math
 	_low = math.log(150)
-	_top = math.log(5000)
+	_top = math.log(3000)
 
 	_dat[_dat > 0] = (np.log(_dat.astype(np.float32)[_dat > 0]) - _low) * (256.0 / (_top - _low))
 
@@ -149,7 +149,8 @@ def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
 	_opt = []
 	if compress:
 		if f_out.endswith('.tif'):
-			_opt.append('compress=lzw')
+			_opt.append('compress=deflate')
+			_opt.append('tiled=yes')
 		if f_out.endswith('.img'):
 			_opt.append('COMPRESS=YES')
 
