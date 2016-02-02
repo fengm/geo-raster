@@ -861,6 +861,115 @@ class geo_band_stack_zip:
 
 		return _ls
 
+	def _read_band(self, bnd, bnd_info, nodata, pol_t1, dat_out):
+		import geo_base_c as gb
+
+		_bnd_info = bnd_info
+		_nodata = nodata
+		_dat_out = dat_out
+		_pol_t1 = pol_t1
+
+		_bnd = _bnd_info.get_band().band
+		logging.info('loading file %s' % _bnd_info.band_file.file)
+		_pol_s = gb.geo_polygon.from_raster(_bnd, div=100)
+
+		if _pol_s == None:
+			logging.info('skip file #1 %s' % _bnd_info.band_file.file)
+			return
+
+		# calculate the intersection area for both data sets
+		_pol_t1_proj = _pol_t1.project_to(_bnd.proj)
+		if _pol_t1_proj == None or _pol_t1_proj.poly == None:
+			logging.info('skip file #2 %s' % _bnd_info.band_file.file)
+			return
+
+		# if 'p166r061_20000223' in _bnd_info.band_file.file:
+		# 	import geo_base_c as gb
+		# 	_ttt = _pol_s.buffer(0.00000001).intersect(_pol_t1_proj)
+		# 	print _ttt
+		# 	print _ttt.poly
+		# 	gb.output_polygons([_pol_s, _pol_t1_proj], 
+		# 			'/data/glcf-nx-002/data/PALSAR/water/region/country3/raw4/test2.shp')
+
+		if not _pol_s.extent().is_intersect(_pol_t1_proj.extent()):
+			return
+
+		_pol_c_s = _pol_s.intersect(_pol_t1_proj)
+		if _pol_c_s.poly == None:
+			_pol_c_s = _pol_s.buffer(0.000000001).intersect(_pol_t1_proj)
+
+		if _pol_c_s.poly == None:
+			logging.info('skip file #3 %s' % _bnd_info.band_file.file)
+			return
+
+		_pol_c_s.set_proj(_bnd.proj)
+		_pol_c_t = _pol_c_s.project_to(bnd.proj)
+
+		if _pol_c_t == None or _pol_c_t.poly == None:
+			logging.info('failed to reproject the extent')
+			return
+
+		#_pol_c_t = _pol_c_t.buffer(bnd.geo_transform[1])
+		#print _pol_c_t.proj.ExportToProj4()
+		#_pol_c_s = _pol_c_t.project_to(_bnd.proj)
+
+		_ext_s = _pol_c_s.extent()
+		_ext_t = _pol_c_t.extent()
+
+		# the rows that contain the intersection area
+		_col_s_s, _row_s_s = _bnd.to_cell(_ext_s.minx, _ext_s.maxy)
+		_col_s_e, _row_s_e = _bnd.to_cell(_ext_s.maxx, _ext_s.miny)
+
+		if _row_s_s > _row_s_e:
+			_row_s_s, _row_s_e = _row_s_e, _row_s_s
+
+		if _row_s_s >= _row_s_e:
+			return
+
+		# _col_s_s, _col_s_e = max(0, _col_s_s-1), min(_bnd.width, _col_s_e+1)
+		# _row_s_s, _row_s_e = max(0, _row_s_s-1), min(_bnd.height,_row_s_e+1)
+
+		_ext_s_cs = geo_extent(_col_s_s, _row_s_s, _col_s_e, _row_s_e)
+
+		# only load the intersection area to reduce memory use
+		_row_s_s = max(0, _row_s_s - 1)
+
+		_dat = _bnd.read_rows(_row_s_s,
+				min(_row_s_e + 2, _bnd.height) - _row_s_s)
+
+		_col_t_s, _row_t_s = to_cell(tuple(bnd.geo_transform),
+				_ext_t.minx, _ext_t.maxy)
+		_col_t_e, _row_t_e = to_cell(tuple(bnd.geo_transform),
+				_ext_t.maxx, _ext_t.miny)
+
+		#_col_t_s, _col_t_e = max(0, _col_t_s-1), min(bnd.width, _col_t_e+1)
+		#_row_t_s, _row_t_e = max(0, _row_t_s-1), min(bnd.height,_row_t_e+1)
+		_ext_t_cs = geo_extent(_col_t_s, _row_t_s, _col_t_e, _row_t_e)
+
+		_prj = projection_transform.from_band(bnd, _bnd.proj)
+
+		if self.pixel_type == 1:
+			read_block_uint8(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
+					_nodata, _row_s_s, _dat_out)
+		elif self.pixel_type == 2:
+			read_block_uint16(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
+					_nodata, _row_s_s, _dat_out)
+		elif self.pixel_type == 3:
+			read_block_int16(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
+					_nodata, _row_s_s, _dat_out)
+		elif self.pixel_type == 4:
+			read_block_uint32(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
+					_nodata, _row_s_s, _dat_out)
+		elif self.pixel_type == 5:
+			read_block_int32(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
+					_nodata, _row_s_s, _dat_out)
+		elif self.pixel_type == 6:
+			read_block_float32(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
+					_nodata, _row_s_s, _dat_out)
+		else:
+			raise Exception('The pixel type is not supported ' + \
+					str(self.pixel_type))
+
 	def read_block(self, bnd, use_pts=False):
 		_default_nodata = {1: 255, 2: 65535, 3: -9999, 4: (2 ** 32) - 1, 5: -9999, 6: -9999}
 		if self.pixel_type not in _default_nodata.keys():
@@ -899,106 +1008,8 @@ class geo_band_stack_zip:
 		logging.info('found %s bands' % len(_bnds))
 
 		for _bnd_info in _bnds:
-			_bnd = _bnd_info.get_band().band
-			logging.info('loading file %s' % _bnd_info.band_file.file)
-			_pol_s = gb.geo_polygon.from_raster(_bnd, div=100)
-
-			if _pol_s == None:
-				logging.info('skip file #1 %s' % _bnd_info.band_file.file)
-				continue
-
-			# calculate the intersection area for both data sets
-			_pol_t1_proj = _pol_t1.project_to(_bnd.proj)
-			if _pol_t1_proj == None or _pol_t1_proj.poly == None:
-				logging.info('skip file #2 %s' % _bnd_info.band_file.file)
-				continue
-
-			# if 'p166r061_20000223' in _bnd_info.band_file.file:
-			# 	import geo_base_c as gb
-			# 	_ttt = _pol_s.buffer(0.00000001).intersect(_pol_t1_proj)
-			# 	print _ttt
-			# 	print _ttt.poly
-			# 	gb.output_polygons([_pol_s, _pol_t1_proj], 
-			# 			'/data/glcf-nx-002/data/PALSAR/water/region/country3/raw4/test2.shp')
-
-			if not _pol_s.extent().is_intersect(_pol_t1_proj.extent()):
-				continue
-
-			_pol_c_s = _pol_s.intersect(_pol_t1_proj)
-			if _pol_c_s.poly == None:
-				_pol_c_s = _pol_s.buffer(0.000000001).intersect(_pol_t1_proj)
-
-			if _pol_c_s.poly == None:
-				logging.info('skip file #3 %s' % _bnd_info.band_file.file)
-				continue
-
-			_pol_c_s.set_proj(_bnd.proj)
-			_pol_c_t = _pol_c_s.project_to(bnd.proj)
-
-			if _pol_c_t == None or _pol_c_t.poly == None:
-				logging.info('failed to reproject the extent')
-				continue
-
-			#_pol_c_t = _pol_c_t.buffer(bnd.geo_transform[1])
-			#print _pol_c_t.proj.ExportToProj4()
-			#_pol_c_s = _pol_c_t.project_to(_bnd.proj)
-
-			_ext_s = _pol_c_s.extent()
-			_ext_t = _pol_c_t.extent()
-
-			# the rows that contain the intersection area
-			_col_s_s, _row_s_s = _bnd.to_cell(_ext_s.minx, _ext_s.maxy)
-			_col_s_e, _row_s_e = _bnd.to_cell(_ext_s.maxx, _ext_s.miny)
-
-			if _row_s_s > _row_s_e:
-				_row_s_s, _row_s_e = _row_s_e, _row_s_s
-
-			if _row_s_s >= _row_s_e:
-				continue
-
-			# _col_s_s, _col_s_e = max(0, _col_s_s-1), min(_bnd.width, _col_s_e+1)
-			# _row_s_s, _row_s_e = max(0, _row_s_s-1), min(_bnd.height,_row_s_e+1)
-
-			_ext_s_cs = geo_extent(_col_s_s, _row_s_s, _col_s_e, _row_s_e)
-
-			# only load the intersection area to reduce memory use
-			_row_s_s = max(0, _row_s_s - 1)
-
-			_dat = _bnd.read_rows(_row_s_s,
-					min(_row_s_e + 2, _bnd.height) - _row_s_s)
-
-			_col_t_s, _row_t_s = to_cell(tuple(bnd.geo_transform),
-					_ext_t.minx, _ext_t.maxy)
-			_col_t_e, _row_t_e = to_cell(tuple(bnd.geo_transform),
-					_ext_t.maxx, _ext_t.miny)
-
-			#_col_t_s, _col_t_e = max(0, _col_t_s-1), min(bnd.width, _col_t_e+1)
-			#_row_t_s, _row_t_e = max(0, _row_t_s-1), min(bnd.height,_row_t_e+1)
-			_ext_t_cs = geo_extent(_col_t_s, _row_t_s, _col_t_e, _row_t_e)
-
-			_prj = projection_transform.from_band(bnd, _bnd.proj)
-
-			if self.pixel_type == 1:
-				read_block_uint8(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
-						_nodata, _row_s_s, _dat_out)
-			elif self.pixel_type == 2:
-				read_block_uint16(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
-						_nodata, _row_s_s, _dat_out)
-			elif self.pixel_type == 3:
-				read_block_int16(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
-						_nodata, _row_s_s, _dat_out)
-			elif self.pixel_type == 4:
-				read_block_uint32(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
-						_nodata, _row_s_s, _dat_out)
-			elif self.pixel_type == 5:
-				read_block_int32(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
-						_nodata, _row_s_s, _dat_out)
-			elif self.pixel_type == 6:
-				read_block_float32(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
-						_nodata, _row_s_s, _dat_out)
-			else:
-				raise Exception('The pixel type is not supported ' + \
-						str(self.pixel_type))
+			self._read_band(bnd, _bnd_info, _nodata, _pol_t1, _dat_out)
+			_bnd_info.clean()
 
 		import geo_raster_c
 		return geo_raster_c.geo_band_cache(_dat_out, bnd.geo_transform, bnd.proj, _nodata, self.pixel_type)
