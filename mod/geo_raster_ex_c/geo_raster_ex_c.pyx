@@ -665,6 +665,7 @@ class geo_band_stack_zip:
 			raise Exception('No band loaded')
 
 		_bnd = self.bands[0].get_band()
+
 		if self.nodata == None:
 			self.nodata = _bnd.band.nodata
 
