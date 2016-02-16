@@ -225,7 +225,9 @@ class file_unzip:
 		self.fd_out = _fd_out
 		self.files = []
 		self.exclusive = exclusive
-		self._debug = debug
+
+		import config
+		self._debug = debug | config.getboolean('conf', 'debug', False)
 
 		logging.info('temp: %s' % self.fd_out)
 		if self._debug:
