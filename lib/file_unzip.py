@@ -178,6 +178,17 @@ def generate_file(fd_out, prefix='', subfix=''):
 	import os
 	return os.path.join(fd_out, generate_id(fd_out, prefix, subfix))
 
+def _file_name():
+	import sys
+	_f = sys.argv[0]
+
+	if _f:
+		if _f.endswith('.py'):
+			return _f[:-3]
+		return _f
+
+	raise Exception('failed to detect file name')
+
 def default_dir(fd_out):
 	import os, sys
 
@@ -189,7 +200,7 @@ def default_dir(fd_out):
 	if config.cfg.has_option('conf', 'temp'):
 		return config.cfg.get('conf', 'temp')
 
-	return os.path.join(sys.path[0], 'tmp')
+	return os.path.join(sys.path[0], 'tmp', _file_name())
 
 def clean(fd_out, remove_root=False):
 	'''force to clean the folder'''
