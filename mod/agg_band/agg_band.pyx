@@ -368,6 +368,9 @@ def perc(bnd_in, bnd_ot, val, valid_values=None, excluded_values=None, nodata=25
 			exclude_nodata=False, scale=100, pixel_type='byte'):
 	'''aggregate the values to percentage of the pixels'''
 
+	if bnd_in.nodata == None:
+		raise Exception('nodata was not given for the input band')
+
 	_geo_in = list(bnd_in.geo_transform)
 	_geo_ot = list(bnd_ot.geo_transform)
 
