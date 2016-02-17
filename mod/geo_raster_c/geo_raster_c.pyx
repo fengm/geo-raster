@@ -122,6 +122,18 @@ class geo_raster_info:
 		return gb.geo_extent(_pt0[0] - _cell_x, _pt0[1] - _cell_y,
 					   _pt0[0] + _cell_x, _pt0[1] + _cell_y, self.proj)
 
+	def scale(self, ratio, ceil=False):
+		_cols = math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio)
+		_rows = math.ceil(self.height * ratio) if ceil else math.floor(self.height * ratio)
+
+		_geo = list(self.geo_transform)
+		_geo[1] /= ratio
+		_geo[2] /= ratio
+		_geo[4] /= ratio
+		_geo[5] /= ratio
+
+		return geo_raster_info(_geo, _cols, _rows, self.proj)
+
 class geo_band_info(geo_raster_info):
 
 	def __init__(self, geo_transform, width, height, proj, nodata=None, pixel_type=None):
@@ -190,18 +202,6 @@ class geo_band_info(geo_raster_info):
 
 		return geo_band_info(_geo, _cols, _rows, self.proj, self.nodata, self.pixel_type)
 
-	def scale(self, ratio, ceil=False):
-		_cols = math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio)
-		_rows = math.ceil(self.height * ratio) if ceil else math.floor(self.height * ratio)
-
-		_geo = list(self.geo_transform)
-		_geo[1] /= ratio
-		_geo[2] /= ratio
-		_geo[4] /= ratio
-		_geo[5] /= ratio
-
-		return geo_band_info(_geo, _cols, _rows, self.proj, self.nodata, self.pixel_type)
-
 	def align(self, ext, clip=False):
 		_geo = self.geo_transform
 
@@ -241,7 +241,20 @@ class geo_band_info(geo_raster_info):
 		_cols = int(round((_max_x - _min_x) / _cell))
 		_rows = int(round((_max_y - _min_y) / _cell))
 
-		return geo_band_info([_min_x, _cell, 0, _max_y, 0, _cell * -1], _cols, _rows, self.proj, self.nodata, self.pixel_type)
+		return geo_band_info([_min_x, _cell, 0, _max_y, 0, _cell * -1], _cols, _rows, self.proj, \
+				self.nodata, self.pixel_type)
+
+	def scale(self, ratio, ceil=False):
+		_cols = math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio)
+		_rows = math.ceil(self.height * ratio) if ceil else math.floor(self.height * ratio)
+
+		_geo = list(self.geo_transform)
+		_geo[1] /= ratio
+		_geo[2] /= ratio
+		_geo[4] /= ratio
+		_geo[5] /= ratio
+
+		return geo_band_info(_geo, _cols, _rows, self.proj, self.nodata, self.pixel_type)
 
 class geo_band_cache(geo_band_info):
 
@@ -607,6 +620,24 @@ class geo_band(geo_band_info):
 		self.buf_col_end = col + _d.shape[1]
 
 		return self.data
+
+	def read_grid(self, col, row, width, height):
+		_dat = self.read_rows(row, height, col, width)
+		if _dat == None:
+			raise Exception('failed to read block')
+
+		_geo = list(self.geo_transform)
+
+		_geo[0] += col * _geo[1] + row * _geo[2]
+		_geo[3] += col * _geo[4] + row * _geo[5]
+
+		_rows = _dat.shape[0]
+		_cols = _dat.shape[1]
+
+		if _cols <= 0 or _rows <= 0:
+			raise Exception('out of the band extent')
+
+		return geo_band_cache(_dat, _geo, self.proj, self.nodata, self.pixel_type)
 
 	@property
 	def cached(self):
