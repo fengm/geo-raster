@@ -31,7 +31,8 @@ cdef to_cell(tuple g, float x, float y):
 	'''Convert coordinate to col and row'''
 	return int((x - g[0]) / g[1]), int((y - g[3]) / g[5])
 
-def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int nodata, int row_start, np.ndarray[np.uint8_t, ndim=2] dat_out, min_val=None, max_val=None):
+def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int nodata, 
+		int row_start, np.ndarray[np.uint8_t, ndim=2] dat_out, min_val=None, max_val=None):
 	cdef int _row, _col
 	cdef float _x, _y
 	cdef int _c, _r
@@ -42,7 +43,7 @@ def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int noda
 	cdef int _rows_ot = dat_out.shape[0]
 	cdef int _cols_ot = dat_out.shape[1]
 
-	cdef unsigned int _v
+	cdef unsigned int _v, _o
 
 	cdef int _col_min = max(0, ext.minx)
 	cdef int _col_max = min(_cols_ot, ext.maxx + 1)
@@ -51,6 +52,11 @@ def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int noda
 
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
+			_o = dat_out[_row, _col]
+			if _o != nodata:
+				if (min_val == None or _o >= min_val) and (max_val == None or _o <= max_val):
+					continue
+
 			_x, _y = prj.project(_col, _row)
 
 			_c, _r = to_cell(geo, _x, _y)
@@ -63,15 +69,15 @@ def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int noda
 			if _v == nodata:
 				continue
 
-			if min_val != None and _v < min_val:
-				continue
-
-			if max_val != None and _v > max_val:
-				continue
+			# if (min_val != None and _v < min_val):
+			# 	continue
+			# if (max_val != None and _v > max_val):
+			# 	continue
 
 			dat_out[_row, _col] = _v
 
-def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int nodata, int row_start, np.ndarray[np.uint16_t, ndim=2] dat_out, min_val=None, max_val=None):
+def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int nodata, 
+		int row_start, np.ndarray[np.uint16_t, ndim=2] dat_out, min_val=None, max_val=None):
 	cdef int _row, _col
 	cdef float _x, _y
 	cdef int _c, _r
@@ -82,7 +88,7 @@ def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int no
 	cdef int _rows_ot = dat_out.shape[0]
 	cdef int _cols_ot = dat_out.shape[1]
 
-	cdef unsigned short _v
+	cdef unsigned short _v, _o
 
 	cdef int _col_min = max(0, ext.minx)
 	cdef int _col_max = min(_cols_ot, ext.maxx + 1)
@@ -91,6 +97,11 @@ def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int no
 
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
+			_o = dat_out[_row, _col]
+			if _o != nodata:
+				if (min_val == None or _o >= min_val) and (max_val == None or _o <= max_val):
+					continue
+
 			_x, _y = prj.project(_col, _row)
 
 			_c, _r = to_cell(geo, _x, _y)
@@ -103,15 +114,15 @@ def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int no
 			if _v == nodata:
 				continue
 
-			if min_val != None and _v < min_val:
-				continue
-
-			if max_val != None and _v > max_val:
-				continue
+			# if (min_val != None and _v < min_val):
+			# 	continue
+			# if (max_val != None and _v > max_val):
+			# 	continue
 
 			dat_out[_row, _col] = _v
 
-def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int nodata, int row_start, np.ndarray[np.int16_t, ndim=2] dat_out, min_val=None, max_val=None):
+def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int nodata, 
+		int row_start, np.ndarray[np.int16_t, ndim=2] dat_out, min_val=None, max_val=None):
 	cdef int _row, _col
 	cdef float _x, _y
 	cdef int _c, _r
@@ -122,7 +133,7 @@ def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int noda
 	cdef int _rows_ot = dat_out.shape[0]
 	cdef int _cols_ot = dat_out.shape[1]
 
-	cdef short _v
+	cdef short _v, _o
 
 	cdef int _col_min = max(0, ext.minx)
 	cdef int _col_max = min(_cols_ot, ext.maxx + 1)
@@ -131,6 +142,11 @@ def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int noda
 
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
+			_o = dat_out[_row, _col]
+			if _o != nodata:
+				if (min_val == None or _o >= min_val) and (max_val == None or _o <= max_val):
+					continue
+
 			_x, _y = prj.project(_col, _row)
 
 			_c, _r = to_cell(geo, _x, _y)
@@ -143,15 +159,15 @@ def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int noda
 			if _v == nodata:
 				continue
 
-			if min_val != None and _v < min_val:
-				continue
-
-			if max_val != None and _v > max_val:
-				continue
+			# if (min_val != None and _v < min_val):
+			# 	continue
+			# if (max_val != None and _v > max_val):
+			# 	continue
 
 			dat_out[_row, _col] = _v
 
-def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int nodata, int row_start, np.ndarray[np.uint32_t, ndim=2] dat_out, min_val=None, max_val=None):
+def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int nodata, 
+		int row_start, np.ndarray[np.uint32_t, ndim=2] dat_out, min_val=None, max_val=None):
 	cdef int _row, _col
 	cdef float _x, _y
 	cdef int _c, _r
@@ -162,7 +178,7 @@ def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int no
 	cdef int _rows_ot = dat_out.shape[0]
 	cdef int _cols_ot = dat_out.shape[1]
 
-	cdef unsigned int _v
+	cdef unsigned int _v, _o
 
 	cdef int _col_min = max(0, ext.minx)
 	cdef int _col_max = min(_cols_ot, ext.maxx + 1)
@@ -171,6 +187,11 @@ def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int no
 
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
+			_o = dat_out[_row, _col]
+			if _o != nodata:
+				if (min_val == None or _o >= min_val) and (max_val == None or _o <= max_val):
+					continue
+
 			_x, _y = prj.project(_col, _row)
 
 			_c, _r = to_cell(geo, _x, _y)
@@ -183,15 +204,15 @@ def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int no
 			if _v == nodata:
 				continue
 
-			if min_val != None and _v < min_val:
-				continue
-
-			if max_val != None and _v > max_val:
-				continue
+			# if (min_val != None and _v < min_val):
+			# 	continue
+			# if (max_val != None and _v > max_val):
+			# 	continue
 
 			dat_out[_row, _col] = _v
 
-def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int nodata, int row_start, np.ndarray[np.int32_t, ndim=2] dat_out, min_val=None, max_val=None):
+def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int nodata, 
+		int row_start, np.ndarray[np.int32_t, ndim=2] dat_out, min_val=None, max_val=None):
 	cdef int _row, _col
 	cdef float _x, _y
 	cdef int _c, _r
@@ -202,7 +223,7 @@ def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int noda
 	cdef int _rows_ot = dat_out.shape[0]
 	cdef int _cols_ot = dat_out.shape[1]
 
-	cdef int _v
+	cdef int _v, _o
 
 	cdef int _col_min = max(0, ext.minx)
 	cdef int _col_max = min(_cols_ot, ext.maxx + 1)
@@ -211,6 +232,11 @@ def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int noda
 
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
+			_o = dat_out[_row, _col]
+			if _o != nodata:
+				if (min_val == None or _o >= min_val) and (max_val == None or _o <= max_val):
+					continue
+
 			_x, _y = prj.project(_col, _row)
 
 			_c, _r = to_cell(geo, _x, _y)
@@ -223,15 +249,15 @@ def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int noda
 			if _v == nodata:
 				continue
 
-			if min_val != None and _v < min_val:
-				continue
-
-			if max_val != None and _v > max_val:
-				continue
+			# if (min_val != None and _v < min_val):
+			# 	continue
+			# if (max_val != None and _v > max_val):
+			# 	continue
 
 			dat_out[_row, _col] = _v
 
-def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, float nodata, int row_start, np.ndarray[np.float32_t, ndim=2] dat_out, min_val=None, max_val=None):
+def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, float nodata, 
+		int row_start, np.ndarray[np.float32_t, ndim=2] dat_out, min_val=None, max_val=None):
 	cdef int _row, _col
 	cdef float _x, _y
 	cdef int _c, _r
@@ -242,7 +268,7 @@ def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, floa
 	cdef int _rows_ot = dat_out.shape[0]
 	cdef int _cols_ot = dat_out.shape[1]
 
-	cdef float _v
+	cdef float _v, _o
 
 	cdef int _col_min = max(0, ext.minx)
 	cdef int _col_max = min(_cols_ot, ext.maxx + 1)
@@ -251,6 +277,11 @@ def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, floa
 
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
+			_o = dat_out[_row, _col]
+			if _o != nodata:
+				if (min_val == None or _o >= min_val) and (max_val == None or _o <= max_val):
+					continue
+
 			_x, _y = prj.project(_col, _row)
 
 			_c, _r = to_cell(geo, _x, _y)
@@ -263,11 +294,10 @@ def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, floa
 			if _v == nodata:
 				continue
 
-			if min_val != None and _v < min_val:
-				continue
-
-			if max_val != None and _v > max_val:
-				continue
+			# if (min_val != None and _v < min_val):
+			# 	continue
+			# if (max_val != None and _v > max_val):
+			# 	continue
 
 			dat_out[_row, _col] = _v
 
@@ -1042,6 +1072,7 @@ class geo_band_stack_zip:
 			_bnds = self.get_bands(_pol_t2)
 
 		logging.info('found %s bands' % len(_bnds))
+		print min_val, max_val
 
 		for _bnd_info in _bnds:
 			self._read_band(bnd, _bnd_info, _nodata, _pol_t1, _dat_out, min_val, max_val)
