@@ -270,24 +270,24 @@ class Pool:
 			print_percent(_pos, len(self.args), self.perc_step)
 			_vs = _arg if isinstance(_arg, list) or isinstance(_arg, tuple) else (_arg,)
 
-			try:
+			if not self.continue_exception:
 				_rs.append(self.func(*(tuple(_vs) + tuple(vs))))
-			except KeyboardInterrupt:
-				logging.warning('terminated by user')
-				print ''
-				print 'parent received ctrl-c'
-				break
+			else:
+				try:
+					_rs.append(self.func(*(tuple(_vs) + tuple(vs))))
+				except KeyboardInterrupt:
+					logging.warning('terminated by user')
+					print ''
+					print 'parent received ctrl-c'
+					break
 
-			except Exception, _err:
-				import traceback
+				except Exception, _err:
+					import traceback
 
-				logging.error('Error (%s): %s' % (_pos, traceback.format_exc()))
-				logging.error('Error (%s): %s' % (_pos, str(_err)))
+					logging.error('Error (%s): %s' % (_pos, traceback.format_exc()))
+					logging.error('Error (%s): %s' % (_pos, str(_err)))
 
-				if self.continue_exception:
 					continue
-				else:
-					raise _err
 
 			_pos += 1
 

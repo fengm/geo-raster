@@ -22,3 +22,8 @@ class obj(dict):
 		for _k, _v in self._obj.items():
 			_ls.append('%15s: %s' % (_k, _v))
 		return '\n'.join(_ls)
+
+
+from collections import defaultdict
+def tree(): return defaultdict(tree)
+

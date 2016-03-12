@@ -198,7 +198,7 @@ def default_dir(fd_out):
 
 	import config
 	if config.cfg.has_option('conf', 'temp'):
-		return config.cfg.get('conf', 'temp')
+		return os.path.join(config.cfg.get('conf', 'temp'), _file_name())
 
 	return os.path.join(sys.path[0], 'tmp', _file_name())
 
