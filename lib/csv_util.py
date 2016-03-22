@@ -90,6 +90,19 @@ class csv_record:
 	def __str__(self):
 		return self.info.sep.join(self.vals)
 
+def _format_value(n):
+	_n = n.strip()
+
+	if len(_n) > 1:
+		if _n[0] in ['"', '\'']:
+			_n = _n[1:]
+
+	if len(_n) > 1:
+		if _n[-1] in ['"', '\'']:
+			_n = _n[:-1]
+
+	return _n
+
 def open(f, sep=','):
 	_cls = None
 	with file(f) as _fi:
@@ -101,7 +114,7 @@ def open(f, sep=','):
 				# skip empty lines
 				continue
 
-			_vs = _l.split(sep)
+			_vs = map(_format_value, _l.split(sep))
 
 			if _cls == None:
 				_cls = csv_class(f, _vs, sep)
