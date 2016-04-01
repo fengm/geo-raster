@@ -180,7 +180,9 @@ def generate_file(fd_out, prefix='', subfix=''):
 
 def _file_name():
 	import sys
-	_f = sys.argv[0]
+	import os
+
+	_f = os.path.basename(os.path.abspath(sys.argv[0]))
 
 	if _f:
 		if _f.endswith('.py'):
