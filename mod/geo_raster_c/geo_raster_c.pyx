@@ -123,8 +123,8 @@ class geo_raster_info:
 					   _pt0[0] + _cell_x, _pt0[1] + _cell_y, self.proj)
 
 	def scale(self, ratio, ceil=False):
-		_cols = math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio)
-		_rows = math.ceil(self.height * ratio) if ceil else math.floor(self.height * ratio)
+		_cols = int(math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio))
+		_rows = int(math.ceil(self.height * ratio) if ceil else math.floor(self.height * ratio))
 
 		_geo = list(self.geo_transform)
 		_geo[1] /= ratio
@@ -161,8 +161,6 @@ class geo_band_info(geo_raster_info):
 		return _nodata
 
 	def from_ma_grid(self, grid, update_type=True, nodata=None):
-		logging.info('updating the band with masked array')
-
 		_nodata = nodata
 		if _nodata == None:
 			_nodata = self.nodata
@@ -174,8 +172,6 @@ class geo_band_info(geo_raster_info):
 		return self.from_grid(_dat, update_type, _nodata)
 
 	def from_grid(self, grid, update_type=True, nodata=None):
-		logging.info('updating the band with masked array')
-
 		if not (self.height == grid.shape[0] and self.width == grid.shape[1]):
 			raise Exception('grid size does not match')
 
@@ -245,8 +241,8 @@ class geo_band_info(geo_raster_info):
 				self.nodata, self.pixel_type)
 
 	def scale(self, ratio, ceil=False):
-		_cols = math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio)
-		_rows = math.ceil(self.height * ratio) if ceil else math.floor(self.height * ratio)
+		_cols = int(math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio))
+		_rows = int(math.ceil(self.height * ratio) if ceil else math.floor(self.height * ratio))
 
 		_geo = list(self.geo_transform)
 		_geo[1] /= ratio
@@ -258,9 +254,10 @@ class geo_band_info(geo_raster_info):
 
 class geo_band_cache(geo_band_info):
 
-	def __init__(self, data, geo_transform, proj, nodata=None, pixel_type=None):
+	def __init__(self, data, geo_transform, proj, nodata=None, pixel_type=None, color_table=None):
 		geo_band_info.__init__(self, geo_transform, data.shape[1], data.shape[0], proj, nodata, pixel_type)
 		self.data = data
+		self.color_table = color_table
 
 	def __del__(self):
 		geo_band_info.__del__(self)
@@ -411,7 +408,7 @@ class geo_band_cache(geo_band_info):
 		_geo2[3] = _ext.maxy
 
 		return geo_band_cache(_dat, _geo2, self.proj, _fill,
-						self.pixel_type)
+						self.pixel_type, self.color_table)
 
 	def read_block(self, bnd):
 		import geo_base_c
@@ -487,7 +484,7 @@ class geo_band_cache(geo_band_info):
 					str(self.pixel_type))
 
 		return geo_band_cache(_dat_out, bnd.geo_transform, bnd.proj,
-			_nodata, self.pixel_type)
+			_nodata, self.pixel_type, self.color_table)
 
 class geo_band(geo_band_info):
 	'''A raster band'''
@@ -637,7 +634,7 @@ class geo_band(geo_band_info):
 		if _cols <= 0 or _rows <= 0:
 			raise Exception('out of the band extent')
 
-		return geo_band_cache(_dat, _geo, self.proj, self.nodata, self.pixel_type)
+		return geo_band_cache(_dat, _geo, self.proj, self.nodata, self.pixel_type, self.color_table)
 
 	@property
 	def cached(self):
@@ -653,7 +650,7 @@ class geo_band(geo_band_info):
 		_geo[0] += _col * _geo[1] + _row * _geo[2]
 		_geo[3] += _col * _geo[4] + _row * _geo[5]
 
-		return geo_band_cache(_dat, _geo, self.proj, self.nodata, self.pixel_type)
+		return geo_band_cache(_dat, _geo, self.proj, self.nodata, self.pixel_type, self.color_table)
 
 	def read(self):
 		'''Read all the raster data'''
@@ -673,7 +670,7 @@ class geo_band(geo_band_info):
 		_img = self.raster
 		_dat = self.read_rows(0, self.height)
 		return geo_band_cache(_dat, _img.geo_transform, _img.proj,
-				self.nodata, self.pixel_type)
+				self.nodata, self.pixel_type, self.color_table)
 
 	def read_ext(self, ext):
 		if ext.proj != None and self.proj.ExportToProj4() != ext.proj.ExportToProj4():
@@ -719,7 +716,7 @@ class geo_band(geo_band_info):
 		_geo2[3] = _ext.maxy
 
 		return geo_band_cache(_dat, _geo2, self.proj, _fill,
-						self.pixel_type)
+						self.pixel_type, self.color_table)
 
 	def read_block(self, bnd):
 		import geo_base_c
@@ -801,7 +798,7 @@ class geo_band(geo_band_info):
 					str(self.pixel_type))
 
 		return geo_band_cache(_dat_out, bnd.geo_transform, bnd.proj,
-			_nodata, self.pixel_type)
+			_nodata, self.pixel_type, self.color_table)
 
 class geo_raster(geo_raster_info):
 
@@ -1038,7 +1035,7 @@ def load_colortable(f):
 
 		_vs = re.split('\s+', _l, maxsplit=1)
 		if len(_vs) != 2:
-			logging.info('ignore color entry: %s' % _l)
+			logging.warning('ignore color entry: %s' % _l)
 			continue
 
 		_cs = tuple([int(_v) for _v in re.split('\W+', _vs[1])])

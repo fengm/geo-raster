@@ -649,8 +649,7 @@ class band_file:
 	def get_band(self):
 		import geo_raster_c
 
-		logging.info('loading %s' % self.file)
-
+		logging.debug('loading %s' % self.file)
 		if self.band:
 			return self.band
 
@@ -723,7 +722,7 @@ class geo_band_stack_zip:
 		self.color_table = None
 		self.estimate_params_from_band()
 
-		logging.info('build geo_band_stack (bands: %s, nodata: %s -> %s)' % (len(bands), nodata, self.nodata))
+		logging.debug('build geo_band_stack (bands: %s, nodata: %s -> %s)' % (len(bands), nodata, self.nodata))
 
 	def estimate_params_from_band(self):
 		if len(self.bands) == 0:
@@ -921,7 +920,7 @@ class geo_band_stack_zip:
 		for i in xrange(len(self.bands)):
 			for _pt in pts:
 				if self.bands[i].poly.is_contain(_pt):
-					logging.info('add band %s' % self.bands[i].band_file.file)
+					logging.debug('add band %s' % self.bands[i].band_file.file)
 					_ls.append(self.bands[i])
 					break
 
@@ -936,17 +935,17 @@ class geo_band_stack_zip:
 		_pol_t1 = pol_t1
 
 		_bnd = _bnd_info.get_band().band
-		logging.info('loading file %s' % _bnd_info.band_file.file)
+		logging.debug('loading file %s' % _bnd_info.band_file.file)
 		_pol_s = gb.geo_polygon.from_raster(_bnd, div=100)
 
 		if _pol_s == None:
-			logging.info('skip file #1 %s' % _bnd_info.band_file.file)
+			logging.debug('skip file #1 %s' % _bnd_info.band_file.file)
 			return
 
 		# calculate the intersection area for both data sets
 		_pol_t1_proj = _pol_t1.project_to(_bnd.proj)
 		if _pol_t1_proj == None or _pol_t1_proj.poly == None:
-			logging.info('skip file #2 %s' % _bnd_info.band_file.file)
+			logging.debug('skip file #2 %s' % _bnd_info.band_file.file)
 			return
 
 		# if 'p166r061_20000223' in _bnd_info.band_file.file:
@@ -965,14 +964,14 @@ class geo_band_stack_zip:
 			_pol_c_s = _pol_s.buffer(0.000000001).intersect(_pol_t1_proj)
 
 		if _pol_c_s.poly == None:
-			logging.info('skip file #3 %s' % _bnd_info.band_file.file)
+			logging.debug('skip file #3 %s' % _bnd_info.band_file.file)
 			return
 
 		_pol_c_s.set_proj(_bnd.proj)
 		_pol_c_t = _pol_c_s.project_to(bnd.proj)
 
 		if _pol_c_t == None or _pol_c_t.poly == None:
-			logging.info('failed to reproject the extent')
+			logging.debug('failed to reproject the extent')
 			return
 
 		#_pol_c_t = _pol_c_t.buffer(bnd.geo_transform[1])
@@ -1050,7 +1049,7 @@ class geo_band_stack_zip:
 	
 		_dat_out.fill(_nodata)
 
-		logging.info('reading block from "%s" to "%s"' % (\
+		logging.debug('reading block from "%s" to "%s"' % (\
 			self.proj.ExportToProj4(),
 			bnd.proj.ExportToProj4()))
 
@@ -1064,16 +1063,14 @@ class geo_band_stack_zip:
 			return None
 
 		if use_pts:
-			logging.info('enable using PTS')
+			logging.debug('enable using PTS')
 
 			_pts_t1 = _pol_t1.get_points(self.proj)
 			_bnds = self.get_bands_pts(_pts_t1)
 		else:
 			_bnds = self.get_bands(_pol_t2)
 
-		logging.info('found %s bands' % len(_bnds))
-		print min_val, max_val
-
+		logging.debug('found %s bands' % len(_bnds))
 		for _bnd_info in _bnds:
 			self._read_band(bnd, _bnd_info, _nodata, _pol_t1, _dat_out, min_val, max_val)
 			

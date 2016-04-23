@@ -7,6 +7,9 @@ Description: Provide the basic geometry objects, retrieved from geo_raster_ex
 '''
 
 import numpy as np
+import sys
+_inf = sys.float_info.max
+
 cimport numpy as np
 cimport cython
 import logging
@@ -53,7 +56,7 @@ def from_dtype(dtype):
 
 	raise Exception('unknown dtype %s' % dtype)
 
-cdef to_cell(g, float x, float y):
+def to_cell(g, float x, float y):
 	'''Convert coordinate to col and row'''
 	return int((x - g[0]) / g[1]), int((y - g[3]) / g[5])
 
@@ -75,12 +78,11 @@ def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, unsigned
 	cdef int _row_min = max(0, ext.miny)
 	cdef int _row_max = min(_rows_ot, ext.maxy + 1)
 
-	_geo = tuple(geo)
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
 			_x, _y = prj.project(_col, _row)
 
-			_c, _r = to_cell(_geo, _x, _y)
+			_c, _r = to_cell(geo, _x, _y)
 			_r -= row_start
 
 			if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
@@ -110,12 +112,11 @@ def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int no
 	cdef int _row_min = max(0, ext.miny)
 	cdef int _row_max = min(_rows_ot, ext.maxy + 1)
 
-	_geo = tuple(geo)
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
 			_x, _y = prj.project(_col, _row)
 
-			_c, _r = to_cell(_geo, _x, _y)
+			_c, _r = to_cell(geo, _x, _y)
 			_r -= row_start
 
 			if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
@@ -145,12 +146,11 @@ def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int noda
 	cdef int _row_min = max(0, ext.miny)
 	cdef int _row_max = min(_rows_ot, ext.maxy + 1)
 
-	_geo = tuple(geo)
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
 			_x, _y = prj.project(_col, _row)
 
-			_c, _r = to_cell(_geo, _x, _y)
+			_c, _r = to_cell(geo, _x, _y)
 			_r -= row_start
 
 			if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
@@ -180,12 +180,11 @@ def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int no
 	cdef int _row_min = max(0, ext.miny)
 	cdef int _row_max = min(_rows_ot, ext.maxy + 1)
 
-	_geo = tuple(geo)
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
 			_x, _y = prj.project(_col, _row)
 
-			_c, _r = to_cell(_geo, _x, _y)
+			_c, _r = to_cell(geo, _x, _y)
 			_r -= row_start
 
 			if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
@@ -215,12 +214,11 @@ def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int noda
 	cdef int _row_min = max(0, ext.miny)
 	cdef int _row_max = min(_rows_ot, ext.maxy + 1)
 
-	_geo = tuple(geo)
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
 			_x, _y = prj.project(_col, _row)
 
-			_c, _r = to_cell(_geo, _x, _y)
+			_c, _r = to_cell(geo, _x, _y)
 			_r -= row_start
 
 			if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
@@ -250,12 +248,11 @@ def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, floa
 	cdef int _row_min = max(0, ext.miny)
 	cdef int _row_max = min(_rows_ot, ext.maxy + 1)
 
-	_geo = tuple(geo)
 	for _row in xrange(_row_min, _row_max):
 		for _col in xrange(_col_min, _col_max):
 			_x, _y = prj.project(_col, _row)
 
-			_c, _r = to_cell(_geo, _x, _y)
+			_c, _r = to_cell(geo, _x, _y)
 			_r -= row_start
 
 			if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
@@ -303,11 +300,22 @@ class geo_extent:
 			return False
 		return True
 
+	def buffer(self, dist):
+		return geo_extent(self.minx - dist, self.miny - dist, self.maxx + dist, self.maxy + dist)
+
+	def is_contain(self, pt):
+		if pt.x < self.minx or pt.x > self.maxx or pt.y < self.miny or pt.y > self.maxy:
+			return False
+
+		return True
+
 	def intersect(self, extent):
-		return geo_extent(max(self.minx, extent.minx), max(self.miny, extent.miny), min(self.maxx, extent.maxx), min(self.maxy, extent.maxy), self.proj)
+		return geo_extent(max(self.minx, extent.minx), max(self.miny, extent.miny), \
+				min(self.maxx, extent.maxx), min(self.maxy, extent.maxy), self.proj)
 
 	def union(self, extent):
-		return geo_extent(min(self.minx, extent.minx), min(self.miny, extent.miny), max(self.maxx, extent.maxx), max(self.maxy, extent.maxy), self.proj)
+		return geo_extent(min(self.minx, extent.minx), min(self.miny, extent.miny), \
+				max(self.maxx, extent.maxx), max(self.maxy, extent.maxy), self.proj)
 
 	def get_center(self):
 		return geo_point(self.minx + self.width() / 2, self.miny + self.height() / 2, self.proj)
@@ -401,17 +409,83 @@ class geo_polygon:
 
 		return cls(_poly)
 
-	def project_to(self, proj):
+	@classmethod
+	def from_xys(cls, pts, proj=None):
+		from osgeo import ogr
+
+		if len(pts) <= 2:
+			raise Exception('need at least 3 points (%s) to create a polygon' % len(pts))
+
+		_proj = proj
+		_ring = ogr.Geometry(ogr.wkbLinearRing)
+		for _pt in pts:
+			_ring.AddPoint(_pt[0], _pt[1])
+
+		if pts[len(pts) - 1][0] != pts[0][0] or pts[len(pts) - 1][1] != pts[0][1]:
+			_ring.AddPoint(pts[0][0], pts[0][1])
+
+		_ring.CloseRings()
+
+		_poly = ogr.Geometry(ogr.wkbPolygon)
+		_poly.AddGeometry(_ring)
+		_proj and _poly.AssignSpatialReference(_proj)
+
+		return cls(_poly)
+
+	def project_to(self, proj, geo_cut=False):
 		if self.proj == None or self.proj.IsSame(proj):
 			return self
+		
+		return self._project_poly(proj)
 
-		_poly = self.poly.Clone()
-		_err = _poly.TransformTo(proj)
-		if _err != 0:
-			logging.error('failed to project polygon to (%s)' % (proj.ExportToProj4(), ))
-			return None
+		# _poly = self.poly.Clone()
+		# _err = _poly.TransformTo(proj)
+		# if _err != 0:
+		# 	logging.error('failed to project polygon to (%s)' % (proj.ExportToProj4(), ))
+		# 	return None
+        #
+		# return geo_polygon(_poly)
 
-		return geo_polygon(_poly.Simplify(0.000000001))
+	def _project_ring(self, ring, proj_src, proj):
+		from osgeo import ogr
+		_ring = ogr.Geometry(ogr.wkbLinearRing)
+
+		_pp = ogr.Geometry(ogr.wkbPoint)
+		for _i in xrange(ring.GetPointCount()):
+			_pt = ring.GetPoint_2D(_i)
+
+			_pp.SetPoint_2D(0, _pt[0], _pt[1])
+			_pp.AssignSpatialReference(proj_src)
+
+			if _pp.TransformTo(proj) != 0:
+				continue
+
+			_pt = _pp.GetPoint_2D()
+			_ring.AddPoint(_pt[0], _pt[1])
+
+		_ring.CloseRings()
+		return _ring
+
+	def _project_poly(self, proj, geo_cut=False):
+		from osgeo import ogr
+
+		_poly = ogr.Geometry(ogr.wkbPolygon)
+		_poly.AssignSpatialReference(proj)
+
+		_proj = self.proj
+		_pppp = self
+
+		# if '+proj=sinu ' in _proj.ExportToProj4() and proj.IsGeographic():
+		if geo_cut and proj.IsGeographic():
+			# cut the polygon to avoid exceeding geographic extent
+			_pppp = self.intersect( \
+					geo_polygon.from_xys([(-179.999, -89.999), (-179.999, 89.999), (179.999, 89.999), (179.999, -89.999)], \
+					proj).segment_ratio(300).project_to(self.proj))
+
+		for _r in xrange(_pppp.poly.GetGeometryCount()):
+			_poly.AddGeometry(self._project_ring(_pppp.poly.GetGeometryRef(_r), _proj, proj))
+
+		return geo_polygon(_poly)
 
 	def set_proj(self, proj):
 		self.poly.AssignSpatialReference(proj)
@@ -629,7 +703,7 @@ class projection_transform:
 	''' Build a grid for transforming raster pixels'''
 
 	@classmethod
-	def from_band(cls, bnd_info, proj, interval=100, f_pts0=None, f_pts1=None):
+	def from_band(cls, bnd_info, proj, interval=100, f_pts0=None, f_pts1=None, delay_reproj=True):
 		import math, geo_raster_c
 
 		# make sure there are at least 10 points for each axis
@@ -639,7 +713,7 @@ class projection_transform:
 		_img_w = int(math.ceil(bnd_info.width / _scale)) + 1
 		_img_h = int(math.ceil(bnd_info.height / _scale)) + 1
 
-		logging.info('scale: %s, size: %s, %s' % (_scale, _img_w, _img_h))
+		logging.debug('scale: %s, size: %s, %s' % (_scale, _img_w, _img_h))
 
 		_ms = []
 
@@ -651,19 +725,21 @@ class projection_transform:
 			_mm = []
 			for _col in xrange(_img_w):
 				_pt0 = geo_raster_c.to_location(bnd_info.geo_transform, _col * _scale, _row * _scale)
+
 				_pt0 = geo_point(_pt0[0], _pt0[1], bnd_info.proj)
-				_pt1 = _pt0.project_to(proj)
-				if _pt1 == None:
-					continue
-
-				_mm.append([_pt0.x, _pt0.y, _pt1.x, _pt1.y])
-
 				_pts0.append(_pt0)
-				_pts1.append(_pt1)
+
+				_pt1 = None if delay_reproj else _pt0.project_to(proj)
+
+				if _pt1 == None:
+					_mm.append([_pt0.x, _pt0.y, _inf, _inf])
+				else:
+					_mm.append([_pt0.x, _pt0.y, _pt1.x, _pt1.y])
+					_pts1.append(_pt1)
 
 			_ms.append(_mm)
 
-		logging.info('points number: %s' % len(_pts0))
+		logging.debug('points number: %s' % len(_pts0))
 
 		f_pts0 and output_points(_pts0, f_pts0)
 		f_pts1 and output_points(_pts1, f_pts1)
@@ -671,7 +747,7 @@ class projection_transform:
 		# output_points(_pts0, 'point0.shp')
 		# output_points(_pts1, 'point1.shp')
 
-		return cls(_ms, _scale)
+		return cls(_ms, _scale, bnd_info.proj, proj)
 
 	@classmethod
 	def from_extent(cls, ext, proj, dist=1000.0):
@@ -691,22 +767,41 @@ class projection_transform:
 			_x = ext.minx
 			for _col in xrange(_img_w):
 				_pt0 = geo_point(_x, _y, ext.proj)
-				_pt1 = _pt0.project_to(proj)
-				if _pt1 == None:
-					continue
+				_mm.append([_pt0.x, _pt0.y, _inf, _inf])
 
-				_mm.append([_pt0.x, _pt0.y, _pt1.x, _pt1.y])
+				# _pt1 = _pt0.project_to(proj)
+				# if _pt1 == None:
+				# 	continue
+                #
+				# _mm.append([_pt0.x, _pt0.y, _pt1.x, _pt1.y])
 
 				_x += dist
 
 			_ms.append(_mm)
 			_y += dist
 
-		return cls(_ms, _scale)
+		return cls(_ms, _scale, ext.proj, proj)
 
-	def __init__(self, mat, scale):
+	def __init__(self, mat, scale, proj_src=None, proj_tar=None):
 		self.mat = mat
 		self.scale = float(scale)
+		self.proj_src = proj_src
+		self.proj_tar = proj_tar
+
+	def _update_cc(self, row, col):
+		_vs = self.mat[row][col]
+		if _vs[2] >= _inf or _vs[3] >= _inf:
+			if self.proj_src == None or self.proj_tar == None:
+				raise Exception('exceeded the projection extent')
+
+			_pt0 = geo_point(_vs[0], _vs[1], self.proj_src)
+			_pt1 = _pt0.project_to(self.proj_tar)
+
+			if _pt1 == None:
+				raise Exception('failed to reproject control point')
+
+			self.mat[row][col][2] = _pt1.x
+			self.mat[row][col][3] = _pt1.y
 
 	def project(self, int col, int row):
 		cdef float _scale = self.scale
@@ -719,12 +814,23 @@ class projection_transform:
 		cdef float _del_x = col / _scale - _col0
 		cdef float _del_y = row / _scale - _row0
 
+		self._update_cc(_row0, _col0)
+		self._update_cc(_row0, _col1)
+		self._update_cc(_row1, _col0)
+		self._update_cc(_row1, _col1)
+
 		cdef list _mat = self.mat
 		# print col, row, _col0, _row0, self.mat.shape
 		cdef float _mat_00x = _mat[_row0][_col0][2]
 		cdef float _mat_01x = _mat[_row0][_col1][2]
 		cdef float _mat_10x = _mat[_row1][_col0][2]
 		cdef float _mat_11x = _mat[_row1][_col1][2]
+
+		if _mat_00x >= _inf or _mat_01x >= _inf or _mat_10x >= _inf or _mat_11x >= _inf:
+			# print _inf, _mat_00x, _mat_01x, _mat_10x, _mat_11x 
+			# print _mat_00x >= _inf, _mat_01x >= _inf, _mat_10x >= _inf, _mat_11x >= _inf
+
+			raise Exception('exceeded the projection extent')
 
 		cdef float _pos_x0 = _mat_00x + _del_x * (_mat_01x - _mat_00x)
 		cdef float _pos_x1 = _mat_10x + _del_x * (_mat_11x - _mat_10x)
@@ -753,7 +859,7 @@ def output_geometries(geos, proj, geo_type, f_shp):
 	from osgeo import ogr, gdal
 	import os
 
-	logging.info('output shapefile to ' + f_shp)
+	logging.debug('output shapefile to ' + f_shp)
 	_drv_type = 'ESRI Shapefile'
 	if f_shp.lower().endswith('.kml'):
 		_drv_type = 'KML'
@@ -775,13 +881,13 @@ def output_points(pts, f_shp):
 	from osgeo import ogr, gdal
 
 	if len(pts) == 0: return
-	logging.info('output points to ' + f_shp)
+	logging.debug('output points to ' + f_shp)
 	output_geometries([_pt.to_geometry() for _pt in pts], pts[0].proj, ogr.wkbPoint, f_shp)
 
 def output_polygons(polys, f_shp):
 	from osgeo import ogr, gdal
 
 	if len(polys) == 0: return
-	logging.info('output polygon to ' + f_shp)
+	logging.debug('output polygon to ' + f_shp)
 	output_geometries([_poly.poly for _poly in polys], polys[0].proj, ogr.wkbPolygon, f_shp)
 

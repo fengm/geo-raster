@@ -15,6 +15,7 @@ import numpy as np
 import geo_raster_c as ge
 import math
 import logging
+import collections
 
 cimport numpy as np
 cimport cython
@@ -22,7 +23,7 @@ cimport cython
 @cython.boundscheck(False)
 @cython.wraparound(False)
 
-def mean(bnd_in, bnd_ot):
+def mean(bnd_in, bnd_ot, float v_min=0, float v_max=100):
 	_geo_in = list(bnd_in.geo_transform)
 	_geo_ot = list(bnd_ot.geo_transform)
 
@@ -42,7 +43,7 @@ def mean(bnd_in, bnd_ot):
 
 	_dat = average_pixels(_dat,
 			_offs[0], _offs[1], _dive,
-			_nodata, _size[0], _size[1])
+			_nodata, _size[0], _size[1], v_min, v_max)
 
 	if bnd_in.data.dtype != np.float32:
 		_dat = _dat.astype(bnd_in.data.dtype)
@@ -81,9 +82,9 @@ def mean_std(bnd_in, bnd_ot):
 	return ge.geo_band_cache(_dat, _geo_ot, bnd_ot.proj,
 				_nodata, ge.pixel_type('float'))
 
-cdef np.ndarray[np.float32_t, ndim=2] average_pixels(np.ndarray[np.float32_t, ndim=2] dat,
+def average_pixels(np.ndarray[np.float32_t, ndim=2] dat,
 		float off_y, float off_x, float scale,
-		float nodata, unsigned int rows, unsigned int cols):
+		float nodata, unsigned int rows, unsigned int cols, float v_min, float v_max):
 
 	cdef unsigned int _rows_o, _cols_o
 	cdef unsigned int _rows_n, _cols_n
@@ -142,23 +143,39 @@ cdef np.ndarray[np.float32_t, ndim=2] average_pixels(np.ndarray[np.float32_t, nd
 			_col_max = int(math.ceil(_col_max_f))
 			_col_max = min(_cols_o, _col_max)
 
-			_vs = 0
-			_ns = 0
+			_vs = 0.0
+			_ns = 0.0
+			_aa = 0.0
+
+			_ss = collections.defaultdict(lambda: 0.0)
 			for _row_o from _row_min<=_row_o<_row_max:
 				for _col_o from _col_min<=_col_o<_col_max:
 					_a = (min(_row_o + 1, _row_max_f) - \
 							max(_row_o, _row_min_f)) * \
 							(min(_col_o + 1, _col_max_f) - \
 							(max(_col_o, _col_min_f)))
+					_aa += _a
 
 					_v = dat[_row_o, _col_o]
-					if _v == _nodata:
+					if _v == _nodata or _v < v_min or _v > v_max:
+						_ss[_v] += _a
 						continue
 
 					_vs += _v * _a
 					_ns += _a
 
-			if _ns <= 0:
+			if _aa <= 0.0:
+				continue
+
+			if _ns < _aa / 2:
+				_vv = nodata
+				_vx = 0 
+				for _k, _v in _ss.items():
+					if _v > _vx:
+						_vv = _k
+						_vx = _v
+
+				_dat[_row_n, _col_n] = _vv
 				continue
 
 			_dat[_row_n, _col_n] = _vs / _ns
@@ -368,9 +385,6 @@ def perc(bnd_in, bnd_ot, val, valid_values=None, excluded_values=None, nodata=25
 			exclude_nodata=False, scale=100, pixel_type='byte'):
 	'''aggregate the values to percentage of the pixels'''
 
-	if bnd_in.nodata == None:
-		raise Exception('nodata was not given for the input band')
-
 	_geo_in = list(bnd_in.geo_transform)
 	_geo_ot = list(bnd_ot.geo_transform)
 
@@ -429,7 +443,7 @@ cdef np.ndarray[np.float32_t, ndim=2] perc_pixels(np.ndarray[np.uint8_t, ndim=2]
 	cdef float _vv
 
 	_dat = np.empty([_rows_n, _cols_n], np.float32)
-	logging.info('aggregating nodata: %s, %s' % (s_nodata, t_nodata))
+	logging.debug('aggregating nodata: %s, %s' % (s_nodata, t_nodata))
 	_dat.fill(t_nodata)
 
 	_row_min_f = off_y - scale

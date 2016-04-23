@@ -62,9 +62,9 @@ def print_percent(nu, tn, perc_step, end=False):
 	_p2 = int((nu+0) * _ss // (perc_step * tn))
 
 	if end:
-		logging.info('--> finished task %d %d' % (nu, tn))
+		logging.debug('--> finished task %d %d' % (nu, tn))
 	else:
-		logging.info('<-- start task %d %d' % (nu, tn))
+		logging.debug('<-- start task %d %d' % (nu, tn))
 
 	if _p1 < _p2 or nu >= tn:
 		if end:
@@ -98,7 +98,7 @@ def work_function(obj, job_queue, vs, mag, res, t_lock, pos):
 				_ts = job_queue.get(block=False)
 
 			_ps = tuple(_ts) + tuple(vs)
-			logging.info('task (%s) params: %s' % (_nu, ','.join([str(_v) for _v in _ps])))
+			logging.debug('task (%s) params: %s' % (_nu, ','.join([str(_v) for _v in _ps])))
 
 			if mag['stop']:
 				return
@@ -197,7 +197,7 @@ class Pool:
 				if _task_num != _task_tmp:
 					_task_num = _task_tmp
 
-					logging.info('Alive tasks num: %s' % _task_num)
+					logging.debug('alive tasks num: %s' % _task_num)
 					text('\r\t\t\t\t\t\t(%3d)' % _task_num)
 
 					if _task_num <= 0:

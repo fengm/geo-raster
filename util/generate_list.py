@@ -25,10 +25,11 @@ def main():
 	import re
 
 	_fs = []
-	for _root, _dirs, _files in os.walk(os.path.abspath(_opts.input)):
-		for _file in _files:
-			if not _opts.pattern or re.search(_opts.pattern, _file):
-				_fs.append(os.path.join(format_path(_root), _file))
+	for _dd in _opts.input:
+		for _root, _dirs, _files in os.walk(os.path.abspath(_dd)):
+			for _file in _files:
+				if not _opts.pattern or re.search(_opts.pattern, _file):
+					_fs.append(os.path.join(format_path(_root), _file))
 
 	if _opts.output:
 		print 'found', len(_fs), 'files'
@@ -46,7 +47,7 @@ def _usage():
 	_p.add_argument('--config', dest='config')
 	_p.add_argument('--temp', dest='temp')
 
-	_p.add_argument('-i', '--input', dest='input', required=True)
+	_p.add_argument('-i', '--input', dest='input', required=True, action='append')
 	_p.add_argument('-o', '--output', dest='output')
 	_p.add_argument('-p', '--pattern', dest='pattern')
 

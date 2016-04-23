@@ -5,7 +5,6 @@ Version: 0.1
 Create: 2014-03-18 02:02:29
 Description: help locate and read the configuration file
 '''
-import logging
 import collections
 
 cfg = None
@@ -41,6 +40,9 @@ def _detect_file(f_cfg):
 		if _m:
 			_f = _m.group(1)
 
+	if os.path.exists(_f):
+		return _f
+
 	_f = _detect_sys(_f, 'conf') or _detect_sys(_f, 'ini')
 	return _f
 
@@ -60,7 +62,6 @@ def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_
 		if _l == None:
 			continue
 
-		logging.info('loading config file ' + _l)
 		_fs.append(_l)
 
 	cfg.read(_fs)
@@ -75,13 +76,16 @@ def get_at(section, name):
 def items(section):
 	global cfg
 
+	if section not in cfg.sections():
+		return
+
 	_ns = cfg.defaults()
 	for _n, _v in cfg.items(section):
-
 		if _n in _ns:
 			continue
 
 		yield _n, _v
+
 def get(section, name, val=None):
 	"""get config param
 

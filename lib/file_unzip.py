@@ -28,7 +28,7 @@ def uncompress_file(f, d_ot):
 
 	_ft = _fo + '.tmp'
 
-	logging.info('unzipping %s: %s' % (f, _ft))
+	logging.debug('unzipping %s: %s' % (f, _ft))
 	try:
 		with gzip.open(f, 'rb') as _f_in:
 			with open(_ft, 'wb') as _f_ot:
@@ -80,7 +80,7 @@ def compress_file(f_src, f_dst=None, remove_src=True):
 
 	_f_tmp = _f_dst + '.tmp'
 	try:
-		logging.info('compress %s to %s' % (f_src, _f_dst))
+		logging.debug('compress %s to %s' % (f_src, _f_dst))
 		with open(f_src, 'rb') as _zip_src:
 			with open(_f_tmp, 'wb') as _ft:
 				with gzip.GzipFile(_f_dst, 'wb', fileobj=_ft) as _zip_tar:
@@ -208,7 +208,7 @@ def clean(fd_out, remove_root=False):
 	'''force to clean the folder'''
 	import shutil, os
 
-	logging.warning('clean folder: %s (%s)' % (fd_out, remove_root))
+	logging.debug('clean folder: %s (%s)' % (fd_out, remove_root))
 	if remove_root:
 		shutil.rmtree(fd_out, True)
 		return
@@ -252,7 +252,7 @@ class file_unzip:
 
 	def __exit__(self, type, value, traceback):
 		if self._debug:
-			logging.info('remain the temporary files in debug mode')
+			logging.warning('remain the temporary files in debug mode')
 		else:
 			self.clean()
 
@@ -280,7 +280,7 @@ class file_unzip:
 		if f.lower()[-3:] != '.gz':
 			return f
 
-		logging.info('> unzip ' + f)
+		logging.debug('> unzip ' + f)
 		sys.stdout.flush()
 
 		_f_out = f_out
