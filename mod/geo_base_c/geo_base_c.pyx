@@ -356,7 +356,7 @@ class geo_polygon:
 		for _c in xrange(div):
 			_pts.append(geo_point(_ext.maxx - _cel_x * (_c+1), _ext.miny))
 
-		for _c in xrange(div):
+		for _c in xrange(div - 1):
 			_pts.append(geo_point(_ext.minx, _ext.miny + _cel_y * (_c+1)))
 
 		return cls.from_pts(_pts, img.proj)

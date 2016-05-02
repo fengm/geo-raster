@@ -928,6 +928,7 @@ class geo_band_stack_zip:
 
 	def _read_band(self, bnd, bnd_info, nodata, pol_t1, dat_out, min_val=None, max_val=None):
 		import geo_base_c as gb
+		_buffer_dist = 1.0E-25
 
 		_bnd_info = bnd_info
 		_nodata = nodata
@@ -947,6 +948,7 @@ class geo_band_stack_zip:
 		if _pol_t1_proj == None or _pol_t1_proj.poly == None:
 			logging.debug('skip file #2 %s' % _bnd_info.band_file.file)
 			return
+		# _pol_t1_proj = _pol_t1_proj.buffer(_buffer_dist)
 
 		# if 'p166r061_20000223' in _bnd_info.band_file.file:
 		# 	import geo_base_c as gb
@@ -961,7 +963,8 @@ class geo_band_stack_zip:
 
 		_pol_c_s = _pol_s.intersect(_pol_t1_proj)
 		if _pol_c_s.poly == None:
-			_pol_c_s = _pol_s.buffer(0.000000001).intersect(_pol_t1_proj)
+			_pol_c_s = _pol_s.buffer(_buffer_dist).intersect(_pol_t1_proj.buffer(_buffer_dist))
+			logging.warning('apply buffer to solve geometric conflicts')
 
 		if _pol_c_s.poly == None:
 			logging.debug('skip file #3 %s' % _bnd_info.band_file.file)
@@ -1054,9 +1057,12 @@ class geo_band_stack_zip:
 			bnd.proj.ExportToProj4()))
 
 		import geo_base_c as gb
+		# _pol_t1 = gb.geo_polygon.from_raster(bnd, div=100).buffer(0.0)
 		_pol_t1 = gb.geo_polygon.from_raster(bnd, div=100)
 		if _pol_t1 == None or _pol_t1.poly == None:
 			return None
+
+		gb.output_polygons([_pol_t1], 'testq_ext.shp')
 
 		_pol_t2 = _pol_t1.project_to(self.proj)
 		if _pol_t2 == None or _pol_t2.poly == None:
@@ -1073,7 +1079,6 @@ class geo_band_stack_zip:
 		logging.debug('found %s bands' % len(_bnds))
 		for _bnd_info in _bnds:
 			self._read_band(bnd, _bnd_info, _nodata, _pol_t1, _dat_out, min_val, max_val)
-			
 			_bnd_info.clean()
 
 		import geo_raster_c
