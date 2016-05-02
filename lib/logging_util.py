@@ -42,11 +42,14 @@ def init(f=None):
 	os.path.exists(_d_log) or os.makedirs(_d_log)
 
 	import config
-	_debug = config.getboolean('conf', 'debug')
+	_debug = config.getboolean('conf', 'debug') if config.cfg else False
 
 	# print 'logging file', _f
 	_handler = sync_file_log_handler(_f)
-	_handler.setLevel(logging.DEBUG if _debug else logging.INFO)
+	print _debug
+	_level = logging.DEBUG if _debug else logging.INFO
+
+	_handler.setLevel(_level)
 	if _debug:
 		_handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s:%(message)s'))
 	else:
@@ -54,7 +57,7 @@ def init(f=None):
 
 	_log = logging.getLogger()
 	_log.addHandler(_handler)
-	_log.setLevel(logging.DEBUG if _debug else logging.INFO)
+	_log.setLevel(_level)
 
 	# logging.basicConfig(filename=_f, level=logging.DEBUG, filemode=filemode, format=format)
 
