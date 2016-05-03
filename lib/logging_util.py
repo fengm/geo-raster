@@ -43,10 +43,11 @@ def init(f=None):
 
 	import config
 	_debug = config.getboolean('conf', 'debug') if config.cfg else False
+	if _debug:
+		print ' - debugging'
 
 	# print 'logging file', _f
 	_handler = sync_file_log_handler(_f)
-	print _debug
 	_level = logging.DEBUG if _debug else logging.INFO
 
 	_handler.setLevel(_level)
