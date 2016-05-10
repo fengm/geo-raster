@@ -1062,8 +1062,6 @@ class geo_band_stack_zip:
 		if _pol_t1 == None or _pol_t1.poly == None:
 			return None
 
-		gb.output_polygons([_pol_t1], 'testq_ext.shp')
-
 		_pol_t2 = _pol_t1.project_to(self.proj)
 		if _pol_t2 == None or _pol_t2.poly == None:
 			return None
