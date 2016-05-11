@@ -168,6 +168,37 @@ def getSensorName(d):
 def normalizeId(sensor, pathrow, date):
 	return 'L%s_%s_%s' % (sensor, pathrow, date)
 
+def find_tiles(geom):
+	'''return tiles at the given geometry'''
+
+	from osgeo import ogr
+	import config
+
+	_f_shp = config.get('conf', 'wrs')
+	_shp = ogr.Open(_f_shp)
+	_lyr = _shp.GetLayer()
+
+	import geo_base_c as gb
+	_geom = None
+
+	if geom != None:
+		if isinstance(geom, ogr.Geometry):
+			_geom = geom
+		elif isinstance(geom, gb.geo_point):
+			_geom = geom.to_geometry()
+		elif isinstance(geom, gb.geo_polygon):
+			_geom = geom.poly
+		else:
+			raise Exception('failed to parse the geometry')
+
+		_lyr.SetSpatialFilter(_geom)
+
+	_ps = []
+	for _f in _lyr:
+		_ps.append(_f['pathrow'])
+
+	return _ps
+
 def main():
 	_f = '/export/data/bessie1/fengm/prog/vct/test1/w2p048r022_2002192LLE_sr'
 	print parse(_f)
