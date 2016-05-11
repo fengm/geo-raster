@@ -54,7 +54,8 @@ def init(f=None):
 	if _debug:
 		_handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s:%(message)s'))
 	else:
-		_handler.setFormatter(logging.Formatter('%(process)d:%(levelname)s:%(message)s'))
+		_handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s:%(message)s'))
+		# _handler.setFormatter(logging.Formatter('%(process)d:%(levelname)s:%(message)s'))
 
 	_log = logging.getLogger()
 	_log.addHandler(_handler)
