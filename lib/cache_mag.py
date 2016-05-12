@@ -20,9 +20,19 @@ class cache_mag():
 		import os
 		return os.path.exists(_f) and os.path.getsize(_f) > 0
 
+	def _format_str(self, t):
+		import re
+		_k = list(re.sub('[^\w\d_]', '_', t))
+
+		for i in xrange(len(_k)):
+			if t[i] in ['\\', '/', '.', '-']:
+				_k[i] = t[i]
+
+		return ''.join(_k)
+
 	def path(self, key):
 		import os
-		return os.path.join(self._d, self._t, key)
+		return os.path.join(self._d, self._t, self._format_str(key))
 
 	def get(self, key):
 		if not self.cached(key):
@@ -37,7 +47,10 @@ class cache_mag():
 			return _f
 
 		import os
-		(lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
+		try:
+			(lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
+		except Exception:
+			pass
 
 		import shutil
 		shutil.copy(inp, _f)
@@ -67,7 +80,10 @@ class s3():
 			return _f
 
 		import os
-		(lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
+		try:
+			(lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
+		except Exception:
+			pass
 
 		with open(_f, 'wb') as _fo:
 			self.bucket.get_key(key).get_contents_to_file(_fo)
