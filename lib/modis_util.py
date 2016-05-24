@@ -32,3 +32,25 @@ def pixel(x, y, size=4800):
 	return int(size * (x - ((_h - 36 / 2) * _div)) / _div), \
 			int(size * ((_v - 18 / 2) * _div - y) / _div)
 
+class modis_info:
+
+	def __init__(self):
+		self.div = 1111950.5197665232305861525775064
+
+	def tile(self, x, y):
+		_h = (x + 36 / 2 * self.div) / self.div
+		_v = (18 / 2 * self.div - y) / self.div
+
+		return 'h%02dv%02d' % (_h, _v)
+
+	def size(self, cell=500):
+		return 2400 * 500 / cell
+
+	def pixel(self, x, y, cell=500):
+		import math
+
+		_cell = self.div / self.size(cell)
+		_col = int(math.floor((x - self.div * math.floor(x / self.div)) / _cell))
+		_row = int(math.floor((self.div * math.ceil(y / self.div) - y) / _cell))
+
+		return _col, _row
