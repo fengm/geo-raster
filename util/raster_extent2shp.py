@@ -31,7 +31,7 @@ def create_polygon(ext):
 	return _poly
 
 def open_file(f, fzip):
-	import geo_raster
+	import geo_raster_c as ge
 
 	_cs = f.split('#')
 
@@ -39,7 +39,7 @@ def open_file(f, fzip):
 	if _f.endswith('gz'):
 		_f = fzip.unzip(_f)
 
-	_img = geo_raster.geo_raster.open(_f)
+	_img = ge.geo_raster.open(_f)
 	if _f.lower().endswith('.hdf'):
 		if len(_cs) >= 2:
 			return _img.get_subdataset(_cs[1])
@@ -47,8 +47,80 @@ def open_file(f, fzip):
 
 	return _img
 
+def _geo_line(ext, proj):
+	from osgeo import ogr
+
+	_line = ogr.Geometry(ogr.wkbLineString)
+
+	# _leng = ext.height()
+	# if _leng <= 0.0:
+
+	_line.AddPoint(180.0, min(ext.maxy + 5.0, 89.5))
+	_line.AddPoint(180.0, max(ext.miny - 5.0, -89.5))
+
+	_line.AssignSpatialReference(proj)
+	return _line
+
+def _project_to(poly, proj):
+	from osgeo import ogr
+	_poly = ogr.CreateGeometryFromWkt(poly.ExportToWkt())
+	_poly.AssignSpatialReference(poly.GetSpatialReference())
+
+	_poly.TransformTo(proj)
+	return _poly
+
+def _split_box(ext):
+	import geo_base_c as gb
+
+	_pt = lambda x, y: gb.geo_point(x, y)
+	_pol1 = gb.geo_polygon.from_pts([_pt(-120, ext.miny), _pt(-120, ext.maxy), _pt(-179.999, ext.maxy), \
+			_pt(-179.999, ext.miny)], ext.proj).segment_ratio(10)
+	_pol2 = gb.geo_polygon.from_pts([_pt(120, ext.miny), _pt(120, ext.maxy), _pt(179.999, ext.maxy), \
+			_pt(179.999, ext.miny)], ext.proj).segment_ratio(10)
+
+	return _pol1, _pol2
+
+def _split_polygons(ext, prj):
+	# import geo_base_c as gb
+
+	_prj1 = ext.proj
+	_prj2 = prj
+
+	_ext = ext.project_to(_prj2)
+	_box = _ext.extent()
+
+	_lin2 = _geo_line(_box, _prj2)
+	_lin1 = _project_to(_lin2, _prj1)
+
+	# gb.output_polygons([ext], 'test5.shp')
+	# from osgeo import ogr
+	# gb.output_geometries([_lin1], _prj1, ogr.wkbLineString, 'test6.shp')
+	# gb.output_geometries([_lin2], _prj2, ogr.wkbLineString, 'test7.shp')
+	# gb.output_polygons([_ext], 'test8.shp')
+
+	if ext.poly.Intersect(_lin1):
+		_pol1, _pol2 = _split_box(_box)
+
+		_ara1 = ext.intersect(_pol1.project_to(_prj1))
+		_ara2 = ext.intersect(_pol2.project_to(_prj1))
+
+		# gb.output_polygons([ext, _pol1.project_to(_prj1)], 'test1.shp')
+		# gb.output_polygons([_pol1], 'test2.shp')
+		# gb.output_polygons([_pol1.project_to(_prj1)], 'test3.shp')
+		# gb.output_polygons([_box.to_polygon()], 'test4.shp')
+		# gb.output_polygons([_ara1], 'test5.shp')
+		# gb.output_polygons([_ara2], 'test6.shp')
+		# gb.output_polygons([_ara1.project_to(_prj2), _ara2.project_to(_prj2)], 'test7.shp')
+
+		# import sys
+		# sys.exit(0)
+
+		return [_ara1.project_to(_prj2), _ara2.project_to(_prj2)]
+
+	return [_ext]
+
 def generate_shp(fs, proj, f_out, fzip):
-	import geo_raster, geo_raster_ex
+	import geo_raster_c as ge, geo_raster_ex_c as gx
 	from osgeo import ogr
 	from progress_percentage import progress_percentage
 	import os
@@ -57,7 +129,7 @@ def generate_shp(fs, proj, f_out, fzip):
 	_proj = open_file(fs[0], fzip).projection_obj
 	print _proj
 
-	_proj = (_proj) if proj == None else geo_raster.proj_from_epsg(proj)
+	_proj = (_proj) if proj == None else ge.proj_from_epsg(proj)
 	fzip.clean()
 
 	_drv = ogr.GetDriverByName('ESRI Shapefile')
@@ -81,15 +153,25 @@ def generate_shp(fs, proj, f_out, fzip):
 		_img = open_file(_f, fzip)
 		_bnd = _img.get_band()
 
-		_ext = geo_raster_ex.geo_polygon.from_raster(_bnd.raster)
-		if _proj != None:
-			_ext = _ext.project_to(_proj)
+		_ext = gx.geo_polygon.from_raster(_bnd.raster)
+		_geos = [_ext]
 
-		_ftr = ogr.Feature(_lyr.GetLayerDefn())
-		_ftr.SetField('file', _f)
-		_ftr.SetGeometry(_ext.poly)
-		_lyr.CreateFeature(_ftr)
-		_ftr.Destroy()
+		if _proj != None:
+			if proj == 4326:
+				_geos = _split_polygons(_ext, _proj)
+			else:
+				_ext = _ext.project_to(_proj)
+				_geos = [_ext]
+
+		for _geo in _geos:
+			if _geo == None or _geo.poly == None:
+				continue
+
+			_ftr = ogr.Feature(_lyr.GetLayerDefn())
+			_ftr.SetField('file', _f)
+			_ftr.SetGeometry(_geo.poly)
+			_lyr.CreateFeature(_ftr)
+			_ftr.Destroy()
 
 		fzip.clean()
 
