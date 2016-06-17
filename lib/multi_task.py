@@ -42,7 +42,11 @@ def load_list(f_ls, num, pos):
 		return _ls_s
 
 def run(func, ps, opts, vs=[]):
-	return Pool(func, ps, opts.task_num, opts.skip_error, opts.time_wait).run(vs)
+	_pool = Pool(func, ps, opts.task_num, opts.skip_error, opts.time_wait)
+	if opts.task_num == 1:
+		_pool.run_single(vs)
+	else:
+		_pool.run(vs)
 
 def load_ids(size, num, pos):
 	logging.debug('loading ids %d' % size)
@@ -152,7 +156,7 @@ class Pool:
 		self.continue_exception = error_continue
 
 	def run(self, vs=[]):
-		logging.info('process tasks (%d, %d)' % (len(self.args), self.t_num))
+		# logging.info('process tasks (%d, %d)' % (len(self.args), self.t_num))
 
 		_mag = multiprocessing.Manager().dict()
 		_mag['stop'] = False
