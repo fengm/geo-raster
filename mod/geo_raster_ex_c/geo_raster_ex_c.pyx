@@ -797,7 +797,11 @@ class geo_band_stack_zip:
 					','.join([_col.name for _col in _lyr.schema]))
 
 		for _f in _lyr:
-			_poly = gb.geo_polygon(_f.geometry().Clone())
+			_geo = _f.geometry()
+			if _geo == None:
+				continue
+
+			_poly = gb.geo_polygon(_geo.Clone())
 			_file = _f.items()[_file_columns[0]]
 			_file = _file.strip() if _file else None
 			if not _file:
