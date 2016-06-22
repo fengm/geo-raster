@@ -44,9 +44,9 @@ def load_list(f_ls, num, pos):
 def run(func, ps, opts, vs=[]):
 	_pool = Pool(func, ps, opts.task_num, opts.skip_error, opts.time_wait)
 	if opts.task_num == 1:
-		_pool.run_single(vs)
+		return _pool.run_single(vs)
 	else:
-		_pool.run(vs)
+		return _pool.run(vs)
 
 def load_ids(size, num, pos):
 	logging.debug('loading ids %d' % size)
@@ -66,9 +66,9 @@ def print_percent(nu, tn, perc_step, end=False):
 	_p2 = int((nu+0) * _ss // (perc_step * tn))
 
 	if end:
-		logging.debug('--> finished task %d %d' % (nu, tn))
+		logging.info('-> task end %d/%d' % (nu, tn))
 	else:
-		logging.debug('<-- start task %d %d' % (nu, tn))
+		logging.info('<- task start %d/%d' % (nu, tn))
 
 	if _p1 < _p2 or nu >= tn:
 		if end:
@@ -129,11 +129,11 @@ def work_function(obj, job_queue, vs, mag, res, t_lock, pos):
 				return
 
 			res.append(_rs)
-			logging.info('task (%s) end' % _nu)
+			# logging.info('task (%s/%s) end' % (_nu, obj.perc_step))
 
 			# _nu = mag['num_done'] + 1
 			# mag['num_done'] = _nu
-			# print_percent(_nu, len(obj.args), obj.perc_step, end=True)
+			print_percent(_nu, len(obj.args), obj.perc_step, end=True)
 
 		except Queue.Empty:
 			return
