@@ -47,7 +47,7 @@ def rasterize_polygon(bnd, poly, f_img, f_shp):
 		_drv.DeleteDataSource(f_shp)
 
 	_shp = _drv.CreateDataSource(f_shp)
-	_lyr = _shp.CreateLayer(f_shp[:-4], bnd.proj, ogr.wkbPolygon)
+	_lyr = _shp.CreateLayer(os.path.basename(f_shp)[:-4], bnd.proj, ogr.wkbPolygon)
 
 	_fea = ogr.Feature(_lyr.GetLayerDefn())
 	_fea.SetGeometry(poly.poly)
