@@ -8,7 +8,7 @@ Description: prepare and run the processes to process global data
 
 import logging
 
-def load_shp(f, column='file'):
+def load_shp(f, column='file', ext=None):
 	from osgeo import ogr
 	import geo_base_c as gb
 
@@ -19,6 +19,9 @@ def load_shp(f, column='file'):
 		raise Exception('Failed to load shapefile ' + f)
 
 	_lyr = _shp.GetLayer()
+	if ext:
+		_lyr.SetSpatialFilter(ext.project_to(_lyr.GetSpatialRef()).poly)
+
 	_objs = []
 	_area = None
 
@@ -36,12 +39,20 @@ def load_shp(f, column='file'):
 		else:
 			_area = _area.union(_ext)
 
+	if len(_objs) == 0 or _area == None:
+		return None, []
+
 	_reg = _area.to_polygon().segment_ratio(30).project_to(_prj)
 	return _reg.extent(), _objs
 
 def files(bnd, objs):
 	_ext = bnd.extent()
 	_pol = _ext.to_polygon()
+
+	if len(objs) > 0:
+		_obj = objs[0][2]
+		_pol = _pol.project_to(_obj.proj)
+		_ext = _pol.extent()
 
 	_fs = []
 	for _f, _e, _p in objs:
@@ -124,8 +135,12 @@ class tile:
 				}
 
 	def filter_files(self, f, column='file'):
-		_reg, _objs = load_shp(f, column)
-		return files(self.extent(), _objs)
+		_ext = self.extent()
+		_reg, _objs = load_shp(f, column, _ext.extent().to_polygon())
+		if _reg == None:
+			return []
+
+		return files(_ext, _objs)
 
 	@staticmethod
 	def from_obj(obj):
@@ -168,6 +183,9 @@ def _output_polygons(polys, f_shp):
 
 def make(f_inp, column, image_size=1000, cell_size=30, ps=None, f_shp=None):
 	_ext, _objs = load_shp(f_inp, column)
+	if _ext == None:
+		return []
+
 	_tils = tiles(image_size, cell_size)
 
 	logging.info('detected extent %s' % str(_ext))
