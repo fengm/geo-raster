@@ -119,11 +119,55 @@ def _split_polygons(ext, prj):
 
 	return [_ext]
 
-def generate_shp(fs, proj, f_out, fzip):
-	import geo_raster_c as ge, geo_raster_ex_c as gx
+def _generate_extent(f, proj):
+	import file_unzip
+	import re
+
+	_f = f
+	_re = re.match('/a/[^/]+(/.+)', _f)
+
+	if _re:
+		_f = _re.group(1)
+
+	with file_unzip.file_unzip() as _zip:
+		_img = open_file(_f, _zip)
+		_bnd = _img.get_band()
+
+		import geo_base_c as gb
+		_ext = gb.geo_polygon.from_raster(_bnd.raster)
+		_geos = [_ext]
+
+		if proj != None:
+			if proj == 4326:
+				_geos = _split_polygons(_ext, proj)
+			else:
+				_ext = _ext.project_to(proj)
+				_geos = [_ext]
+
+		_pols = []
+		for _geo in _geos:
+			if _geo == None or _geo.poly == None:
+				continue
+			_pols.append(_geo.poly.ExportToWkb())
+
+		return [_f, _pols]
+
+def _generate_extents(fs, proj, opts):
+	import multi_task
+
+	_res = {}
+	for _f, _p in multi_task.run(_generate_extent, [(_f, proj) for _f in fs], opts):
+		_res[_f] = _p
+
+	return _res
+
+def generate_shp(fs, proj, f_out, fzip, opts):
+	import geo_raster_c as ge
 	from osgeo import ogr
 	from progress_percentage import progress_percentage
 	import os
+
+	_pols = _generate_extents(fs, proj, opts)
 
 	# use projection of the first file if no target projection specified
 	_proj = open_file(fs[0], fzip).projection_obj
@@ -135,41 +179,24 @@ def generate_shp(fs, proj, f_out, fzip):
 	_drv = ogr.GetDriverByName('ESRI Shapefile')
 	os.path.exists(f_out) and _drv.DeleteDataSource(f_out)
 	_shp = _drv.CreateDataSource(f_out)
-	_lyr = _shp.CreateLayer(filter(lambda x: x[:-4] if x.lower().endswith('.shp') else x, os.path.basename(f_out)[:-4]), _proj, ogr.wkbPolygon)
+	_lyr = _shp.CreateLayer(filter(lambda x: x[:-4] if x.lower().endswith('.shp') else x, \
+			os.path.basename(f_out)[:-4]), _proj, ogr.wkbPolygon)
 
 	_fld = ogr.FieldDefn('FILE', ogr.OFTString)
 	_fld.SetWidth(254)
 	_lyr.CreateField(_fld)
 
-	import re
-	_perc = progress_percentage(len(fs))
-	for _f in fs:
+	_perc = progress_percentage(len(_pols.keys()))
+	for _f, _ps in _pols.items():
 		_perc.next()
 
-		_re = re.match('/a/[^/]+(/.+)', _f)
-		if _re:
-			_f = _re.group(1)
-
-		_img = open_file(_f, fzip)
-		_bnd = _img.get_band()
-
-		_ext = gx.geo_polygon.from_raster(_bnd.raster)
-		_geos = [_ext]
-
-		if _proj != None:
-			if proj == 4326:
-				_geos = _split_polygons(_ext, _proj)
-			else:
-				_ext = _ext.project_to(_proj)
-				_geos = [_ext]
-
-		for _geo in _geos:
-			if _geo == None or _geo.poly == None:
+		for _p in _ps:
+			if _p == None:
 				continue
 
 			_ftr = ogr.Feature(_lyr.GetLayerDefn())
 			_ftr.SetField('file', _f)
-			_ftr.SetGeometry(_geo.poly)
+			_ftr.SetGeometry(ogr.CreateGeometryFromWkb(_p))
 			_lyr.CreateFeature(_ftr)
 			_ftr.Destroy()
 
@@ -195,7 +222,7 @@ def generate_shp_from_file(fs, dataset, proj, f_out, absp, d_tmp):
 	with file_unzip.file_unzip(d_tmp) as _zip:
 		generate_shp(_fs, proj, f_out, _zip)
 
-def generate_shp_from_list(f_list, dataset, proj, f_out, absp, d_tmp):
+def generate_shp_from_list(f_list, dataset, proj, f_out, absp, d_tmp, opts):
 	_fs = [(_l.strip() + '#' + dataset if dataset else _l.strip()) \
 			for _l in open(f_list).read().splitlines() if _l.strip()]
 	if len(_fs) == 0:
@@ -211,11 +238,11 @@ def generate_shp_from_list(f_list, dataset, proj, f_out, absp, d_tmp):
 	import file_unzip
 	_zip = file_unzip.file_unzip(d_tmp)
 	try:
-		generate_shp(_fs, proj, f_out, _zip)
+		generate_shp(_fs, proj, f_out, _zip, opts)
 	finally:
 		_zip.clean()
 
-def generate_shp_from_folder(fd, dataset, proj, f_out, absp, d_tmp):
+def generate_shp_from_folder(fd, dataset, proj, f_out, absp, d_tmp, opts):
 	import os
 
 	_fs = []
@@ -244,25 +271,26 @@ def generate_shp_from_folder(fd, dataset, proj, f_out, absp, d_tmp):
 	import file_unzip
 	_zip = file_unzip.file_unzip(d_tmp)
 	try:
-		generate_shp(_fs, proj, f_out, _zip)
+		generate_shp(_fs, proj, f_out, _zip, opts)
 	finally:
 		_zip.clean()
 
 def main():
 	_opts = _init_env()
 
-	if _opts.inputfile:
-		generate_shp_from_file(_opts.inputfile, _opts.dataset, _opts.projection,
-				_opts.output, _opts.absolutepath, _opts.temp_path)
-	elif _opts.inputlist:
-		generate_shp_from_list(_opts.inputlist, _opts.dataset, _opts.projection,
-				_opts.output, _opts.absolutepath, _opts.temp_path)
-	elif _opts.inputfolder:
-		generate_shp_from_folder(_opts.inputfolder, _opts.dataset,
+	import os
+
+	if os.path.isdir(_opts.input):
+		return generate_shp_from_folder(_opts.input, _opts.dataset,
 				_opts.projection, _opts.output, _opts.absolutepath,
-				_opts.temp_path)
-	else:
-		print 'unknown inputs'
+				_opts.temp_path, _opts)
+
+	_f_inp = _opts.input.lower()
+	if _f_inp.endswith('.txt'):
+		return generate_shp_from_list(_opts.input, _opts.dataset, _opts.projection,
+				_opts.output, _opts.absolutepath, _opts.temp_path, _opts)
+
+	print 'unknown inputs'
 
 def _usage():
 	import argparse
@@ -272,17 +300,16 @@ def _usage():
 	_p.add_argument('--config', dest='config')
 	_p.add_argument('--temp', dest='temp')
 
-	_g_input = _p.add_mutually_exclusive_group(required=True)
-	_g_input.add_argument('-i', '--input-file', dest='inputfile', nargs='*')
-	_g_input.add_argument('-l', '--input-list', dest='inputlist')
-	_g_input.add_argument('-d', '--input-folder', dest='inputfolder')
-
+	_p.add_argument('-i', '--input', dest='input')
 	_p.add_argument('-p', '--projection', dest='projection', type=int)
 	_p.add_argument('-n', '--dataset', dest='dataset')
 	_p.add_argument('-o', '--ouput-file', dest='output', required=True)
 	_p.add_argument('-t', '--temp-path', dest='temp_path')
 	_p.add_argument('-a', '--absolute-path', dest='absolutepath',
 			action='store_true')
+
+	import multi_task
+	multi_task.add_task_opts(_p)
 
 	return _p.parse_args()
 
