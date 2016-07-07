@@ -411,6 +411,12 @@ class geo_band_cache(geo_band_info):
 						self.pixel_type, self.color_table)
 
 	def read_block(self, bnd):
+		if (bnd.geo_transform[1] == self.geo_transform[1]) and \
+				((None in [bnd.proj, self.proj]) or bnd.proj.IsSame(self.proj)):
+			_bnd = self.read_ext(bnd.extent())
+			assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
+			return _bnd
+
 		import geo_base_c
 
 		_prj = geo_base_c.projection_transform.from_band(bnd, self.proj)
@@ -719,6 +725,12 @@ class geo_band(geo_band_info):
 						self.pixel_type, self.color_table)
 
 	def read_block(self, bnd):
+		if (bnd.geo_transform[1] == self.geo_transform[1]) and \
+				(None in [bnd.proj, self.proj] or bnd.proj.IsSame(self.proj)):
+			_bnd = self.read_ext(bnd.extent())
+			assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
+			return _bnd
+
 		import geo_base_c
 
 		_prj = geo_base_c.projection_transform.from_band(bnd, self.proj)
