@@ -333,7 +333,7 @@ class geo_polygon:
 
 	def __init__(self, poly):
 		self.poly = poly
-		self.proj = poly.GetSpatialReference() if poly != None else None
+		self.proj = poly.GetSpatialReference() if poly is not None else None
 
 	@classmethod
 	def from_raster(cls, img, div=10):
@@ -395,7 +395,7 @@ class geo_polygon:
 		_ring = ogr.Geometry(ogr.wkbLinearRing)
 		for _pt in pts:
 			_ring.AddPoint(_pt.x, _pt.y)
-			if _proj != None and _pt.proj != None:
+			if _proj is not None and _pt.proj is not None:
 				_proj = _pt.proj
 
 		if pts[-1].x != pts[0].x or pts[-1].y != pts[0].y:
@@ -516,7 +516,7 @@ class geo_polygon:
 
 	def buffer(self, dis):
 		_poly = geo_polygon(self.poly.Buffer(dis))
-		if self.proj != None:
+		if self.proj is not None:
 			_poly.set_proj(self.proj)
 		return _poly
 
@@ -634,7 +634,7 @@ class geo_polygon:
 			_g = self.poly.GetGeometryRef(i)
 			for _p in _g.GetPoints():
 				_pt = gb.geo_point(_p[0], _p[1], self.proj)
-				if proj != None:
+				if proj is not None:
 					_pt = _pt.project_to(proj)
 				
 				if _pt is None:
@@ -681,7 +681,7 @@ class geo_point:
 			self.geom = ogr.Geometry(ogr.wkbPoint)
 
 		self.geom.SetPoint_2D(0, self.x, self.y)
-		if self.proj != None:
+		if self.proj is not None:
 			self.geom.AssignSpatialReference(self.proj)
 
 		return self.geom

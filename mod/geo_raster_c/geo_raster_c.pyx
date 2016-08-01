@@ -365,7 +365,7 @@ class geo_band_cache(geo_band_info):
 				self.data, nodata=self.nodata, pixel_type=_pixel_type, driver=driver, color_table=color_table, opts=opts)
 
 	def read_ext(self, ext):
-		if ext.proj != None and self.proj.ExportToProj4() != ext.proj.ExportToProj4():
+		if ext.proj is not None and self.proj.ExportToProj4() != ext.proj.ExportToProj4():
 			raise Exception('The extent is supposed to be in the same CRS as the band does')
 
 		_ext1 = self.extent()
@@ -679,7 +679,7 @@ class geo_band(geo_band_info):
 				self.nodata, self.pixel_type, self.color_table)
 
 	def read_ext(self, ext):
-		if ext.proj != None and self.proj.ExportToProj4() != ext.proj.ExportToProj4():
+		if ext.proj is not None and self.proj.ExportToProj4() != ext.proj.ExportToProj4():
 			raise Exception('The extent is supposed to be in the same CRS as the band does')
 
 		_ext1 = self.extent()
@@ -875,9 +875,9 @@ class geo_raster(geo_raster_info):
 		for _b in xrange(_size[0]):
 			_band = _img.GetRasterBand(_b + 1)
 
-			if nodata != None:
+			if nodata is not None:
 				_band.SetNoDataValue(nodata)
-			if color_table != None:
+			if color_table is not None:
 				_band.SetColorTable(color_table)
 
 		_img.SetGeoTransform(geo_transform)
@@ -939,9 +939,9 @@ class geo_raster(geo_raster_info):
 			_bnd_inp = self.get_band(_b + 1)
 			_bnd_out = _img.GetRasterBand(_b + 1)
 
-			if _bnd_inp.nodata != None:
+			if _bnd_inp.nodata is not None:
 				_bnd_out.SetNoDataValue(_bnd_inp.nodata)
-			if _bnd_inp.color_table != None:
+			if _bnd_inp.color_table is not None:
 				_bnd_out.SetColorTable(_bnd_inp.color_table)
 
 			_dat = _bnd_inp.read()
@@ -1000,9 +1000,9 @@ def write_raster(f, geo_transform, proj, img, pixel_type=gdal.GDT_Byte, driver='
 		_img = _driver.Create(f, _size[1], _size[0], 1, pixel_type, opts)
 
 		_band = _img.GetRasterBand(1)
-		if color_table != None:
+		if color_table is not None:
 			_band.SetColorTable(color_table)
-		if nodata != None:
+		if nodata is not None:
 			_band.SetNoDataValue(nodata)
 		_band.WriteArray(img)
 		_band.FlushCache()
@@ -1011,9 +1011,9 @@ def write_raster(f, geo_transform, proj, img, pixel_type=gdal.GDT_Byte, driver='
 		for _b in xrange(_size[0]):
 			_band = _img.GetRasterBand(_b + 1)
 
-			if nodata != None:
+			if nodata is not None:
 				_band.SetNoDataValue(nodata)
-			if color_table != None:
+			if color_table is not None:
 				_band.SetColorTable(color_table)
 			_band.WriteArray(img[_b, :, :])
 			_band.FlushCache()
