@@ -9,6 +9,10 @@ import collections
 
 cfg = None
 
+def _exist_file(f):
+	import os
+	return os.path.exists(f) and os.path.isfile(f)
+
 def _detect_sys(f, ext):
 	import os
 	import sys
@@ -16,15 +20,15 @@ def _detect_sys(f, ext):
 	_f = f + (ext if ext.startswith('.') else ('.' + ext))
 
 	_f_cfg = os.path.join(sys.argv[0], _f)
-	if os.path.exists(_f_cfg):
+	if _exist_file(_f_cfg):
 		return _f_cfg
 
 	_f_cfg = os.path.join(sys.path[0], 'conf', _f)
-	if os.path.exists(_f_cfg):
+	if _exist_file(_f_cfg):
 		return _f_cfg
 
 	_f_cfg = os.path.join(sys.path[0], 'etc', _f)
-	if os.path.exists(_f_cfg):
+	if _exist_file(_f_cfg):
 		return _f_cfg
 
 	return None
@@ -40,7 +44,7 @@ def _detect_file(f_cfg):
 		if _m:
 			_f = _m.group(1)
 
-	if os.path.exists(_f):
+	if _exist_file(_f):
 		return _f
 
 	_f = _detect_sys(_f, 'conf') or _detect_sys(_f, 'ini')

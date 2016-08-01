@@ -43,6 +43,25 @@ class modis_info:
 
 		return 'h%02dv%02d' % (_h, _v)
 
+	def extent(self, tile):
+		import re
+
+		_m = re.match('h(\d{2})v(\d{2})', tile)
+		if not _m:
+			raise Exception('failed parse the MODIS tile')
+
+		_p_h = int(_m.group(1))
+		_p_v = int(_m.group(2))
+
+		_min_x = (_p_h - 36 / 2) * self.div
+		_max_y = (18 / 2 - _p_v) * self.div
+
+		_max_x = _min_x + self.div
+		_min_y = _max_y - self.div
+
+		import geo_base_c as gb
+		return gb.geo_extent(_min_x, _max_y, _max_x, _min_y, gb.modis_projection())
+
 	def size(self, cell=500):
 		return 2400 * 500 / cell
 
