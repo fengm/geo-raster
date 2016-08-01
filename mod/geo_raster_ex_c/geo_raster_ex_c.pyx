@@ -899,7 +899,7 @@ class geo_band_stack_zip:
 				continue
 
 			_v = self.bands[i].get_band().read_point(pt, cache)
-			if self.check_layers == False or _v not is None:
+			if self.check_layers == False or _v is not None:
 				self.last_band = i
 				return _v
 
