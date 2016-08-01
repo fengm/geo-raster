@@ -4,7 +4,7 @@ from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
 ext_modules = [Extension("geo_raster_c", ["geo_raster_c.pyx"],
-		extra_compile_args=["-O3", "-ffast-math","-funroll-loops"],
+		# extra_compile_args=["-O3", "-ffast-math","-funroll-loops"],
 		define_macros=[("NPY_NO_DEPRECATED_API", None)])]
 
 setup(
