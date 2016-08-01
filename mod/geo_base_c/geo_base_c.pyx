@@ -433,7 +433,7 @@ class geo_polygon:
 		return cls(_poly)
 
 	def project_to(self, proj, geo_cut=False):
-		if self.proj == None or self.proj.IsSame(proj):
+		if self.proj is None or self.proj.IsSame(proj):
 			return self
 		
 		return self._project_poly(proj)
@@ -637,7 +637,7 @@ class geo_polygon:
 				if proj != None:
 					_pt = _pt.project_to(proj)
 				
-				if _pt == None:
+				if _pt is None:
 					continue
 
 				_ps.append(_pt)
@@ -663,7 +663,7 @@ class geo_point:
 		return self.x, self.y
 
 	def project_to(self, proj):
-		if self.proj == None or self.proj.IsSame(proj):
+		if self.proj is None or self.proj.IsSame(proj):
 			return self
 
 		_pt = self.to_geometry()
@@ -676,7 +676,7 @@ class geo_point:
 		return geo_point(_pt[0], _pt[1], proj=proj)
 
 	def to_geometry(self):
-		if self.geom == None:
+		if self.geom is None:
 			from osgeo import ogr
 			self.geom = ogr.Geometry(ogr.wkbPoint)
 
@@ -694,10 +694,10 @@ class geo_point:
 		return '%f, %f' % (self.x, self.y)
 
 	def __eq__(self, pt):
-		if pt == None:
+		if pt is None:
 			return False
 
-		return (self.x == pt.x and self.y == pt.y and (self.proj == None or self.proj.IsSame(pt.proj) == 1))
+		return (self.x == pt.x and self.y == pt.y and (self.proj is None or self.proj.IsSame(pt.proj) == 1))
 
 class projection_transform:
 	''' Build a grid for transforming raster pixels'''
@@ -731,7 +731,7 @@ class projection_transform:
 
 				_pt1 = None if delay_reproj else _pt0.project_to(proj)
 
-				if _pt1 == None:
+				if _pt1 is None:
 					_mm.append([_pt0.x, _pt0.y, _inf, _inf])
 				else:
 					_mm.append([_pt0.x, _pt0.y, _pt1.x, _pt1.y])
@@ -770,7 +770,7 @@ class projection_transform:
 				_mm.append([_pt0.x, _pt0.y, _inf, _inf])
 
 				# _pt1 = _pt0.project_to(proj)
-				# if _pt1 == None:
+				# if _pt1 is None:
 				# 	continue
                 #
 				# _mm.append([_pt0.x, _pt0.y, _pt1.x, _pt1.y])
@@ -791,13 +791,13 @@ class projection_transform:
 	def _update_cc(self, row, col):
 		_vs = self.mat[row][col]
 		if _vs[2] >= _inf or _vs[3] >= _inf:
-			if self.proj_src == None or self.proj_tar == None:
+			if self.proj_src is None or self.proj_tar is None:
 				raise Exception('exceeded the projection extent')
 
 			_pt0 = geo_point(_vs[0], _vs[1], self.proj_src)
 			_pt1 = _pt0.project_to(self.proj_tar)
 
-			if _pt1 == None:
+			if _pt1 is None:
 				raise Exception('failed to reproject control point')
 
 			self.mat[row][col][2] = _pt1.x

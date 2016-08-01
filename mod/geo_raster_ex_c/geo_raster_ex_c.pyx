@@ -54,7 +54,7 @@ def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int noda
 		for _col in xrange(_col_min, _col_max):
 			_o = dat_out[_row, _col]
 			if _o != nodata:
-				if (min_val == None or _o >= min_val) and (max_val == None or _o <= max_val):
+				if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
 					continue
 
 			_x, _y = prj.project(_col, _row)
@@ -99,7 +99,7 @@ def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int no
 		for _col in xrange(_col_min, _col_max):
 			_o = dat_out[_row, _col]
 			if _o != nodata:
-				if (min_val == None or _o >= min_val) and (max_val == None or _o <= max_val):
+				if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
 					continue
 
 			_x, _y = prj.project(_col, _row)
@@ -144,7 +144,7 @@ def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int noda
 		for _col in xrange(_col_min, _col_max):
 			_o = dat_out[_row, _col]
 			if _o != nodata:
-				if (min_val == None or _o >= min_val) and (max_val == None or _o <= max_val):
+				if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
 					continue
 
 			_x, _y = prj.project(_col, _row)
@@ -189,7 +189,7 @@ def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int no
 		for _col in xrange(_col_min, _col_max):
 			_o = dat_out[_row, _col]
 			if _o != nodata:
-				if (min_val == None or _o >= min_val) and (max_val == None or _o <= max_val):
+				if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
 					continue
 
 			_x, _y = prj.project(_col, _row)
@@ -234,7 +234,7 @@ def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int noda
 		for _col in xrange(_col_min, _col_max):
 			_o = dat_out[_row, _col]
 			if _o != nodata:
-				if (min_val == None or _o >= min_val) and (max_val == None or _o <= max_val):
+				if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
 					continue
 
 			_x, _y = prj.project(_col, _row)
@@ -279,7 +279,7 @@ def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, floa
 		for _col in xrange(_col_min, _col_max):
 			_o = dat_out[_row, _col]
 			if _o != nodata:
-				if (min_val == None or _o >= min_val) and (max_val == None or _o <= max_val):
+				if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
 					continue
 
 			_x, _y = prj.project(_col, _row)
@@ -429,7 +429,7 @@ class geo_polygon:
 		return cls(_poly)
 
 	def project_to(self, proj):
-		if self.proj == None or self.proj.IsSame(proj):
+		if self.proj is None or self.proj.IsSame(proj):
 			return self
 
 		_poly = self.poly.Clone()
@@ -604,7 +604,7 @@ class geo_point:
 		return self.x, self.y
 
 	def project_to(self, proj):
-		if self.proj == None or self.proj.IsSame(proj):
+		if self.proj is None or self.proj.IsSame(proj):
 			return self
 
 		_pt = self.to_geometry()
@@ -614,7 +614,7 @@ class geo_point:
 		return geo_point(_pt[0], _pt[1], proj=proj)
 
 	def to_geometry(self):
-		if self.geom == None:
+		if self.geom is None:
 			from osgeo import ogr
 			self.geom = ogr.Geometry(ogr.wkbPoint)
 
@@ -632,10 +632,10 @@ class geo_point:
 		return '%f, %f' % (self.x, self.y)
 
 	def __eq__(self, pt):
-		if pt == None:
+		if pt is None:
 			return False
 
-		return (self.x == pt.x and self.y == pt.y and (self.proj == None or self.proj.IsSame(pt.proj) == 1))
+		return (self.x == pt.x and self.y == pt.y and (self.proj is None or self.proj.IsSame(pt.proj) == 1))
 
 class band_file:
 
@@ -662,12 +662,12 @@ class band_file:
 		else:
 			_img = geo_raster_c.geo_raster.open(self.file)
 
-		if _img == None:
+		if _img is None:
 			raise Exception('Failed to open image ' + self.file)
 
 		if self.dataset_name:
 			_img = _img.get_subdataset(self.dataset_name)
-			if _img == None:
+			if _img is None:
 				raise Exception('Failed to open dataset ' + \
 						self.dataset_name + ' in ' + self.file)
 
@@ -712,7 +712,7 @@ class geo_band_stack_zip:
 		self.bands = bands
 		_proj = proj
 		for _b in bands:
-			if _proj == None:
+			if _proj is None:
 				_proj = _b.poly.proj
 
 		self.last_band = None
@@ -730,7 +730,7 @@ class geo_band_stack_zip:
 
 		_bnd = self.bands[0].get_band()
 
-		if self.nodata == None:
+		if self.nodata is None:
 			self.nodata = _bnd.band.nodata
 
 		self.pixel_type = _bnd.band.pixel_type
@@ -762,7 +762,7 @@ class geo_band_stack_zip:
 			_bbb = _bnd.get_band()
 			assert(_bbb != None)
 
-			if _proj == None:
+			if _proj is None:
 				_proj = _bbb.proj
 
 			_poly = gb.geo_polygon.from_raster(_bbb)
@@ -782,7 +782,7 @@ class geo_band_stack_zip:
 
 		_bnds = []
 		_shp = ogr.Open(f_list)
-		if _shp == None:
+		if _shp is None:
 			logging.error('failed to load shapefile (%s)' % f_list)
 			raise Exception('Failed to load shapefile ' + f_list)
 
@@ -798,7 +798,7 @@ class geo_band_stack_zip:
 
 		for _f in _lyr:
 			_geo = _f.geometry()
-			if _geo == None:
+			if _geo is None:
 				continue
 
 			_poly = gb.geo_polygon(_geo.Clone())
@@ -876,7 +876,7 @@ class geo_band_stack_zip:
 				continue
 
 			_v = self.bands[i].get_band().read(x, y, cache)
-			if self.check_layers == False or _v != None:
+			if self.check_layers == False or not _v is None:
 				self.last_band = i
 				return _v
 
@@ -899,7 +899,7 @@ class geo_band_stack_zip:
 				continue
 
 			_v = self.bands[i].get_band().read_point(pt, cache)
-			if self.check_layers == False or _v != None:
+			if self.check_layers == False or _v not is None:
 				self.last_band = i
 				return _v
 
@@ -943,13 +943,13 @@ class geo_band_stack_zip:
 		logging.debug('loading file %s' % _bnd_info.band_file.file)
 		_pol_s = gb.geo_polygon.from_raster(_bnd, div=100)
 
-		if _pol_s == None:
+		if _pol_s is None:
 			logging.debug('skip file #1 %s' % _bnd_info.band_file.file)
 			return
 
 		# calculate the intersection area for both data sets
 		_pol_t1_proj = _pol_t1.project_to(_bnd.proj)
-		if _pol_t1_proj == None or _pol_t1_proj.poly == None:
+		if _pol_t1_proj is None or _pol_t1_proj.poly is None:
 			logging.debug('skip file #2 %s' % _bnd_info.band_file.file)
 			return
 		# _pol_t1_proj = _pol_t1_proj.buffer(_buffer_dist)
@@ -966,18 +966,18 @@ class geo_band_stack_zip:
 			return
 
 		_pol_c_s = _pol_s.intersect(_pol_t1_proj)
-		if _pol_c_s.poly == None:
+		if _pol_c_s.poly is None:
 			_pol_c_s = _pol_s.buffer(_buffer_dist).intersect(_pol_t1_proj.buffer(_buffer_dist))
 			logging.warning('apply buffer to solve geometric conflicts')
 
-		if _pol_c_s.poly == None:
+		if _pol_c_s.poly is None:
 			logging.debug('skip file #3 %s' % _bnd_info.band_file.file)
 			return
 
 		_pol_c_s.set_proj(_bnd.proj)
 		_pol_c_t = _pol_c_s.project_to(bnd.proj)
 
-		if _pol_c_t == None or _pol_c_t.poly == None:
+		if _pol_c_t is None or _pol_c_t.poly is None:
 			logging.debug('failed to reproject the extent')
 			return
 
@@ -1050,7 +1050,7 @@ class geo_band_stack_zip:
 		_dat_out = np.empty([bnd.height, bnd.width], dtype=to_dtype(self.pixel_type))
 
 		_nodata = self.nodata
-		if _nodata == None:
+		if _nodata is None:
 			_nodata = _default_nodata[self.pixel_type]
 			logging.warning('No nodata value provided, using default value (%s)' % _nodata)
 	
@@ -1063,11 +1063,11 @@ class geo_band_stack_zip:
 		import geo_base_c as gb
 		# _pol_t1 = gb.geo_polygon.from_raster(bnd, div=100).buffer(0.0)
 		_pol_t1 = gb.geo_polygon.from_raster(bnd, div=100)
-		if _pol_t1 == None or _pol_t1.poly == None:
+		if _pol_t1 is None or _pol_t1.poly is None:
 			return None
 
 		_pol_t2 = _pol_t1.project_to(self.proj)
-		if _pol_t2 == None or _pol_t2.poly == None:
+		if _pol_t2 is None or _pol_t2.poly is None:
 			return None
 
 		if use_pts:
@@ -1099,14 +1099,14 @@ class geo_band_reader:
 	def read(self, float x, float y, cache=False):
 		_val = self.band.read_location_cache(x, y) if cache else self.band.read_location(x, y)
 
-		if _val == None or _val == self.band.nodata:
+		if _val is None or _val == self.band.nodata:
 			return None
 
 		return _val
 
 	def read_point(self, pt, cache=False):
 		_pt = pt.project_to(self.raster.proj)
-		if _pt == None:
+		if _pt is None:
 			return None
 
 		return self.read(_pt.x, _pt.y, cache)
@@ -1128,7 +1128,7 @@ class geo_band_reader:
 					continue
 
 				_v = self.band.read_location(_x, _y)
-				if _v == None or _v == self.band.nodata:
+				if _v is None or _v == self.band.nodata:
 					continue
 
 				_vs.append(_v)
@@ -1140,7 +1140,7 @@ class geo_band_reader:
 
 	def read_ext(self, pt, dist=1):
 		_v_o = self.read_point(pt)
-		if _v_o == None:
+		if _v_o is None:
 			return None, 0
 
 		_col_o, _row_o = self.raster.to_cell(pt.x, pt.y)
@@ -1149,7 +1149,7 @@ class geo_band_reader:
 			for _col in xrange(_col_o - dist, _col_o + dist + 1):
 				if 0 <= _row < self.band.height and 0 <= _col < self.band.width:
 					_v = self.band.read_cell(_col, _row)
-					if _v == None or _v == self.banGetAread.nodata:
+					if _v is None or _v == self.banGetAread.nodata:
 						continue
 
 					_vs.append(_v)
@@ -1175,7 +1175,7 @@ def collect_samples(bnd_landsat, proj, interval=3000):
 			_pt = geo_point(_x, _y, proj)
 			_vl = _read_landsat.read_point(_pt)
 
-			if None == _vl:
+			if _vl is None:
 				continue
 
 			_vs.append(_pt)

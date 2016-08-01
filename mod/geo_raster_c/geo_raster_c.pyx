@@ -150,7 +150,7 @@ class geo_band_info(geo_raster_info):
 	def get_nodata(self):
 		_nodata = self.nodata
 
-		if _nodata == None:
+		if _nodata is None:
 			_default_nodata = {1: 255, 2: 65535, 3: -9999, 4: (2 ** 32) - 1, 5: -9999, 6: -9999}
 			if self.pixel_type not in _default_nodata.keys():
 				raise Exception('Unsupport data type %s' % self.pixel_type)
@@ -162,10 +162,10 @@ class geo_band_info(geo_raster_info):
 
 	def from_ma_grid(self, grid, update_type=True, nodata=None):
 		_nodata = nodata
-		if _nodata == None:
+		if _nodata is None:
 			_nodata = self.nodata
 
-		if _nodata == None:
+		if _nodata is None:
 			raise Exception('nodata is required')
 
 		_dat = grid.filled(_nodata)
@@ -176,7 +176,7 @@ class geo_band_info(geo_raster_info):
 			raise Exception('grid size does not match')
 
 		_nodata = nodata
-		if _nodata == None:
+		if _nodata is None:
 			_nodata = self.nodata
 
 		_dat = grid
@@ -349,7 +349,7 @@ class geo_band_cache(geo_band_info):
 	def write(self, f, opts=[]):
 		'''write the raster to file'''
 		_pixel_type = self.pixel_type
-		if _pixel_type == None:
+		if _pixel_type is None:
 			from osgeo import gdal
 			_pixel_type = gdal.GDT_Byte
 		write_raster(f, self.geo_transform, self.proj.ExportToWkt(),
@@ -358,7 +358,7 @@ class geo_band_cache(geo_band_info):
 	def save(self, f, driver='GTiff', color_table=None, opts=[]):
 		'''write the raster to file'''
 		_pixel_type = self.pixel_type
-		if _pixel_type == None:
+		if _pixel_type is None:
 			from osgeo import gdal
 			_pixel_type = gdal.GDT_Byte
 		write_raster(f, self.geo_transform, self.proj.ExportToWkt(),
@@ -423,7 +423,7 @@ class geo_band_cache(geo_band_info):
 
 		_pol_t1 = geo_base_c.geo_polygon.from_raster(bnd).segment_ratio(10)
 		_pol_t2 = _pol_t1.project_to(self.proj)
-		if _pol_t2 == None:
+		if _pol_t2 is None:
 			return None
 
 		_bnd = self
@@ -431,7 +431,7 @@ class geo_band_cache(geo_band_info):
 
 		# calculate the intersection area for both data sets
 		_pol_c_s = _pol_s.intersect(_pol_t2)
-		if _pol_c_s.poly == None:
+		if _pol_c_s.poly is None:
 			logging.warning('The raster does not cover the request bnd')
 			return None
 
@@ -532,7 +532,7 @@ class geo_band(geo_band_info):
 
 	def read_location_cache(self, float x, float y):
 		'''Read a cell at given coordinate. the entire band is cached to avoid multiple IO'''
-		if self.data == None:
+		if self.data is None:
 			self.read()
 
 		_col, _row = self.raster.to_cell(x, y)
@@ -547,7 +547,7 @@ class geo_band(geo_band_info):
 		if col < 0 or row < 0 or col >= self.width or row >= self.height:
 			return None
 
-		if self.data == None:
+		if self.data is None:
 			self.read()
 
 		return self.data[row][col] if self.convert_list \
@@ -565,7 +565,7 @@ class geo_band(geo_band_info):
 			return False
 
 		# if self.data== None or self.buf_row_start < 0 or not (self.buf_row_start <= row < self.buf_row_start + self.data.shape[0]):
-		if self.data== None or self.buf_row_start < 0 or not \
+		if self.data is None or self.buf_row_start < 0 or not \
 				(self.buf_row_start <= row < self.buf_row_start + \
 				self.data.shape[0]):
 			return False
@@ -626,7 +626,7 @@ class geo_band(geo_band_info):
 
 	def read_grid(self, col, row, width, height):
 		_dat = self.read_rows(row, height, col, width)
-		if _dat == None:
+		if _dat is None:
 			raise Exception('failed to read block')
 
 		_geo = list(self.geo_transform)
@@ -737,7 +737,7 @@ class geo_band(geo_band_info):
 
 		_pol_t1 = geo_base_c.geo_polygon.from_raster(bnd).segment_ratio(10)
 		_pol_t2 = _pol_t1.project_to(self.proj)
-		if _pol_t2 == None:
+		if _pol_t2 is None:
 			raise Exception('failed to project the grid extent')
 
 		_bnd = self
@@ -745,7 +745,7 @@ class geo_band(geo_band_info):
 
 		# calculate the intersection area for both data sets
 		_pol_c_s = _pol_s.intersect(_pol_t2)
-		if _pol_c_s == None or _pol_c_s.poly == None:
+		if _pol_c_s is None or _pol_c_s.poly is None:
 			logging.warning('The raster does not cover the request bnd')
 			return None
 
@@ -883,7 +883,7 @@ class geo_raster(geo_raster_info):
 		_img.SetGeoTransform(geo_transform)
 
 		_prj = proj
-		if _prj == None:
+		if _prj is None:
 			logging.warning('no SRS specified')
 		else:
 			if type(_prj) != str:
@@ -1021,7 +1021,7 @@ def write_raster(f, geo_transform, proj, img, pixel_type=gdal.GDT_Byte, driver='
 	_img.SetGeoTransform(geo_transform)
 
 	_prj = proj
-	if _prj == None:
+	if _prj is None:
 		logging.warning('no SRS specified')
 	else:
 		if type(_prj) != str:
