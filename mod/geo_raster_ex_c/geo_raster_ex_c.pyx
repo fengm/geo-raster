@@ -69,9 +69,9 @@ def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int noda
 			if _v == nodata:
 				continue
 
-			# if (min_val != None and _v < min_val):
+			# if (min_val is not None and _v < min_val):
 			# 	continue
-			# if (max_val != None and _v > max_val):
+			# if (max_val is not None and _v > max_val):
 			# 	continue
 
 			dat_out[_row, _col] = _v
@@ -114,9 +114,9 @@ def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int no
 			if _v == nodata:
 				continue
 
-			# if (min_val != None and _v < min_val):
+			# if (min_val is not None and _v < min_val):
 			# 	continue
-			# if (max_val != None and _v > max_val):
+			# if (max_val is not None and _v > max_val):
 			# 	continue
 
 			dat_out[_row, _col] = _v
@@ -159,9 +159,9 @@ def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int noda
 			if _v == nodata:
 				continue
 
-			# if (min_val != None and _v < min_val):
+			# if (min_val is not None and _v < min_val):
 			# 	continue
-			# if (max_val != None and _v > max_val):
+			# if (max_val is not None and _v > max_val):
 			# 	continue
 
 			dat_out[_row, _col] = _v
@@ -204,9 +204,9 @@ def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int no
 			if _v == nodata:
 				continue
 
-			# if (min_val != None and _v < min_val):
+			# if (min_val is not None and _v < min_val):
 			# 	continue
-			# if (max_val != None and _v > max_val):
+			# if (max_val is not None and _v > max_val):
 			# 	continue
 
 			dat_out[_row, _col] = _v
@@ -249,9 +249,9 @@ def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int noda
 			if _v == nodata:
 				continue
 
-			# if (min_val != None and _v < min_val):
+			# if (min_val is not None and _v < min_val):
 			# 	continue
-			# if (max_val != None and _v > max_val):
+			# if (max_val is not None and _v > max_val):
 			# 	continue
 
 			dat_out[_row, _col] = _v
@@ -294,9 +294,9 @@ def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, floa
 			if _v == nodata:
 				continue
 
-			# if (min_val != None and _v < min_val):
+			# if (min_val is not None and _v < min_val):
 			# 	continue
-			# if (max_val != None and _v > max_val):
+			# if (max_val is not None and _v > max_val):
 			# 	continue
 
 			dat_out[_row, _col] = _v
@@ -359,7 +359,7 @@ class geo_polygon:
 
 	def __init__(self, poly):
 		self.poly = poly
-		self.proj = poly.GetSpatialReference() if poly != None else None
+		self.proj = poly.GetSpatialReference() if poly is not None else None
 
 	@classmethod
 	def from_raster(cls, img, div=10):
@@ -418,7 +418,7 @@ class geo_polygon:
 		_ring = ogr.Geometry(ogr.wkbLinearRing)
 		for _pt in pts:
 			_ring.AddPoint(_pt.x, _pt.y)
-			if _proj != None and _pt.proj != None:
+			if _proj is not None and _pt.proj is not None:
 				_proj = _pt.proj
 		_ring.CloseRings()
 
@@ -470,7 +470,7 @@ class geo_polygon:
 
 	def buffer(self, dis):
 		_poly = geo_polygon(self.poly.Buffer(dis))
-		if self.proj != None:
+		if self.proj is not None:
 			_poly.set_proj(self.proj)
 		return _poly
 
@@ -619,7 +619,7 @@ class geo_point:
 			self.geom = ogr.Geometry(ogr.wkbPoint)
 
 		self.geom.SetPoint_2D(0, self.x, self.y)
-		if self.proj != None:
+		if self.proj is not None:
 			self.geom.AssignSpatialReference(self.proj)
 
 		return self.geom
@@ -760,7 +760,7 @@ class geo_band_stack_zip:
 
 			_bnd = band_file(_file, band_idx, _name, file_unzip)
 			_bbb = _bnd.get_band()
-			assert(_bbb != None)
+			assert(_bbb is not None)
 
 			if _proj is None:
 				_proj = _bbb.proj
@@ -829,11 +829,11 @@ class geo_band_stack_zip:
 
 	def clean(self):
 		for _b in self.bands:
-			if _b.band != None:
+			if _b.band is not None:
 				_b.clean()
 
 	def get_band(self, pt):
-		if self.last_band != None and self.bands[self.last_band].poly.is_contain(pt):
+		if self.last_band is not None and self.bands[self.last_band].poly.is_contain(pt):
 			return self.bands[self.last_band].get_band()
 
 		for i in xrange(len(self.bands)):
@@ -848,7 +848,7 @@ class geo_band_stack_zip:
 
 	def get_band_xy(self, float x, float y):
 		_pt = geo_point(x, y)
-		if self.last_band != None and self.bands[self.last_band].poly.is_contain(_pt):
+		if self.last_band is not None and self.bands[self.last_band].poly.is_contain(_pt):
 			return self.bands[self.last_band].get_band()
 
 		for i in xrange(len(self.bands)):
@@ -862,9 +862,9 @@ class geo_band_stack_zip:
 
 	def read_xy(self, float x, float y, cache=False):
 		_v = None
-		if self.last_band != None:
+		if self.last_band is not None:
 			_v = self.bands[self.last_band].get_band().read(x, y, cache)
-			if _v != None:
+			if _v is not None:
 				return _v
 
 		_pt = geo_point(x, y)
@@ -884,11 +884,11 @@ class geo_band_stack_zip:
 
 	def read(self, pt, cache=False):
 		_v = None
-		if self.last_band != None:
+		if self.last_band is not None:
 			_v = self.bands[self.last_band].get_band(
 						).read_point(pt, cache)
 
-			if _v != None:
+			if _v is not None:
 				return _v
 
 		for i in xrange(len(self.bands)):
