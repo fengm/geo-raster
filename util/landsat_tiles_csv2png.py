@@ -50,10 +50,10 @@ def save(fig, out):
 	_cav.print_png(out, dpi=150)
 
 def load_tiles(f, col=None):
-	import csv_util
+	import gio.csv_util
 
 	_ts = {}
-	for _r in csv_util.open(f):
+	for _r in gio.csv_util.open(f):
 		_t = _r.get('tile')
 		if _t in _ts:
 			continue
@@ -188,11 +188,11 @@ def _init_env():
 
 	_opts = _usage()
 
-	import logging_util
-	logging_util.init(_opts.logging)
+	import gio.logging_util
+	gio.logging_util.init(_opts.logging)
 
-	import config
-	config.load(_opts.config)
+	import gio.config
+	gio.config.load(_opts.config)
 
 	return _opts
 

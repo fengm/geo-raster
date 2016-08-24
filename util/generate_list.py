@@ -63,13 +63,13 @@ def _init_env():
 
 	_opts = _usage()
 
-	import logging_util
+	from gio import logging_util
 	logging_util.init(_opts.logging)
 
-	import config
+	from gio import config
 	config.load(_opts.config)
 
-	import file_unzip as fz
+	from gio import file_unzip as fz
 	fz.clean(fz.default_dir(_opts.temp))
 
 	return _opts

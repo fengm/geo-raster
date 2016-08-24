@@ -50,11 +50,11 @@ def load_landsat_tile(f_shp, tile_col='PATHROW'):
 
 def csv2shapefile(f_csv, f_out, col, f_landsat):
 	from osgeo import ogr
-	import csv_util, sys
+	import gio.csv_util
 	import os
 
-	_tiles, _landsat_schema, _landsat_proj, _landsat_geom = load_landsat_tile(os.path.join(sys.path[0], f_landsat))
-	_cols, _typs, _vals = csv_util.read(f_csv)
+	_tiles, _landsat_schema, _landsat_proj, _landsat_geom = load_landsat_tile(f_landsat)
+	_cols, _typs, _vals = gio.csv_util.read(f_csv)
 
 	print 'columns'
 	for i in xrange(len(_cols)):
@@ -80,7 +80,7 @@ def csv2shapefile(f_csv, f_out, col, f_landsat):
 	for _vs in _vals:
 		_feat = ogr.Feature(_lyr.GetLayerDefn())
 		for i in xrange(len(_cols)):
-			_feat.SetField(_cols[i].upper(), csv_util.parse_val(_typs[i], _vs[i]))
+			_feat.SetField(_cols[i].upper(), gio.csv_util.parse_val(_typs[i], _vs[i]))
 
 		_tile = _vs[_cols.index(col)]
 		if _tile not in _tiles:
@@ -117,12 +117,12 @@ if __name__ == '__main__':
 
 	_f_ref = _opts.tile_file
 	if not _f_ref:
-		import os, sys
+		import gio.data.landsat.path
 
 		if _opts.tile_tag == 'wrs2':
-			_f_ref = os.path.join(sys.path[0], 'data/landsat/wrs2_descending.shp')
+			_f_ref = gio.data.landsat.path.path('wrs2')
 		elif _opts.tile_tag == 'wrs1':
-			_f_ref = os.path.join(sys.path[0], 'data/landsat/wrs1_descending.shp')
+			_f_ref = gio.data.landsat.path.path('wrs1')
 		else:
 			raise Exception('unsupported tiling system tag (%s)' % _opts.tile_tag)
 

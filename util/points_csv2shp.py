@@ -57,9 +57,9 @@ def format_cols(cols):
 	return _cols
 
 def csv2shapefile(f_csv, f_out, proj=None, fld_x=None, fld_y=None):
-	import csv_util
+	import gio.csv_util
 
-	_cols, _typs, _vals = csv_util.read(f_csv)
+	_cols, _typs, _vals = gio.csv_util.read(f_csv)
 	_cols = format_cols(_cols)
 
 	if fld_x != None:
@@ -114,7 +114,7 @@ def csv2shapefile(f_csv, f_out, proj=None, fld_x=None, fld_y=None):
 	for _vs in _vals:
 		_feat = ogr.Feature(_lyr.GetLayerDefn())
 		for i in xrange(len(_cols)):
-			_feat.SetField(_cols[i].upper(), csv_util.parse_val(_typs[i], _vs[i]))
+			_feat.SetField(_cols[i].upper(), gio.csv_util.parse_val(_typs[i], _vs[i]))
 
 		_x = float(_vs[_cols.index(_fld_x)])
 		_y = float(_vs[_cols.index(_fld_y)])

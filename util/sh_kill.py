@@ -54,8 +54,8 @@ class process(threading.Thread):
 
 			_cmd = 'ssh %s kill -9 %s &' % (self.host, ' '.join(_ts))
 			try:
-				import run_commands
-				run_commands.run(_cmd)
+				import gio.run_commands
+				gio.run_commands.run(_cmd)
 			except:
 				pass
 		finally:
@@ -87,8 +87,8 @@ def init_env():
 	if os.path.exists(_d_in):
 		sys.path.append(_d_in)
 
-	import logging_util
-	logging_util.init()
+	import gio.logging_util
+	gio.logging_util.init()
 
 if __name__ == '__main__':
 	init_env()

@@ -32,7 +32,7 @@ def load_shp(f, column='file', ext=None):
 		_ext = _obj.extent()
 
 		_ooo = _obj.project_to(_prj)
-		_objs.append((_f[column], _ooo.extent(), _ooo))
+		_objs.append((_f[column] if column else _f.GetFID(), _ooo.extent(), _ooo))
 
 		if _area == None:
 			_area = _ext

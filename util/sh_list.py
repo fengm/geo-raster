@@ -77,8 +77,8 @@ def init_env():
 	if os.path.exists(_d_in):
 		sys.path.append(_d_in)
 
-	import logging_util
-	logging_util.init()
+	import gio.logging_util
+	gio.logging_util.init()
 
 if __name__ == '__main__':
 	init_env()

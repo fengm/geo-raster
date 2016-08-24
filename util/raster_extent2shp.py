@@ -31,7 +31,7 @@ def create_polygon(ext):
 	return _poly
 
 def open_file(f, fzip):
-	import geo_raster_c as ge
+	import gio.geo_raster as ge
 
 	_cs = f.split('#')
 
@@ -70,7 +70,7 @@ def _project_to(poly, proj):
 	return _poly
 
 def _split_box(ext):
-	import geo_base_c as gb
+	import gio.geo_base as gb
 
 	_pt = lambda x, y: gb.geo_point(x, y)
 	_pol1 = gb.geo_polygon.from_pts([_pt(-120, ext.miny), _pt(-120, ext.maxy), _pt(-179.999, ext.maxy), \
@@ -120,7 +120,7 @@ def _split_polygons(ext, prj):
 	return [_ext]
 
 def _generate_extent(f, proj):
-	import file_unzip
+	import gio.file_unzip
 	import re
 
 	_f = f
@@ -129,7 +129,7 @@ def _generate_extent(f, proj):
 	if _re:
 		_f = _re.group(1)
 
-	with file_unzip.file_unzip() as _zip:
+	with gio.file_unzip.file_unzip() as _zip:
 		_img = open_file(_f, _zip)
 		_bnd = _img.get_band()
 
@@ -162,9 +162,9 @@ def _generate_extents(fs, proj, opts):
 	return _res
 
 def generate_shp(fs, proj, f_out, fzip, opts):
-	import geo_raster_c as ge
+	import gio.geo_raster_c as ge
 	from osgeo import ogr
-	from progress_percentage import progress_percentage
+	from gio.progress_percentage import progress_percentage
 	import os
 
 	_pols = _generate_extents(fs, proj, opts)
@@ -218,7 +218,7 @@ def generate_shp_from_file(fs, dataset, proj, f_out, absp, d_tmp):
 
 		_fs.append(_p)
 
-	import file_unzip
+	from gio import file_unzip
 	with file_unzip.file_unzip(d_tmp) as _zip:
 		generate_shp(_fs, proj, f_out, _zip)
 
@@ -235,8 +235,8 @@ def generate_shp_from_list(f_list, dataset, proj, f_out, absp, d_tmp, opts):
 		print ' >', _f
 	print '  ...'
 
-	import file_unzip
-	_zip = file_unzip.file_unzip(d_tmp)
+	import gio.file_unzip
+	_zip = gio.file_unzip.file_unzip(d_tmp)
 	try:
 		generate_shp(_fs, proj, f_out, _zip, opts)
 	finally:
@@ -268,8 +268,8 @@ def generate_shp_from_folder(fd, dataset, proj, f_out, absp, d_tmp, opts):
 		print ' >', _f
 	print '  ...'
 
-	import file_unzip
-	_zip = file_unzip.file_unzip(d_tmp)
+	import gio.file_unzip
+	_zip = gio.file_unzip.file_unzip(d_tmp)
 	try:
 		generate_shp(_fs, proj, f_out, _zip, opts)
 	finally:
@@ -308,8 +308,8 @@ def _usage():
 	_p.add_argument('-a', '--absolute-path', dest='absolutepath',
 			action='store_true')
 
-	import multi_task
-	multi_task.add_task_opts(_p)
+	import gio.multi_task
+	gio.multi_task.add_task_opts(_p)
 
 	return _p.parse_args()
 
@@ -323,14 +323,14 @@ def _init_env():
 
 	_opts = _usage()
 
-	import logging_util
-	logging_util.init(_opts.logging)
+	import gio.logging_util
+	gio.logging_util.init(_opts.logging)
 
-	import config
-	config.load(_opts.config)
+	import gio.config
+	gio.config.load(_opts.config)
 
-	import file_unzip as fz
-	fz.clean(fz.default_dir(_opts.temp))
+	import gio.file_unzip as fz
+	gio.fz.clean(fz.default_dir(_opts.temp))
 
 	return _opts
 

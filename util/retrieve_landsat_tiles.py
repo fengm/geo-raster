@@ -12,8 +12,8 @@ def retrieve_tile(l):
 	if _m:
 		return _m.group(), _file
 	else:
-		import landsat
-		_cs = landsat.parse(l)
+		import gio.landsat
+		_cs = gio.landsat.parse(l)
 		if _cs == None:
 			return None, _file
 
@@ -93,8 +93,8 @@ def init_env():
 
 	_opts = usage()
 
-	import logging_util
-	logging_util.init(_opts.logging)
+	import gio.logging_util
+	gio.logging_util.init(_opts.logging)
 
 	return _opts
 

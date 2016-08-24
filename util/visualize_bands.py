@@ -97,7 +97,7 @@ def get_band_hdf(img, b):
 	return img.get_subdataset(_bs[int(b)])
 
 def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
-	import geo_raster_c as ge
+	from gio import geo_raster_c as ge
 	import os
 
 	print 'loading', f_inp
@@ -168,7 +168,7 @@ def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
 			_bbb = _img.get_band(i + 1)
 			_fun = convert_band_sr if convert_sr else convert_band
 
-			import progress_percentage
+			from gio import progress_percentage
 			_ppp = progress_percentage.progress_percentage(_bnd.height)
 
 			for _row in xrange(0, _bnd.height, _line):
@@ -190,13 +190,13 @@ def main():
 	_opts = _init_env()
 
 	import os
-	import file_unzip
+	from gio import file_unzip
 	with file_unzip.file_unzip() as _zip:
 		_f_inp = _opts.input
 		_f_out = _opts.output
 
 		if os.path.isdir(_f_out):
-			import landsat
+			from gio import landsat
 			_f_out = os.path.join(_f_out, '%s_%s_%s.tif' % (landsat.parse(os.path.basename(_f_inp)),
 				'sr' if _opts.convert_sr else 'dn',
 				''.join(map(str, _opts.bands))
@@ -234,13 +234,13 @@ def _init_env():
 
 	_opts = _usage()
 
-	import logging_util
+	from gio import logging_util
 	logging_util.init(_opts.logging)
 
-	import config
+	from gio import config
 	config.load(_opts.config)
 
-	import file_unzip as fz
+	from gio import file_unzip as fz
 	fz.clean(fz.default_dir(_opts.temp))
 
 	return _opts
