@@ -107,7 +107,7 @@ class geo_raster_info:
 		_pt1 = (_geo[0], _geo[3])
 		_pt2 = (_geo[0] + self.width * _geo[1] + self.height * _geo[2], _geo[3] + self.width * _geo[4] + self.height * _geo[5])
 
-		import geo_base_c as gb
+		import geo_base as gb
 		return gb.geo_extent(_pt1[0], _pt2[1], _pt2[0], _pt1[1], self.proj)
 
 	def cell_extent(self, col, row):
@@ -118,7 +118,7 @@ class geo_raster_info:
 
 		_pt0 = self.to_location(col, row)
 
-		import geo_base_c as gb
+		import geo_base as gb
 		return gb.geo_extent(_pt0[0] - _cell_x, _pt0[1] - _cell_y,
 					   _pt0[0] + _cell_x, _pt0[1] + _cell_y, self.proj)
 
@@ -181,7 +181,7 @@ class geo_band_info(geo_raster_info):
 
 		_dat = grid
 
-		import geo_base_c as gb
+		import geo_base as gb
 		return geo_band_cache(_dat, list(self.geo_transform), self.proj, _nodata, gb.from_dtype(grid.dtype))
 
 	def sub_band(self, col, row, width, height):
@@ -386,7 +386,7 @@ class geo_band_cache(geo_band_info):
 		_dat = numpy.empty((_rows, _cols), dtype=self.data.dtype)
 		_dat.fill(_fill)
 
-		import geo_base_c as gb
+		import geo_base as gb
 		_ext = gb.geo_extent.from_raster(self).intersect(ext)
 
 		_off_x1 = int((_ext.minx - _geo1[0]) / _cell)
@@ -417,17 +417,17 @@ class geo_band_cache(geo_band_info):
 			assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
 			return _bnd
 
-		import geo_base_c
+		import geo_base
 
-		_prj = geo_base_c.projection_transform.from_band(bnd, self.proj)
+		_prj = geo_base.projection_transform.from_band(bnd, self.proj)
 
-		_pol_t1 = geo_base_c.geo_polygon.from_raster(bnd).segment_ratio(10)
+		_pol_t1 = geo_base.geo_polygon.from_raster(bnd).segment_ratio(10)
 		_pol_t2 = _pol_t1.project_to(self.proj)
 		if _pol_t2 is None:
 			return None
 
 		_bnd = self
-		_pol_s = geo_base_c.geo_polygon.from_raster(_bnd).segment_ratio(10)
+		_pol_s = geo_base.geo_polygon.from_raster(_bnd).segment_ratio(10)
 
 		# calculate the intersection area for both data sets
 		_pol_c_s = _pol_s.intersect(_pol_t2)
@@ -448,7 +448,7 @@ class geo_band_cache(geo_band_info):
 		# _col_s_s, _col_s_e = max(0, _col_s_s-1), min(_bnd.width, _col_s_e+1)
 		# _row_s_s, _row_s_e = max(0, _row_s_s-1), min(_bnd.height,_row_s_e+1)
 
-		_ext_s_cs = geo_base_c.geo_extent(_col_s_s, _row_s_s,
+		_ext_s_cs = geo_base.geo_extent(_col_s_s, _row_s_s,
 				_col_s_e, _row_s_e)
 
 		_row_s_s = 0
@@ -459,31 +459,31 @@ class geo_band_cache(geo_band_info):
 		_col_t_e, _row_t_e = to_cell(tuple(bnd.geo_transform),
 				_ext_t.maxx, _ext_t.miny)
 
-		_ext_t_cs = geo_base_c.geo_extent(_col_t_s, _row_t_s,
+		_ext_t_cs = geo_base.geo_extent(_col_t_s, _row_t_s,
 				_col_t_e, _row_t_e)
 
 		_nodata = self.get_nodata()
 		_dat_out = np.empty([bnd.height, bnd.width],
-				dtype=geo_base_c.to_dtype(self.pixel_type))
+				dtype=geo_base.to_dtype(self.pixel_type))
 		_dat_out.fill(_nodata)
 
 		if self.pixel_type == 1:
-			geo_base_c.read_block_uint8(_dat, _ext_t_cs, _prj,
+			geo_base.read_block_uint8(_dat, _ext_t_cs, _prj,
 					_bnd.geo_transform, _nodata, _row_s_s, _dat_out)
 		elif self.pixel_type == 2:
-			geo_base_c.read_block_uint16(_dat, _ext_t_cs, _prj,
+			geo_base.read_block_uint16(_dat, _ext_t_cs, _prj,
 					_bnd.geo_transform, _nodata, _row_s_s, _dat_out)
 		elif self.pixel_type == 3:
-			geo_base_c.read_block_int16(_dat, _ext_t_cs, _prj,
+			geo_base.read_block_int16(_dat, _ext_t_cs, _prj,
 					_bnd.geo_transform, _nodata, _row_s_s, _dat_out)
 		elif self.pixel_type == 4:
-			geo_base_c.read_block_uint32(_dat, _ext_t_cs, _prj,
+			geo_base.read_block_uint32(_dat, _ext_t_cs, _prj,
 					_bnd.geo_transform, _nodata, _row_s_s, _dat_out)
 		elif self.pixel_type == 5:
-			geo_base_c.read_block_int32(_dat, _ext_t_cs, _prj,
+			geo_base.read_block_int32(_dat, _ext_t_cs, _prj,
 					_bnd.geo_transform, _nodata, _row_s_s, _dat_out)
 		elif self.pixel_type == 6:
-			geo_base_c.read_block_float32(_dat, _ext_t_cs, _prj,
+			geo_base.read_block_float32(_dat, _ext_t_cs, _prj,
 					_bnd.geo_transform, _nodata, _row_s_s, _dat_out)
 		else:
 			raise Exception('The pixel type is not supported ' + \
@@ -700,7 +700,7 @@ class geo_band(geo_band_info):
 		_dat = numpy.empty((_rows, _cols))
 		_dat.fill(_fill)
 
-		import geo_base_c as gb
+		import geo_base as gb
 		_ext = gb.geo_extent.from_raster(self).intersect(ext)
 
 		_off_x1 = int((_ext.minx - _geo1[0]) / _cell)
@@ -731,17 +731,17 @@ class geo_band(geo_band_info):
 			assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
 			return _bnd
 
-		import geo_base_c
+		import geo_base
 
-		_prj = geo_base_c.projection_transform.from_band(bnd, self.proj)
+		_prj = geo_base.projection_transform.from_band(bnd, self.proj)
 
-		_pol_t1 = geo_base_c.geo_polygon.from_raster(bnd).segment_ratio(10)
+		_pol_t1 = geo_base.geo_polygon.from_raster(bnd).segment_ratio(10)
 		_pol_t2 = _pol_t1.project_to(self.proj)
 		if _pol_t2 is None:
 			raise Exception('failed to project the grid extent')
 
 		_bnd = self
-		_pol_s = geo_base_c.geo_polygon.from_raster(_bnd).segment_ratio(10)
+		_pol_s = geo_base.geo_polygon.from_raster(_bnd).segment_ratio(10)
 
 		# calculate the intersection area for both data sets
 		_pol_c_s = _pol_s.intersect(_pol_t2)
@@ -762,7 +762,7 @@ class geo_band(geo_band_info):
 		# _col_s_s, _col_s_e = max(0, _col_s_s-1), min(_bnd.width, _col_s_e+1)
 		# _row_s_s, _row_s_e = max(0, _row_s_s-1), min(_bnd.height,_row_s_e+1)
 
-		_ext_s_cs = geo_base_c.geo_extent(_col_s_s, _row_s_s,
+		_ext_s_cs = geo_base.geo_extent(_col_s_s, _row_s_s,
 				_col_s_e, _row_s_e)
 
 		# only load the intersection area to reduce memory use
@@ -779,31 +779,31 @@ class geo_band(geo_band_info):
 		_col_t_e, _row_t_e = to_cell(tuple(bnd.geo_transform),
 				_ext_t.maxx, _ext_t.miny)
 
-		_ext_t_cs = geo_base_c.geo_extent(_col_t_s, _row_t_s,
+		_ext_t_cs = geo_base.geo_extent(_col_t_s, _row_t_s,
 				_col_t_e, _row_t_e)
 
 		_nodata = self.get_nodata()
 		_dat_out = np.empty([bnd.height, bnd.width],
-				dtype=geo_base_c.to_dtype(self.pixel_type))
+				dtype=geo_base.to_dtype(self.pixel_type))
 		_dat_out.fill(_nodata)
 
 		if self.pixel_type == 1:
-			geo_base_c.read_block_uint8(_dat, _ext_t_cs, _prj,
+			geo_base.read_block_uint8(_dat, _ext_t_cs, _prj,
 					_bnd.geo_transform, _nodata, _row_s_s, _dat_out)
 		elif self.pixel_type == 2:
-			geo_base_c.read_block_uint16(_dat, _ext_t_cs, _prj,
+			geo_base.read_block_uint16(_dat, _ext_t_cs, _prj,
 					_bnd.geo_transform, _nodata, _row_s_s, _dat_out)
 		elif self.pixel_type == 3:
-			geo_base_c.read_block_int16(_dat, _ext_t_cs, _prj,
+			geo_base.read_block_int16(_dat, _ext_t_cs, _prj,
 					_bnd.geo_transform, _nodata, _row_s_s, _dat_out)
 		elif self.pixel_type == 4:
-			geo_base_c.read_block_uint32(_dat, _ext_t_cs, _prj,
+			geo_base.read_block_uint32(_dat, _ext_t_cs, _prj,
 					_bnd.geo_transform, _nodata, _row_s_s, _dat_out)
 		elif self.pixel_type == 5:
-			geo_base_c.read_block_int32(_dat, _ext_t_cs, _prj,
+			geo_base.read_block_int32(_dat, _ext_t_cs, _prj,
 					_bnd.geo_transform, _nodata, _row_s_s, _dat_out)
 		elif self.pixel_type == 6:
-			geo_base_c.read_block_float32(_dat, _ext_t_cs, _prj,
+			geo_base.read_block_float32(_dat, _ext_t_cs, _prj,
 					_bnd.geo_transform, _nodata, _row_s_s, _dat_out)
 		else:
 			raise Exception('The pixel type is not supported ' + \

@@ -178,7 +178,7 @@ def find_tiles(geom):
 	_shp = ogr.Open(_f_shp)
 	_lyr = _shp.GetLayer()
 
-	import geo_base_c as gb
+	import geo_base as gb
 	_geom = None
 
 	if geom != None:

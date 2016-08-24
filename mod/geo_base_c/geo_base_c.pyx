@@ -597,8 +597,7 @@ class geo_polygon:
 		_proj = self.proj
 		_proj and _poly.AssignSpatialReference(_proj)
 
-		import geo_base_c as gx
-		return gx.geo_polygon(_poly)
+		return geo_polygon(_poly)
 
 	def segment_dis(self, dis):
 		from osgeo import ogr
@@ -623,17 +622,14 @@ class geo_polygon:
 		_proj = self.proj
 		_proj and _poly.AssignSpatialReference(_proj)
 
-		import geo_base_c as gx
-		return gx.geo_polygon(_poly)
+		return geo_polygon(_poly)
 
 	def get_points(self, proj=None):
-		import geo_base_c as gb
-
 		_ps = []
 		for i in xrange(self.poly.GetGeometryCount()):
 			_g = self.poly.GetGeometryRef(i)
 			for _p in _g.GetPoints():
-				_pt = gb.geo_point(_p[0], _p[1], self.proj)
+				_pt = geo_point(_p[0], _p[1], self.proj)
 				if proj is not None:
 					_pt = _pt.project_to(proj)
 				
@@ -704,7 +700,7 @@ class projection_transform:
 
 	@classmethod
 	def from_band(cls, bnd_info, proj, interval=100, f_pts0=None, f_pts1=None, delay_reproj=True):
-		import math, geo_raster_c
+		import math, geo_raster
 
 		# make sure there are at least 10 points for each axis
 		_scale = min((bnd_info.width / 10.0, bnd_info.height / 10.0, float(interval)))
@@ -724,7 +720,7 @@ class projection_transform:
 		for _row in xrange(_img_h):
 			_mm = []
 			for _col in xrange(_img_w):
-				_pt0 = geo_raster_c.to_location(bnd_info.geo_transform, _col * _scale, _row * _scale)
+				_pt0 = geo_raster.to_location(bnd_info.geo_transform, _col * _scale, _row * _scale)
 
 				_pt0 = geo_point(_pt0[0], _pt0[1], bnd_info.proj)
 				_pts0.append(_pt0)

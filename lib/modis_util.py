@@ -59,7 +59,7 @@ class modis_info:
 		_max_x = _min_x + self.div
 		_min_y = _max_y - self.div
 
-		import geo_base_c as gb
+		import geo_base as gb
 		return gb.geo_extent(_min_x, _max_y, _max_x, _min_y, gb.modis_projection())
 
 	def size(self, cell=500):

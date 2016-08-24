@@ -10,16 +10,12 @@ for _root, _dirs, _files in os.walk('mod'):
 			_f, _e = os.path.splitext(_file)
 
 			_n = _f
+			if _n.endswith('_c'):
+				_n = _n[:-2]
 
 			_ms.append(setuptools.Extension("gio.%s" % _n, [os.path.join(_root, _file)],
 				#extra_compile_args=["-O3", "-ffast-math","-funroll-loops"],
 				define_macros=[("NPY_NO_DEPRECATED_API", None)]))
-
-			if _n.endswith('_c'):
-				_n = _n[:-2]
-				_ms.append(setuptools.Extension("gio.%s" % _n, [os.path.join(_root, _file)],
-					#extra_compile_args=["-O3", "-ffast-math","-funroll-loops"],
-					define_macros=[("NPY_NO_DEPRECATED_API", None)]))
 
 _ss = []
 for _root, _dirs, _files in os.walk('util'):

@@ -12,7 +12,7 @@ Note: add the function for calculating STD for each averaged pixel
 '''
 
 import numpy as np
-import geo_raster_c as ge
+import geo_raster as ge
 import math
 import logging
 import collections
@@ -405,8 +405,8 @@ def perc(bnd_in, bnd_ot, val, valid_values=None, excluded_values=None, nodata=25
 			_offs[0], _offs[1], _dive, val, valid_values, excluded_values,
 			bnd_in.nodata, nodata, _size[0], _size[1], 1 if exclude_nodata else 0, int(scale))
 
-	import geo_raster_c as ge
-	import geo_base_c as gb
+	import geo_raster as ge
+	import geo_base as gb
 
 	_pt = ge.pixel_type(pixel_type)
 	return ge.geo_band_cache(_dat.astype(gb.to_dtype(_pt)), _geo_ot, bnd_ot.proj, 

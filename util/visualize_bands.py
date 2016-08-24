@@ -97,7 +97,7 @@ def get_band_hdf(img, b):
 	return img.get_subdataset(_bs[int(b)])
 
 def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
-	from gio import geo_raster_c as ge
+	from gio import geo_raster as ge
 	import os
 
 	print 'loading', f_inp

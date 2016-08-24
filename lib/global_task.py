@@ -10,7 +10,7 @@ import logging
 
 def load_shp(f, column='file', ext=None):
 	from osgeo import ogr
-	import geo_base_c as gb
+	import geo_base as gb
 
 	logging.info('loading the input shapefile')
 
@@ -67,7 +67,7 @@ class tiles:
 
 	def __init__(self, image_size=None, cell_size=None):
 		import math
-		import geo_base_c as gb
+		import geo_base as gb
 		import config
 
 		self.b = 6371007.181 #6378137.0
@@ -78,7 +78,7 @@ class tiles:
 		self.prj = gb.modis_projection()
 
 	def list(self, ext=None):
-		import geo_base_c as gb
+		import geo_base as gb
 
 		_rows = int(2 * self.p / (self.s * self.c))
 		_cols = int(2 * self.p / (self.s * self.c))
@@ -103,7 +103,7 @@ class tiles:
 	def extent(self, col, row):
 		_geo = [-self.p + (col * self.s * self.c), self.c, 0, self.p / 2 - (row * self.s * self.c), 0, -self.c]
 
-		import geo_raster_c as ge
+		import geo_raster as ge
 		return ge.geo_raster_info(_geo, self.s+1, self.s+1, self.prj)
 
 	def files(self, bnd, objs):

@@ -139,7 +139,7 @@ class sr_dir(sr):
 		assert 'mtl' in _fs
 
 	def _load_band(self, b):
-		import geo_raster_c as ge
+		import geo_raster as ge
 
 		_b = self._band_no(self._inf, b)
 		logging.info('loading band %s (%s)' % (b, _b))
@@ -160,7 +160,7 @@ class sr_dir(sr):
 		if 'cloud' not in self._fs.keys():
 			return None
 
-		import geo_raster_c as ge
+		import geo_raster as ge
 		_bnd = qa.from_fmask(ge.open(self._fzip.unzip(self._fs[_b])).get_band().cache())
 
 		self._bnds[_b] = _bnd
@@ -226,7 +226,7 @@ class sr_hdf(sr):
 		if not self._inf:
 			raise Exception('failed to parse %s' % p)
 
-		import geo_raster_c as ge
+		import geo_raster as ge
 		import re
 
 		_img = ge.open(f)

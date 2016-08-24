@@ -40,7 +40,7 @@ def band_idw(bnd, bnd_tar, int dist, float power, float nodata=-9999):
 
 	_ppp.done()
 
-	import geo_raster_c as ge
+	import geo_raster as ge
 	_bnd = ge.geo_band_cache(_dat, bnd_tar.geo_transform, bnd_tar.proj, _nodata, ge.pixel_type('float'))
 	return _bnd
 

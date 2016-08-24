@@ -30,7 +30,7 @@ def rasterize_polygons(bnd, polys, f_img, f_shp):
 		_lyr.CreateFeature(_fea)
 		_fea.Destroy()
 
-	import geo_raster_c as ge
+	import geo_raster as ge
 	_img = ge.geo_raster.create(f_img, [bnd.height, bnd.width], bnd.geo_transform, bnd.proj.ExportToWkt())
 
 	gdal.RasterizeLayer(_img.raster, [1], _lyr, burn_values=[1])
@@ -54,7 +54,7 @@ def rasterize_polygon(bnd, poly, f_img, f_shp):
 	_lyr.CreateFeature(_fea)
 	_fea.Destroy()
 
-	import geo_raster_c as ge
+	import geo_raster as ge
 	_img = ge.geo_raster.create(f_img, [bnd.height, bnd.width], bnd.geo_transform, bnd.proj.ExportToWkt())
 
 	gdal.RasterizeLayer(_img.raster, [1], _lyr, burn_values=[1])
@@ -64,7 +64,7 @@ def rasterize_band(bnd, poly, f_img, f_shp):
 	return rasterize_polygon(bnd, poly, f_img, f_shp)
 
 def detect_corner_x(bnd, xd):
-	import geo_base_c as gb
+	import geo_base as gb
 	assert(bnd.nodata != None)
 
 	_geo = bnd.geo_transform
@@ -86,7 +86,7 @@ def detect_corner_x(bnd, xd):
 	return None
 
 def detect_corner_y(bnd, yd):
-	import geo_base_c as gb
+	import geo_base as gb
 
 	_geo = bnd.geo_transform
 	_cel_x = _geo[1]
@@ -117,7 +117,7 @@ def detect_landsat_extent(bnd):
 	if None in _pts:
 		return None
 
-	import geo_base_c as gb
+	import geo_base as gb
 	_pol = gb.geo_polygon.from_pts(_pts, bnd.proj)
 
 	return _pol
