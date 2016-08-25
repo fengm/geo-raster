@@ -34,7 +34,7 @@ def mmu(bnd, float dis, int min_num):
 	
 	return bnd.from_grid(_ddd, nodata=_nodata)
 
-cdef _stat(np.ndarray[np.uint8_t, ndim=2] dat, int col, int row, float dis, int min_num, int nodata, int val):
+def _stat(np.ndarray[np.uint8_t, ndim=2] dat, int col, int row, float dis, int min_num, int nodata, int val):
 	cdef int _row, _col
 	cdef int _v, _vv
 

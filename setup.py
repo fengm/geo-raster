@@ -31,8 +31,8 @@ setuptools.setup(name='geo-raster', version='1.0', description='', \
 		packages=['gio', 'gio/data/landsat'],
 		package_dir={'gio': 'lib', 'gio/data/landsat': 'lib/data/landsat'},
 		include_package_data=True,
-		package_data={'gio/data/landsat': '*'},
-		cmdclass = {"buid_ext": build_ext},
+		package_data={'gio/data/landsat': ['lib/data/landsat/*']},
+		cmdclass = {"build_ext": build_ext},
 		ext_modules=_ms,
 		scripts=_ss,
 		)
