@@ -202,6 +202,9 @@ def default_dir(fd_out):
 	if config.cfg.has_option('conf', 'temp'):
 		return os.path.join(config.cfg.get('conf', 'temp'), _file_name())
 
+	if 'G_TMP' in os.environ:
+		return os.path.join(os.environ['G_TMP'], _file_name())
+
 	return os.path.join(sys.path[0], 'tmp', _file_name())
 
 def clean(fd_out, remove_root=False):

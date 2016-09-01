@@ -36,10 +36,14 @@ def init(f=None):
 		# import datetime
 		# _f += '_%s.log' % datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
 
-		_f = os.path.join(sys.path[0], 'log', _f + '.log')
+		if 'G_LOG' in os.environ:
+			_f = os.path.join(os.environ['G_LOG'], _f + '.log')
+		else:
+			_f = os.path.join(sys.path[0], 'log', _f + '.log')
 
 	_d_log = os.path.dirname(_f)
 	os.path.exists(_d_log) or os.makedirs(_d_log)
+	print _f
 
 	import config
 	_debug = config.getboolean('conf', 'debug') if config.cfg else False

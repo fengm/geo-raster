@@ -85,8 +85,12 @@ class s3():
 		except Exception:
 			pass
 
-		with open(_f, 'wb') as _fo:
+		_t = _f + '.bak'
+		with open(_t, 'wb') as _fo:
 			self.bucket.get_key(key).get_contents_to_file(_fo)
+
+		import shutil
+		shutil.move(_t, _f)
 
 		return _f
 
