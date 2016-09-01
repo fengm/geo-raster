@@ -139,7 +139,8 @@ def _generate_extent(f, proj):
 
 		if proj != None:
 			if proj == 4326:
-				_geos = _split_polygons(_ext, proj)
+				from gio import geo_raster as ge
+				_geos = _split_polygons(_ext, ge.proj_from_epsg(proj))
 			else:
 				_ext = _ext.project_to(proj)
 				_geos = [_ext]
@@ -153,7 +154,7 @@ def _generate_extent(f, proj):
 		return [_f, _pols]
 
 def _generate_extents(fs, proj, opts):
-	import multi_task
+	from gio import multi_task
 
 	_res = {}
 	for _f, _p in multi_task.run(_generate_extent, [(_f, proj) for _f in fs], opts):
