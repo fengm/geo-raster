@@ -133,7 +133,7 @@ def _generate_extent(f, proj):
 		_img = open_file(_f, _zip)
 		_bnd = _img.get_band()
 
-		import geo_base_c as gb
+		from gio import geo_base as gb
 		_ext = gb.geo_polygon.from_raster(_bnd.raster)
 		_geos = [_ext]
 
@@ -162,7 +162,7 @@ def _generate_extents(fs, proj, opts):
 	return _res
 
 def generate_shp(fs, proj, f_out, fzip, opts):
-	import gio.geo_raster_c as ge
+	from gio import geo_raster as ge
 	from osgeo import ogr
 	from gio.progress_percentage import progress_percentage
 	import os
