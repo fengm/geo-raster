@@ -323,14 +323,14 @@ def _init_env():
 
 	_opts = _usage()
 
-	import gio.logging_util
-	gio.logging_util.init(_opts.logging)
+	from gio import logging_util
+	logging_util.init(_opts.logging)
 
-	import gio.config
-	gio.config.load(_opts.config)
+	from gio import config
+	config.load(_opts.config)
 
-	import gio.file_unzip as fz
-	gio.fz.clean(fz.default_dir(_opts.temp))
+	from gio import file_unzip as fz
+	fz.clean(fz.default_dir(_opts.temp))
 
 	return _opts
 
