@@ -3,16 +3,6 @@
 
 import threading
 
-def usage():
-	import argparse
-
-	_p = argparse.ArgumentParser()
-	_p.add_argument('-c', '--command', dest='command', required=True)
-	_p.add_argument('-r', '--range', dest='range', type=int, default=[1, 20], nargs=2)
-	_p.add_argument('-e', '--exclude', dest='exclude', default=[], type=int, nargs='*')
-
-	return _p.parse_args()
-
 class process(threading.Thread):
 
 	def __init__(self, host, cmd, lock):
@@ -62,13 +52,11 @@ class process(threading.Thread):
 			pass
 			# self.p('- ' + self.host)
 
-def main():
-	_opts = usage()
-
+def main(opts):
 	# run the composition 1 step using the servers
-	_hosts = range(_opts.range[0], _opts.range[1] + 1)
+	_hosts = range(opts.range[0], opts.range[1] + 1)
 
-	for _e in _opts.exclude:
+	for _e in opts.exclude:
 		del _hosts[_hosts.index(_e)]
 
 	_lock = threading.Lock()
@@ -76,21 +64,22 @@ def main():
 	_ps = []
 	for i in xrange(len(_hosts)):
 		_host = 'glcfpro%02d' % _hosts[i]
-		_ps.append(process(_host, _opts.command, _lock))
+		_ps.append(process(_host, opts.command, _lock))
 
 	for _p in _ps:
 		_p.start()
 
-def init_env():
-	import os, sys
-	_d_in = os.path.join(sys.path[0], 'lib')
-	if os.path.exists(_d_in):
-		sys.path.append(_d_in)
+def usage():
+	_p = environ_mag.usage(False)
 
-	import gio.logging_util
-	gio.logging_util.init()
+	_p.add_argument('-c', '--command', dest='command', required=True)
+	_p.add_argument('-r', '--range', dest='range', type=int, default=[1, 20], nargs=2)
+	_p.add_argument('-e', '--exclude', dest='exclude', default=[], type=int, nargs='*')
+
+	return _p
 
 if __name__ == '__main__':
-	init_env()
-	main()
+	from gio import environ_mag
+	environ_mag.init_path()
+	environ_mag.run(main, [environ_mag.config(usage())])
 

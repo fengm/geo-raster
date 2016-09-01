@@ -275,30 +275,24 @@ def generate_shp_from_folder(fd, dataset, proj, f_out, absp, d_tmp, opts):
 	finally:
 		_zip.clean()
 
-def main():
-	_opts = _init_env()
-
+def main(opts):
 	import os
 
-	if os.path.isdir(_opts.input):
-		return generate_shp_from_folder(_opts.input, _opts.dataset,
-				_opts.projection, _opts.output, _opts.absolutepath,
-				_opts.temp_path, _opts)
+	if os.path.isdir(opts.input):
+		return generate_shp_from_folder(opts.input, opts.dataset,
+				opts.projection, opts.output, opts.absolutepath,
+				opts.temp_path, opts)
 
-	_f_inp = _opts.input.lower()
+	_f_inp = opts.input.lower()
+
 	if _f_inp.endswith('.txt'):
-		return generate_shp_from_list(_opts.input, _opts.dataset, _opts.projection,
-				_opts.output, _opts.absolutepath, _opts.temp_path, _opts)
+		return generate_shp_from_list(opts.input, opts.dataset, opts.projection,
+				opts.output, opts.absolutepath, opts.temp_path, opts)
 
 	print 'unknown inputs'
 
-def _usage():
-	import argparse
-
-	_p = argparse.ArgumentParser()
-	_p.add_argument('--logging', dest='logging')
-	_p.add_argument('--config', dest='config')
-	_p.add_argument('--temp', dest='temp')
+def usage():
+	_p = environ_mag.usage(True)
 
 	_p.add_argument('-i', '--input', dest='input')
 	_p.add_argument('-p', '--projection', dest='projection', type=int)
@@ -308,32 +302,11 @@ def _usage():
 	_p.add_argument('-a', '--absolute-path', dest='absolutepath',
 			action='store_true')
 
-	import gio.multi_task
-	gio.multi_task.add_task_opts(_p)
-
-	return _p.parse_args()
-
-def _init_env():
-	import os, sys
-
-	_dirs = ['lib', 'libs']
-	_d_ins = [os.path.join(sys.path[0], _d) for _d in _dirs if \
-			os.path.exists(os.path.join(sys.path[0], _d))]
-	sys.path = [sys.path[0]] + _d_ins + sys.path[1:]
-
-	_opts = _usage()
-
-	from gio import logging_util
-	logging_util.init(_opts.logging)
-
-	from gio import config
-	config.load(_opts.config)
-
-	from gio import file_unzip as fz
-	fz.clean(fz.default_dir(_opts.temp))
-
-	return _opts
+	return _p
 
 if __name__ == '__main__':
-	main()
+	from gio import environ_mag
+	environ_mag.init_path()
+	environ_mag.run(main, [environ_mag.config(usage())])
+
 

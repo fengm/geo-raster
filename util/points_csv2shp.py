@@ -126,23 +126,26 @@ def csv2shapefile(f_csv, f_out, proj=None, fld_x=None, fld_y=None):
 		_lyr.CreateFeature(_feat)
 		_feat.Destroy()
 
-def usage():
-	import argparse, os
+def main(opts):
+	if not opts.output:
+		import os
+		opts.output = os.path.join(os.path.join(os.path.dirname(opts.input), 'shp'), \
+				os.path.basename(opts.input)[:-4] + '.shp')
 
-	_p = argparse.ArgumentParser()
+	csv2shapefile(opts.input, opts.output, opts.projection, opts.columns[0], opts.columns[1])
+
+def usage():
+	_p = environ_mag.usage(False)
 
 	_p.add_argument('-i', '--input-csv', dest='input', required=True)
 	_p.add_argument('--projection', dest='projection')
 	_p.add_argument('--xy-columns', dest='columns', nargs=2, default=[None, None])
 	_p.add_argument('-o', '--output-shp', dest='output')
 
-	_opts = _p.parse_args()
-	if not _opts.output:
-		_opts.output = os.path.join(os.path.join(os.path.dirname(_opts.input), 'shp'), os.path.basename(_opts.input)[:-4] + '.shp')
-
-	return _opts
+	return _p
 
 if __name__ == '__main__':
-	_opts = usage()
-	csv2shapefile(_opts.input, _opts.output, _opts.projection, _opts.columns[0], _opts.columns[1])
+	from gio import environ_mag
+	environ_mag.init_path()
+	environ_mag.run(main, [environ_mag.config(usage())])
 

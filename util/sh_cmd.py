@@ -19,23 +19,6 @@ def format_path(p):
 
 	return p
 
-def usage():
-	import argparse
-
-	_p = argparse.ArgumentParser()
-
-	_p.add_argument('-c', '--command', dest='command', required=True)
-	_p.add_argument('-r', '--nodes', dest='nodes', required=True, type=int, nargs=2)
-	_p.add_argument('-e', '--excludes', dest='excludes', type=int, nargs='*')
-	_p.add_argument('-i', '--include', dest='include', type=int, nargs='*', help='Only nodes listed in the param will be run. Used for reruning jobs for specified nodes.')
-	_p.add_argument('-p', '--print', dest='print_cmd', default=False, action='store_true')
-	_p.add_argument('-ts', '--task-num', dest='task_num', type=int, nargs=2, default=[5, 12], \
-			help='number of task on lower and higer nodes')
-	_p.add_argument('-se', '--skip-error', dest='skip_error', action='store_true')
-	_p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=0)
-
-	return _p.parse_args()
-
 def log_file(p, node):
 	import os
 	_p, _f = os.path.split(os.path.normpath(p))
@@ -58,11 +41,9 @@ def log_file(p, node):
 
 	return _fp
 
-def main():
-	_opts = usage()
-
-	_hosts = range(_opts.nodes[0], _opts.nodes[1] + 1)
-	for _e in _opts.excludes if _opts.excludes else []:
+def main(opts):
+	_hosts = range(opts.nodes[0], opts.nodes[1] + 1)
+	for _e in opts.excludes if opts.excludes else []:
 		del _hosts[_hosts.index(_e)]
 
 	import os, sys
@@ -70,10 +51,10 @@ def main():
 	_d_envi = format_path(os.getcwd())
 
 	_d_base = format_path(sys.path[0])
-	_f_prg = format_command(_opts.command)
+	_f_prg = format_command(opts.command)
 
 	# only include nodes for processing
-	_n_inc = None if ((_opts.include == None) or (len(_opts.include) == 0)) else _opts.include
+	_n_inc = None if ((opts.include == None) or (len(opts.include) == 0)) else opts.include
 
 	for i in xrange(len(_hosts)):
 		_host = 'glcfpro%02d' % _hosts[i]
@@ -84,17 +65,17 @@ def main():
 
 		print '>>', _host
 
-		_task_num = _opts.task_num[0] if _hosts[i] <= 10 else _opts.task_num[1]
+		_task_num = opts.task_num[0] if _hosts[i] <= 10 else opts.task_num[1]
 
 		_d_log = os.path.join(_d_base, 'log', 'pro')
 		_log_std = os.path.join(_d_log, 'note_%02d.log' % _hosts[i])
 
 		_cmd = 'ssh %s "cd %s;python %s --logging %s -ts %d -in %d -ip %d %s %s" > %s &' % \
 				(_host, _d_envi, ' '.join(_f_prg), log_file(_f_prg[0], _hosts[i]), _task_num, len(_hosts), \
-				i, '-se' if _opts.skip_error else '', ('-tw %s' % _opts.time_wait) if _opts.time_wait > 0 else '', \
+				i, '-se' if opts.skip_error else '', ('-tw %s' % opts.time_wait) if opts.time_wait > 0 else '', \
 				_log_std)
 
-		if _opts.print_cmd:
+		if opts.print_cmd:
 			print _cmd
 			continue
 
@@ -111,16 +92,24 @@ def main():
 		import subprocess
 		subprocess.Popen(_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-def init_env():
-	import os, sys
-	_d_in = os.path.join(sys.path[0], 'lib')
-	if os.path.exists(_d_in):
-		sys.path.append(_d_in)
+def usage():
+	_p = environ_mag.usage(False)
 
-	import gio.logging_util
-	gio.logging_util.init()
+	_p.add_argument('-c', '--command', dest='command', required=True)
+	_p.add_argument('-r', '--nodes', dest='nodes', required=True, type=int, nargs=2)
+	_p.add_argument('-e', '--excludes', dest='excludes', type=int, nargs='*')
+	_p.add_argument('-i', '--include', dest='include', type=int, nargs='*', \
+			help='Only nodes listed in the param will be run. Used for reruning jobs for specified nodes.')
+	_p.add_argument('-p', '--print', dest='print_cmd', default=False, action='store_true')
+	_p.add_argument('-ts', '--task-num', dest='task_num', type=int, nargs=2, default=[5, 12], \
+			help='number of task on lower and higer nodes')
+	_p.add_argument('-se', '--skip-error', dest='skip_error', action='store_true')
+	_p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=0)
+
+	return _p
 
 if __name__ == '__main__':
-	init_env()
-	main()
+	from gio import environ_mag
+	environ_mag.init_path()
+	environ_mag.run(main, [environ_mag.config(usage())])
 

@@ -30,62 +30,26 @@ def convert_file(f_img, f_clr, d_out):
 
 		file_unzip.compress_folder(_d_tmp, d_out, [])
 
-def main():
-	_opts = _init_env()
-
-	_ls = [_opts.input] if not _opts.input.endswith('.txt') else open(_opts.input).read().strip().splitlines()
+def main(opts):
+	_ls = [opts.input] if not opts.input.endswith('.txt') else open(opts.input).read().strip().splitlines()
 
 	from gio import multi_task
-	_ps = [(_l, _opts.color, _opts.output) for _l in multi_task.load(_ls, _opts)]
+	_ps = [(_l, opts.color, opts.output) for _l in multi_task.load(_ls, opts)]
 
-	multi_task.run(convert_file, _ps, _opts)
+	multi_task.run(convert_file, _ps, opts)
 
-def _usage():
-	import argparse
-
-	_p = argparse.ArgumentParser()
-	_p.add_argument('--logging', dest='logging')
-	_p.add_argument('--config', dest='config')
-	_p.add_argument('--temp', dest='temp')
+def usage():
+	_p = environ_mag.usage(False)
 
 	_p.add_argument('-i', '--input', dest='input', required=True)
 	_p.add_argument('-c', '--color', dest='color')
 	_p.add_argument('-o', '--output', dest='output', required=True)
 
-	from gio import multi_task
-	multi_task.add_task_opts(_p)
-
-	return _p.parse_args()
-
-def _init_env():
-	import os, sys
-
-	_dirs = ['lib', 'libs']
-	_d_ins = [os.path.join(sys.path[0], _d) for _d in _dirs if \
-			os.path.exists(os.path.join(sys.path[0], _d))]
-	sys.path = [sys.path[0]] + _d_ins + sys.path[1:]
-
-	_opts = _usage()
-
-	from gio import logging_util
-	logging_util.init(_opts.logging)
-
-	from gio import config
-	config.load(_opts.config)
-
-	if not config.cfg.has_section('conf'):
-		config.cfg.add_section('conf')
-
-	for _k, _v in _opts.__dict__.items():
-		if _v != None:
-			config.cfg.set('conf', _k, str(_v))
-
-
-	from gio import file_unzip as fz
-	fz.clean(fz.default_dir(_opts.temp))
-
-	return _opts
+	return _p
 
 if __name__ == '__main__':
-	main()
+	from gio import environ_mag
+	environ_mag.init_path()
+	environ_mag.run(main, [environ_mag.config(usage())])
+
 

@@ -95,10 +95,27 @@ def csv2shapefile(f_csv, f_out, col, f_landsat):
 		_lyr.CreateFeature(_feat)
 		_feat.Destroy()
 
-def usage():
-	import argparse, os
+def main(opts):
+	if not opts.output:
+		import os
+		opts.output = os.path.join(os.path.join(os.path.dirname(opts.input), 'shp'), \
+				os.path.basename(opts.input)[:-4] + '.shp')
 
-	_p = argparse.ArgumentParser()
+	_f_ref = opts.tile_file
+	if not _f_ref:
+		import gio.data.landsat.path
+
+		if opts.tile_tag == 'wrs2':
+			_f_ref = gio.data.landsat.path.path('wrs2')
+		elif opts.tile_tag == 'wrs1':
+			_f_ref = gio.data.landsat.path.path('wrs1')
+		else:
+			raise Exception('unsupported tiling system tag (%s)' % opts.tile_tag)
+
+	csv2shapefile(opts.input, opts.output, opts.column, _f_ref)
+
+def usage():
+	_p = environ_mag.usage()
 
 	_p.add_argument('-i', '--input-csv', dest='input', required=True)
 	_p.add_argument('--tile-column', dest='column', default='tile')
@@ -106,25 +123,10 @@ def usage():
 	_p.add_argument('--tiling', dest='tile_tag', default='wrs2')
 	_p.add_argument('-o', '--output-shp', dest='output', required=False)
 
-	_opts = _p.parse_args()
-	if not _opts.output:
-		_opts.output = os.path.join(os.path.join(os.path.dirname(_opts.input), 'shp'), os.path.basename(_opts.input)[:-4] + '.shp')
-
-	return _opts
+	return _p
 
 if __name__ == '__main__':
-	_opts = usage()
-
-	_f_ref = _opts.tile_file
-	if not _f_ref:
-		import gio.data.landsat.path
-
-		if _opts.tile_tag == 'wrs2':
-			_f_ref = gio.data.landsat.path.path('wrs2')
-		elif _opts.tile_tag == 'wrs1':
-			_f_ref = gio.data.landsat.path.path('wrs1')
-		else:
-			raise Exception('unsupported tiling system tag (%s)' % _opts.tile_tag)
-
-	csv2shapefile(_opts.input, _opts.output, _opts.column, _f_ref)
+	from gio import environ_mag
+	environ_mag.init_path()
+	environ_mag.run(main, [environ_mag.config(usage())])
 

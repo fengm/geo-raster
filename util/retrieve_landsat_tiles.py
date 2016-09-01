@@ -62,42 +62,26 @@ def retrieve_landsat_tiles(f_in, f_out, col, exclude):
 
 	output_tiles(f_in, f_out, col, not exclude)
 
-def usage():
-	import argparse
+def main(opts):
+	if opts.output == None:
+		opts.output = (opts.input if opts.input.endswith('.csv') else opts.input[:-4]) + '.csv'
 
-	_p = argparse.ArgumentParser()
-	_p.add_argument('--logging', dest='logging')
+	retrieve_landsat_tiles(opts.input, opts.output, opts.column, \
+			opts.exclude_duplicate)
+
+def usage():
+	_p = environ_mag.usage(False)
+
 	_p.add_argument('-i', '--input', dest='input', required=True)
 	_p.add_argument('-o', '--output', dest='output')
 	_p.add_argument('-c', '--column', dest='column', default='file')
 	_p.add_argument('-e', '--exclude-duplicate', dest='exclude_duplicate'\
 			, default=False, action='store_true')
 
-	_opts = _p.parse_args()
-	if _opts.output == None:
-		_opts.output = (_opts.input if _opts.input.endswith('.csv') else _opts.input[:-4]) + '.csv'
-
-	return _opts
-
-def main():
-	_opts = init_env()
-
-	retrieve_landsat_tiles(_opts.input, _opts.output, _opts.column, \
-			_opts.exclude_duplicate)
-
-def init_env():
-	import os, sys
-	_d_in = os.path.join(sys.path[0], 'lib')
-	if os.path.exists(_d_in):
-		sys.path.append(_d_in)
-
-	_opts = usage()
-
-	import gio.logging_util
-	gio.logging_util.init(_opts.logging)
-
-	return _opts
+	return _p
 
 if __name__ == '__main__':
-	main()
+	from gio import environ_mag
+	environ_mag.init_path()
+	environ_mag.run(main, [environ_mag.config(usage())])
 

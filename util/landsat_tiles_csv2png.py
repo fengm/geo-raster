@@ -136,32 +136,30 @@ def draw(f_shp, title, ts, show_val, levels, colors, f_out):
 
 	save(_fig, f_out)
 
-def main():
-	_opts = _init_env()
+def main(opts):
+	if not opts.output:
+		import os
+		opts.output = os.path.join(os.path.join(os.path.dirname(opts.input), 'png'), \
+				os.path.basename(opts.input)[:-4] + '.png')
 
-	_f_ref = _opts.tile_file
+	_f_ref = opts.tile_file
 	if not _f_ref:
 		import os, sys
 
-		if _opts.tile_tag == 'wrs2':
+		if opts.tile_tag == 'wrs2':
 			_f_ref = os.path.join(sys.path[0], 'data/landsat/wrs2_descending.shp')
-		elif _opts.tile_tag == 'wrs1':
+		elif opts.tile_tag == 'wrs1':
 			_f_ref = os.path.join(sys.path[0], 'data/landsat/wrs1_descending.shp')
 		else:
-			raise Exception('unsupported tiling system tag (%s)' % _opts.tile_tag)
+			raise Exception('unsupported tiling system tag (%s)' % opts.tile_tag)
 
 	import os
-	draw(_f_ref, _opts.title if _opts.title else os.path.basename(_opts.input),
-	  load_tiles(_opts.input, _opts.column),
-	  _opts.column == None, _opts.levels, _opts.colors, _opts.output)
+	draw(_f_ref, opts.title if opts.title else os.path.basename(opts.input),
+	  load_tiles(opts.input, opts.column),
+	  opts.column == None, opts.levels, opts.colors, opts.output)
 
-def _usage():
-	import argparse
-	import os
-
-	_p = argparse.ArgumentParser()
-	_p.add_argument('--logging', dest='logging')
-	_p.add_argument('--config', dest='config')
+def usage():
+	_p = environ_mag.usage(False)
 
 	_p.add_argument('-i', '--input-csv', dest='input', required=True)
 	_p.add_argument('-t', '--title', dest='title')
@@ -174,28 +172,11 @@ def _usage():
 	_p.add_argument('--tiling', dest='tile_tag', default='wrs2')
 	_p.add_argument('-o', '--output-shp', dest='output')
 
-	_opts = _p.parse_args()
-	if not _opts.output:
-		_opts.output = os.path.join(os.path.join(os.path.dirname(_opts.input), 'png'), os.path.basename(_opts.input)[:-4] + '.png')
-
-	return _opts
-
-def _init_env():
-	import os, sys
-	_d_in = os.path.join(sys.path[0], 'lib')
-	if os.path.exists(_d_in):
-		sys.path.append(_d_in)
-
-	_opts = _usage()
-
-	import gio.logging_util
-	gio.logging_util.init(_opts.logging)
-
-	import gio.config
-	gio.config.load(_opts.config)
-
-	return _opts
+	return _p
 
 if __name__ == '__main__':
-	main()
+	from gio import environ_mag
+	environ_mag.init_path()
+	environ_mag.run(main, [environ_mag.config(usage())])
+
 

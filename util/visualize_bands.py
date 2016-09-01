@@ -186,37 +186,30 @@ def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
 
 	_img = None
 
-def main():
-	_opts = _init_env()
-
+def main(opts):
 	import os
 	from gio import file_unzip
 	with file_unzip.file_unzip() as _zip:
-		_f_inp = _opts.input
-		_f_out = _opts.output
+		_f_inp = opts.input
+		_f_out = opts.output
 
 		if os.path.isdir(_f_out):
 			from gio import landsat
 			_f_out = os.path.join(_f_out, '%s_%s_%s.tif' % (landsat.parse(os.path.basename(_f_inp)),
-				'sr' if _opts.convert_sr else 'dn',
-				''.join(map(str, _opts.bands))
+				'sr' if opts.convert_sr else 'dn',
+				''.join(map(str, opts.bands))
 				))
 
 		_d_tmp = _zip.generate_file()
 		os.makedirs(_d_tmp)
 
-		visualize_bands(_f_inp, _opts.bands, _opts.compress, _opts.convert_sr,
+		visualize_bands(_f_inp, opts.bands, opts.compress, opts.convert_sr,
 				os.path.join(_d_tmp, os.path.basename(_f_out)), _zip)
 
 		file_unzip.compress_folder(_d_tmp, os.path.dirname(_f_out), [])
 
-def _usage():
-	import argparse
-
-	_p = argparse.ArgumentParser()
-	_p.add_argument('--logging', dest='logging')
-	_p.add_argument('--config', dest='config')
-	_p.add_argument('--temp', dest='temp')
+def usage():
+	_p = environ_mag.usage(False)
 
 	_p.add_argument('-i', '--input', dest='input', required=True)
 	_p.add_argument('-b', '--bands', dest='bands', required=True, nargs='+')
@@ -224,37 +217,11 @@ def _usage():
 	_p.add_argument('-sr', '--convert-sr', dest='convert_sr', action='store_true')
 	_p.add_argument('-c', '--compress', dest='compress', action="store_true")
 
-	return _p.parse_args()
-
-def _init_env():
-	import os, sys
-	_d_in = os.path.join(sys.path[0], 'lib')
-	if os.path.exists(_d_in):
-		sys.path.append(_d_in)
-
-	_opts = _usage()
-
-	from gio import logging_util
-	logging_util.init(_opts.logging)
-
-	from gio import config
-	config.load(_opts.config)
-
-	from gio import file_unzip as fz
-	fz.clean(fz.default_dir(_opts.temp))
-
-	return _opts
+	return _p
 
 if __name__ == '__main__':
-	try:
-		main()
-	except KeyboardInterrupt:
-		print '\n\n* User stopped the program'
-	except Exception, err:
-		import traceback
+	from gio import environ_mag
+	environ_mag.init_path()
+	environ_mag.run(main, [environ_mag.config(usage())])
 
-		logging.error(traceback.format_exc())
-		logging.error(str(err))
-
-		print '\n\n* Error:', err
 
