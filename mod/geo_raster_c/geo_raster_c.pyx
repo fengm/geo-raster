@@ -194,7 +194,8 @@ class geo_band_info(geo_raster_info):
 		_rows = min(height, self.height - row)
 
 		if _cols <= 0 or _rows <= 0:
-			raise Exception('out of the band extent')
+			logging.warning('out of the band extent')
+			return None
 
 		return geo_band_info(_geo, _cols, _rows, self.proj, self.nodata, self.pixel_type)
 
@@ -364,7 +365,7 @@ class geo_band_cache(geo_band_info):
 		write_raster(f, self.geo_transform, self.proj.ExportToWkt(),
 				self.data, nodata=self.nodata, pixel_type=_pixel_type, driver=driver, color_table=color_table, opts=opts)
 
-	def read_ext(self, ext):
+	def read_ext(self, ext, roundup=False):
 		if ext.proj is not None and self.proj.ExportToProj4() != ext.proj.ExportToProj4():
 			raise Exception('The extent is supposed to be in the same CRS as the band does')
 
@@ -379,8 +380,12 @@ class geo_band_cache(geo_band_info):
 		_fill = self.get_nodata()
 
 		import math
-		_cols = int(math.ceil((ext.width() / _cell)))
-		_rows = int(math.ceil((ext.height() / _cell)))
+		if roundup:
+			_cols = int(round((ext.width() / _cell)))
+			_rows = int(round((ext.height() / _cell)))
+		else:
+			_cols = int(math.ceil((ext.width() / _cell)))
+			_rows = int(math.ceil((ext.height() / _cell)))
 
 		import numpy
 		_dat = numpy.empty((_rows, _cols), dtype=self.data.dtype)
@@ -411,9 +416,12 @@ class geo_band_cache(geo_band_info):
 						self.pixel_type, self.color_table)
 
 	def read_block(self, bnd):
+		if bnd is None:
+			return None
+
 		if (bnd.geo_transform[1] == self.geo_transform[1]) and \
 				((None in [bnd.proj, self.proj]) or bnd.proj.IsSame(self.proj)):
-			_bnd = self.read_ext(bnd.extent())
+			_bnd = self.read_ext(bnd.extent(), True)
 			assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
 			return _bnd
 
@@ -678,7 +686,7 @@ class geo_band(geo_band_info):
 		return geo_band_cache(_dat, _img.geo_transform, _img.proj,
 				self.nodata, self.pixel_type, self.color_table)
 
-	def read_ext(self, ext):
+	def read_ext(self, ext, roundup=False):
 		if ext.proj is not None and self.proj.ExportToProj4() != ext.proj.ExportToProj4():
 			raise Exception('The extent is supposed to be in the same CRS as the band does')
 
@@ -693,8 +701,15 @@ class geo_band(geo_band_info):
 		_fill = self.get_nodata()
 
 		import math
-		_cols = int(math.ceil((ext.width() / _cell)))
-		_rows = int(math.ceil((ext.height() / _cell)))
+
+		# _cols = int(math.ceil((ext.width() / _cell)))
+		# _rows = int(math.ceil((ext.height() / _cell)))
+		if roundup:
+			_cols = int(round((ext.width() / _cell)))
+			_rows = int(round((ext.height() / _cell)))
+		else:
+			_cols = int(round((ext.width() / _cell)))
+			_rows = int(round((ext.height() / _cell)))
 
 		import numpy
 		_dat = numpy.empty((_rows, _cols))
@@ -712,9 +727,11 @@ class geo_band(geo_band_info):
 		import math
 		_w = int(math.ceil((_ext.width() / _cell)))
 		_h = int(math.ceil((_ext.height() / _cell)))
+		_w = min(_w, self.width - _off_x1)
+		_h = min(_h, self.height - _off_y1)
 
-		_dat[_off_y2: _off_y2 + _h, _off_x2: _off_x2 + _w] = \
-			self.read_rows(_off_y1, _h)[0: _h, _off_x1: _off_x1 + _w]
+		_ddd = self.read_rows(_off_y1, _h)
+		_dat[_off_y2: _off_y2 + _h, _off_x2: _off_x2 + _w] = _ddd[0: _h, _off_x1: _off_x1 + _w]
 
 		_geo2 = list(_geo1)
 
@@ -725,9 +742,12 @@ class geo_band(geo_band_info):
 						self.pixel_type, self.color_table)
 
 	def read_block(self, bnd):
+		if bnd is None:
+			return None
+
 		if (bnd.geo_transform[1] == self.geo_transform[1]) and \
 				(None in [bnd.proj, self.proj] or bnd.proj.IsSame(self.proj)):
-			_bnd = self.read_ext(bnd.extent())
+			_bnd = self.read_ext(bnd.extent(), True)
 			assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
 			return _bnd
 
