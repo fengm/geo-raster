@@ -51,7 +51,9 @@ def config(p):
 	from gio import file_unzip as fz
 	fz.clean(fz.default_dir(_opts.temp))
 
-def run(func, *opts):
+	return _opts
+
+def run(func, opts):
 	import logging
 	import config
 
