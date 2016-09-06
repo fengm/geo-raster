@@ -57,7 +57,7 @@ def run(func, opts):
 	import logging
 	import config
 
-	if config.get('conf', 'debug', True) == True:
+	if config.getboolean('conf', 'debug', True):
 		return func(*opts)
 	else:
 		try:
