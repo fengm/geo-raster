@@ -69,14 +69,27 @@ class metadata(object):
 		with open(f_out, 'w') as _fo:
 			_fo.write('\n'.join(_ls))
 
+	def __str__(self):
+		return '\n'.join(self._str(0))
+
 def load(f):
 	with open(f) as _fi:
 		import json
-		_obj = json.load(_fi, object_hook=_to_obj)
+		import collections
+		# _obj = json.load(_fi, object_hook=_to_obj, object_pairs_hook=collections.OrderedDict)
+		_obj = json.load(_fi, object_pairs_hook=_to_obj_ex)
 		return _obj
 
+def _to_obj_ex(v):
+	import collections
+	_ds = collections.OrderedDict()
+
+	for _k, _v in v:
+		_ds[_k.strip()] = _v.strip if _v is str else _v
+
+	return metadata(_ds)
+
 def _to_obj(obj):
-	print 'teststeest', obj
 	if isinstance(obj, dict):
 		return metadata(obj)
 
@@ -85,6 +98,11 @@ def _to_obj(obj):
 def _convert(obj):
 	if isinstance(obj, metadata):
 		return obj._meta
+	return obj
+
+def _object(obj):
+	if isinstance(obj, dict):
+		return metadata(obj)
 	return obj
 
 def main():
@@ -103,6 +121,7 @@ def main():
 	_m = load('test1.txt')
 	print _m.test1.test4
 	print _m['test1']['test4']
+	print _m
 
 def _usage():
 	import argparse
