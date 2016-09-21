@@ -103,7 +103,7 @@ def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
 	print 'loading', f_inp
 
 	_bnds = []
-	if '%s' % f_inp:
+	if '%s' in f_inp:
 		for _b in bands:
 			_bnds.append(ge.open(fzip.unzip(f_inp % _b)).get_band())
 	elif f_inp.endswith('.tar.gz'):
@@ -133,6 +133,10 @@ def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
 	else:
 		_f_in = fzip.unzip(f_inp)
 
+		_hdr = os.path.splitext(f_inp)[0] + '.hdr.gz'
+		if os.path.exists(_hdr):
+			fzip.unzip(_hdr)
+
 		if _f_in.endswith('hdf'):
 			_img = ge.geo_raster.open(_f_in)
 
@@ -140,7 +144,6 @@ def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
 				_bnds.append(get_band_hdf(_img, _b).get_band())
 		else:
 			_img = ge.geo_raster.open(_f_in)
-
 			for _b in bands:
 				_bnds.append(_img.get_band(int(_b)))
 
