@@ -209,7 +209,7 @@ def main(opts):
 		visualize_bands(_f_inp, opts.bands, opts.compress, opts.convert_sr,
 				os.path.join(_d_tmp, os.path.basename(_f_out)), _zip)
 
-		file_unzip.compress_folder(_d_tmp, os.path.dirname(_f_out), [])
+		file_unzip.compress_folder(_d_tmp, os.path.dirname(os.path.abspath(_f_out)), [])
 
 def usage():
 	_p = environ_mag.usage(False)
