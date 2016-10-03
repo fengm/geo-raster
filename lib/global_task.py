@@ -8,7 +8,7 @@ Description: prepare and run the processes to process global data
 
 import logging
 
-def load_shp(f, column='file', ext=None):
+def load_shp(f, column=None, ext=None):
 	from osgeo import ogr
 	import geo_base as gb
 
