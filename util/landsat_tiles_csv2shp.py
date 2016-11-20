@@ -96,8 +96,8 @@ def csv2shapefile(f_csv, f_out, col, f_landsat):
 		_feat.Destroy()
 
 def main(opts):
+	import os
 	if not opts.output:
-		import os
 		opts.output = os.path.join(os.path.join(os.path.dirname(opts.input), 'shp'), \
 				os.path.basename(opts.input)[:-4] + '.shp')
 
