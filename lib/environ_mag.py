@@ -49,7 +49,8 @@ def config(p):
 	logging_util.init(_opts.logging)
 
 	from gio import file_unzip as fz
-	fz.clean(fz.default_dir(_opts.temp))
+	if config.getboolean('conf', 'clean', True):
+		fz.clean(fz.default_dir(_opts.temp))
 
 	return _opts
 
