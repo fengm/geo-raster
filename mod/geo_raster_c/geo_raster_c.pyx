@@ -134,6 +134,30 @@ class geo_raster_info:
 
 		return geo_raster_info(_geo, _cols, _rows, self.proj)
 
+	def from_ma_grid(self, grid, update_type=True, nodata=None):
+		_nodata = nodata
+		if _nodata is None:
+			_nodata = self.nodata
+
+		if _nodata is None:
+			raise Exception('nodata is required')
+
+		_dat = grid.filled(_nodata)
+		return self.from_grid(_dat, update_type, _nodata)
+
+	def from_grid(self, grid, update_type=True, nodata=None):
+		if not (self.height == grid.shape[0] and self.width == grid.shape[1]):
+			raise Exception('grid size does not match')
+
+		_nodata = nodata
+		if _nodata is None:
+			_nodata = self.nodata
+
+		_dat = grid
+
+		import geo_base as gb
+		return geo_band_cache(_dat, list(self.geo_transform), self.proj, _nodata, gb.from_dtype(grid.dtype))
+
 class geo_band_info(geo_raster_info):
 
 	def __init__(self, geo_transform, width, height, proj, nodata=None, pixel_type=None):
@@ -159,30 +183,6 @@ class geo_band_info(geo_raster_info):
 			logging.warning('No nodata value provided, using default value (%s)' % _nodata)
 
 		return _nodata
-
-	def from_ma_grid(self, grid, update_type=True, nodata=None):
-		_nodata = nodata
-		if _nodata is None:
-			_nodata = self.nodata
-
-		if _nodata is None:
-			raise Exception('nodata is required')
-
-		_dat = grid.filled(_nodata)
-		return self.from_grid(_dat, update_type, _nodata)
-
-	def from_grid(self, grid, update_type=True, nodata=None):
-		if not (self.height == grid.shape[0] and self.width == grid.shape[1]):
-			raise Exception('grid size does not match')
-
-		_nodata = nodata
-		if _nodata is None:
-			_nodata = self.nodata
-
-		_dat = grid
-
-		import geo_base as gb
-		return geo_band_cache(_dat, list(self.geo_transform), self.proj, _nodata, gb.from_dtype(grid.dtype))
 
 	def sub_band(self, col, row, width, height):
 		_geo = list(self.geo_transform)

@@ -96,19 +96,17 @@ def csv2shapefile(f_csv, f_out, col, f_landsat):
 		_feat.Destroy()
 
 def main(opts):
+	import os
 	if not opts.output:
-		import os
 		opts.output = os.path.join(os.path.join(os.path.dirname(opts.input), 'shp'), \
 				os.path.basename(opts.input)[:-4] + '.shp')
 
 	_f_ref = opts.tile_file
 	if not _f_ref:
-		import gio.data.landsat.path
-
 		if opts.tile_tag == 'wrs2':
-			_f_ref = gio.data.landsat.path.path('wrs2')
+			_f_ref = os.environ['D_DATA_WRS2']
 		elif opts.tile_tag == 'wrs1':
-			_f_ref = gio.data.landsat.path.path('wrs1')
+			_f_ref = os.environ['D_DATA_WRS1']
 		else:
 			raise Exception('unsupported tiling system tag (%s)' % opts.tile_tag)
 

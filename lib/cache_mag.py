@@ -85,12 +85,15 @@ class s3():
 		except Exception:
 			pass
 
-		_t = _f + '.bak'
-		with open(_t, 'wb') as _fo:
-			self.bucket.get_key(key).get_contents_to_file(_fo)
-
 		import shutil
-		shutil.move(_t, _f)
 
-		return _f
+		_t = _f + '.bak'
+		for _i in xrange(3):
+			with open(_t, 'wb') as _fo:
+				self.bucket.get_key(key).get_contents_to_file(_fo)
+				if os.path.exists(_t) and os.path.getsize(_t) > 0:
+					shutil.move(_t, _f)
+					return _f
+
+		raise Exception('failed to load S3 file %s' % key)
 
