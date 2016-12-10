@@ -31,6 +31,11 @@ def _detect_sys(f, ext):
 	if _exist_file(_f_cfg):
 		return _f_cfg
 
+	if os.environ['G_INI']:
+		_f_cfg = os.path.join(os.environ['G_INI'], _f)
+		if _exist_file(_f_cfg):
+			return _f_cfg
+
 	return None
 
 def _detect_file(f_cfg):
