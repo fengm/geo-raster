@@ -64,7 +64,6 @@ def init(tag):
 
 			import shutil
 			for _f in os.listdir(_path('etc')):
-				if _f.endswith('.ini') or _f.endswith('conf'):
-					print ' + copy config file', os.path.join(_d_ini, _f)
-					shutil.copy(os.path.join('etc', _f), os.path.join(_d_ini, _f))
+				print ' + copy config file', os.path.join(_d_ini, _f)
+				shutil.copy(os.path.join('etc', _f), os.path.join(_d_ini, _f))
 
