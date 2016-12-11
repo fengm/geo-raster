@@ -64,6 +64,11 @@ def init(tag):
 
 			import shutil
 			for _f in os.listdir(_path('etc')):
-				print ' + copy config file', os.path.join(_d_ini, _f)
-				shutil.copy(os.path.join('etc', _f), os.path.join(_d_ini, _f))
+				_fo = os.path.join(_d_ini, _f)
+				if not os.path.exists(_fo):
+					print ' + copy config file', os.path.join(_d_ini, _f)
+					shutil.copy(os.path.join('etc', _f), _fo)
+				else:
+					print ' - skip existed config file'
+
 
