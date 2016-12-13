@@ -727,8 +727,8 @@ class geo_band(geo_band_info):
 		import math
 		_w = int(math.ceil((_ext.width() / _cell)))
 		_h = int(math.ceil((_ext.height() / _cell)))
-		_w = min(_w, self.width - _off_x1)
-		_h = min(_h, self.height - _off_y1)
+		_w = min(_w, self.width - _off_x1, _cols)
+		_h = min(_h, self.height - _off_y1, _rows)
 
 		_ddd = self.read_rows(_off_y1, _h)
 		_dat[_off_y2: _off_y2 + _h, _off_x2: _off_x2 + _w] = _ddd[0: _h, _off_x1: _off_x1 + _w]
