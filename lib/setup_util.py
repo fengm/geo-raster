@@ -41,12 +41,19 @@ def init(tag):
 				_f = os.path.join(_root, _file)
 				_ss.append(_f)
 
+	_ds = {}
+	_ps = []
+
+	if os.path.exists('lib'):
+		_ps.append(_package)
+		_ds[_package] = 'lib'
+
 	setuptools.setup(name=_package, version='1.0', description='', \
 			author='Min Feng', author_email='mfeng.geo@gmail.com', \
 			# packages=[_package, 'gio/data/landsat'],
 			# package_dir={_package: 'lib', 'gio/data/landsat': 'lib/data/landsat'},
-			packages=[_package],
-			package_dir={_package: 'lib'},
+			packages=_ps,
+			package_dir=_ds,
 			# package_data={_package: ['etc/*']},
 			# include_package_data=True,
 			cmdclass = {"build_ext": build_ext},
