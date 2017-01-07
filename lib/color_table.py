@@ -21,7 +21,7 @@ def to_dist(vs):
 		_cs.append([_w1 * _c for _c in _v['color']])
 
 	_p = int(sum(_ps))
-	_c = [int(sum([_c[_i] for _c in _cs])) for _i in xrange(3)]
+	_c = [int(sum([_c[_i] for _c in _cs])) for _i in xrange(4)]
 
 	return _p, _c
 
@@ -39,20 +39,15 @@ def map_colortable(cs):
 class color_table:
 
 	def __init__(self, ccs):
-		_vs = sorted(ccs.keys()) if isinstance(ccs, dict) else self._load_color_file(ccs)
-
-		_rs = []
-		_dv = float(255) / (len(_vs) - 1)
-		_pp = 0.0
-
-		for _i in xrange(len(_vs) - 1):
-			_ps = int(_pp)
-			_pp += _dv
-
-			_rs.append({'idx': _i, 'pos': _ps, 'value': _vs[_i], 'color': self._color(ccs[_vs[_i]])})
+		_rs = ccs if isinstance(ccs, dict) else self._load_color_file(ccs)
+		_vs = sorted(ccs.keys())
+		_cs = [map(int, list(_rs[_v]) + ([] if len(_rs[_v]) > 3 else [255])) for _v in _vs]
 
 		self._vs = _vs
 		self._rs = _rs
+		self._cs = _cs
+
+		self._color_table()
 
 	def _load_color_file(self, f):
 		import re
@@ -88,10 +83,12 @@ class color_table:
 
 	def _color_table(self):
 		_vs = self._vs
-		_div = int(256 * 2.0 / len(_vs))
+		_div = int(250 * 3.0 / len(_vs))
 
 		_colors = {}
 		_values = {}
+
+		_vs.append(_vs[-1])
 		for i in xrange(len(_vs) - 1):
 			_a = _vs[i]
 			_d = (_vs[i+1] - _vs[i]) / float(_div)
@@ -100,7 +97,7 @@ class color_table:
 				_v, _c = self._interpolate(_a)
 
 				if _v not in _colors:
-					_values[_a] = _c
+					_values[_a] = _v
 					_colors[_v] = _c
 
 				_a += _d
@@ -108,39 +105,83 @@ class color_table:
 		self._values = _values
 		self._colors = _colors
 
+		self._v_min = min(self._values.keys())
+		self._v_max = max(self._values.keys())
+
+		if self._v_min < 0 or self._v_max >= 250:
+			raise Exception('only accept value range between 0 and 250')
+
+	def write_file(self, f, clip=False):
+		_ls = []
+		for i in xrange(256):
+			_ls.append('%s\t%s' % (i, ','.join(map(str, self.get_color(i, clip)))))
+
+		with open(f, 'w') as _fo:
+			_fo.write('\n'.join(_ls))
+
 	def ogr_color_table(self):
 		return map_colortable(self._colors)
 
-	def get_color(self, v):
-		_vs = []
-		for _v, _c in self._values.keys():
-			if _v == v:
-				return _c
+	def get_code(self, v, clip=False):
+		if v >= 255:
+			return 255
 
-			_vs.append({'d': abs(_v - v), 'c': _c})
-		return sorted(_vs, cmp=lambda x1, x2: cmp(x1['d'], x2['d']))[0]
+		if v < self._v_min:
+			if clip:
+				return 255
+			return self._values[self._v_min]
+		if v > self._v_max:
+			if clip:
+				return 255
+			return self._values[self._v_max]
+
+		_vs = []
+		for _v in self._values.keys():
+			if _v == v:
+				return self._values[_v]
+
+			_vs.append({'d': abs(_v - v), 'c': self._values[_v]})
+
+		_cc = sorted(_vs, cmp=lambda x1, x2: cmp(x1['d'], x2['d']))[0]['c']
+		return _cc
+
+	def get_color(self, v, clip=False):
+		_c = self.get_code(v, clip)
+
+		if _c >= 255 or _c not in self._colors:
+			return [0, 0, 0, 0]
+
+		return self._colors[_c]
 
 	def _interpolate(self, v):
 		_vs = self._vs
-		_rs = self._rs
+		_cs = self._cs
 
 		_v = max(min(_vs), min(v, max(_vs) - 0.000000000001))
+		_dv = float(250) / (len(_vs) - 1)
+
+		_pp = 0.0
 
 		for _i in xrange(len(_vs) - 1):
 			_ds = abs(_v - _vs[_i])
+			_ps = int(_pp)
 
 			if _ds == 0:
-				return _rs[_i]['pos'], _rs[_i]['color']
+				return _ps, _cs[_i]
 
 			if _vs[_i] < _v < _vs[_i+1]:
-				_vs = []
+				_vv = []
 
-				_vs.append([{'pos': _rs[_i]['pos'], 'dist': _rs[_i]['color'], 'dist': float(_ds)}])
+				_vv.append({'idx': _i, 'pos': _ps, 'value': _vs[_i], 'color': _cs[_i], 'dist': float(_ds)})
 
 				_ds = abs(_v - _vs[_i + 1])
-				_vs.append([{'pos': _rs[_i+1]['pos'], 'dist': _rs[_i+1]['color'], 'dist': float(_ds)}])
+				_ps = int(_pp + _dv)
+				_vv.append({'idx': _i+1, 'pos': _ps, 'value': _vs[_i+1], 'color': _cs[_i+1], 'dist': float(_ds)})
 
-				return to_dist(_vs)
+				return to_dist(_vv)
+			else:
+				_pp += _dv
 
 		raise Exception('failed to find value %s' % v)
+
 
