@@ -472,9 +472,9 @@ cdef np.ndarray[np.float32_t, ndim=2] perc_pixels(np.ndarray[np.uint8_t, ndim=2]
 			_col_max = int(math.ceil(_col_max_f))
 			_col_max = min(_cols_o, _col_max)
 
-			_vs = 0
-			_ns = 0
-			_as = 0
+			_vs = 0.0
+			_ns = 0.0
+			_as = 0.0
 			for _row_o from _row_min<=_row_o<_row_max:
 				for _col_o from _col_min<=_col_o<_col_max:
 					_a = (min(_row_o + 1, _row_max_f) - \
@@ -485,7 +485,7 @@ cdef np.ndarray[np.float32_t, ndim=2] perc_pixels(np.ndarray[np.uint8_t, ndim=2]
 					_as += _a
 
 					_v = dat[_row_o, _col_o]
-					if _v == None:
+					if _v is None:
 						continue
 
 					# if exclude_nodata == 1 and (_v > 10 or _v == s_nodata):
@@ -493,26 +493,31 @@ cdef np.ndarray[np.float32_t, ndim=2] perc_pixels(np.ndarray[np.uint8_t, ndim=2]
 					if _v == s_nodata:
 						continue
 
-					if valid_values != None and len(valid_values) > 0:
+					if valid_values is not None and len(valid_values) > 0:
 						if _v not in valid_values:
 							continue
 
-					if excluded_values != None and len(excluded_values) > 0:
+					if excluded_values is not None and len(excluded_values) > 0:
 						if _v in excluded_values:
 							continue
 
-					_z = 1 if (_v == val or _v == 100) else 0
+					_z = 1 if (_v == val) else 0
 
 					_vs += _z * _a
 					_ns += _a
 
-			if _ns <= 0:
+			if _ns <= 0.0:
 				continue
 
 			if _ns < 0.5 * _as:
 				continue
 
-			_vv = (scale_val * _vs) / _ns
+			if _vs == 0:
+				_dat[_row_n, _col_n] = 0
+				continue
+
+			_vv = (float(scale_val) * _vs) / _ns
+
 			if _vv > scale_val:
 				_vv = scale_val
 			if _vv < 0:

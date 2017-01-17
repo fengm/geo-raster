@@ -205,101 +205,65 @@ def generate_shp(fs, proj, f_out, fzip, opts):
 
 	_perc.done()
 
-def generate_shp_from_file(fs, dataset, proj, f_out, absp, d_tmp):
-	import os
-
-	_fs = []
-	for i in xrange(len(fs)):
-		_p = os.path.abspath(fs[i])
-		if absp:
-			_p = os.path.abspath(_p)
-
-		if dataset:
-			_p = _p + '#' + dataset
-
-		_fs.append(_p)
-
-	from gio import file_unzip
-	with file_unzip.file_unzip(d_tmp) as _zip:
-		generate_shp(_fs, proj, f_out, _zip)
-
-def generate_shp_from_list(f_list, dataset, proj, f_out, absp, d_tmp, opts):
-	_fs = [(_l.strip() + '#' + dataset if dataset else _l.strip()) \
-			for _l in open(f_list).read().splitlines() if _l.strip()]
+def generate_shp_from_list(fs, dataset, proj, f_out, absp, opts):
+	_fs = fs
 	if len(_fs) == 0:
 		print 'found no files'
 		return
 
-	print 'found', len(_fs), 'files in list', f_list
+	print 'found', len(_fs), 'files in list'
 	print '--------------'
+
 	for _f in _fs[: min(len(_fs), 2)]:
 		print ' >', _f
 	print '  ...'
 
 	import gio.file_unzip
-	_zip = gio.file_unzip.file_unzip(d_tmp)
-	try:
+	with gio.file_unzip.file_unzip() as _zip:
 		generate_shp(_fs, proj, f_out, _zip, opts)
-	finally:
-		_zip.clean()
 
-def generate_shp_from_folder(fd, dataset, proj, f_out, absp, d_tmp, opts):
+def indentify_files(fs):
 	import os
 
 	_fs = []
-	for _root, _dirs, _files in os.walk(fd):
-		for _f in _files:
-			if _f.lower()[-4:] in ['.tif', '.img', '.hdf'] or \
-					_f.lower()[-7:] in ['.tif.gz', '.img.gz', '.hdf.gz']:
-				_p = os.path.join(_root, _f)
+	for _f in fs:
+		if os.path.isdir(_f):
+			for _root, _dirs, _files in os.walk(_f):
+				for _file in _files:
+					if os.path.splitext(_file)[-1] in ['.tif', '.img']:
+						_fs.append(os.path.join(_root, _file))
+		else:
+			_ext = os.path.splitext(_f)
+			if _ext[-1] in ['.txt']:
+				with open(_f) as _fi:
+					_ls = _fi.read().strip().splitlines()
+					_fs.extend(_ls)
+				continue
 
-				if absp:
-					_p = os.path.abspath(_p)
+			if _ext[-1] in ['.tif', '.img']:
+				_fs.append(_f)
+				continue
 
-				if dataset:
-					_p = _p + '#' + dataset
-				_fs.append(_p)
-	if len(_fs) == 0:
-		print 'found no files'
-		return
+			raise Exception('unsupported file type (%s)' % _f)
 
-	print 'found', len(_fs), 'files in', fd
-	print '--------------'
-	for _f in _fs[: min(len(_fs), 2)]:
-		print ' >', _f
-	print '  ...'
-
-	import gio.file_unzip
-	_zip = gio.file_unzip.file_unzip(d_tmp)
-	try:
-		generate_shp(_fs, proj, f_out, _zip, opts)
-	finally:
-		_zip.clean()
+	return _fs
 
 def main(opts):
 	import os
 
-	if os.path.isdir(opts.input):
-		return generate_shp_from_folder(opts.input, opts.dataset,
-				opts.projection, opts.output, opts.absolutepath,
-				opts.temp_path, opts)
+	_fs = indentify_files(opts.input)
+	_fo = opts.output if opts.output else os.path.splitext(opts.input[0])[0] + '.shp'
 
-	_f_inp = opts.input.lower()
-
-	if _f_inp.endswith('.txt'):
-		return generate_shp_from_list(opts.input, opts.dataset, opts.projection,
-				opts.output, opts.absolutepath, opts.temp_path, opts)
-
-	print 'unknown inputs'
+	return generate_shp_from_list(_fs, opts.dataset, opts.projection,
+			_fo, opts.absolutepath, opts)
 
 def usage():
 	_p = environ_mag.usage(True)
 
-	_p.add_argument('-i', '--input', dest='input')
+	_p.add_argument('-i', '--input', dest='input', nargs='+')
 	_p.add_argument('-p', '--projection', dest='projection', type=int)
 	_p.add_argument('-n', '--dataset', dest='dataset')
-	_p.add_argument('-o', '--ouput-file', dest='output', required=True)
-	_p.add_argument('-t', '--temp-path', dest='temp_path')
+	_p.add_argument('-o', '--ouput-file', dest='output')
 	_p.add_argument('-a', '--absolute-path', dest='absolutepath',
 			action='store_true')
 
@@ -309,5 +273,4 @@ if __name__ == '__main__':
 	from gio import environ_mag
 	environ_mag.init_path()
 	environ_mag.run(main, [environ_mag.config(usage())])
-
 

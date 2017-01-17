@@ -73,7 +73,7 @@ class s3():
 
 		return _bk
 
-	def get(self, key):
+	def get(self, key, lock=None):
 		_f = self._c.path(key.key)
 
 		if self._c.cached(key.key):
@@ -86,14 +86,31 @@ class s3():
 			pass
 
 		import shutil
+		import file_unzip
 
-		_t = _f + '.bak'
 		for _i in xrange(3):
-			with open(_t, 'wb') as _fo:
-				self.bucket.get_key(key).get_contents_to_file(_fo)
-				if os.path.exists(_t) and os.path.getsize(_t) > 0:
-					shutil.move(_t, _f)
-					return _f
+			_t = file_unzip.generate_file(os.path.dirname(_f), '', '.bak')
+
+			try:
+				# write an empty file to prevent other process to use the same file name
+				with open(_t, 'wb') as _fo:
+					_fo.write('')
+
+				with open(_t, 'wb') as _fo:
+					self.bucket.get_key(key).get_contents_to_file(_fo)
+					if os.path.exists(_t) and os.path.getsize(_t) > 0:
+						if lock is None:
+							if os.path.exists(_f) == False:
+								shutil.move(_t, _f)
+						else:
+							with lock:
+								if os.path.exists(_f) == False:
+									shutil.move(_t, _f)
+
+						return _f
+			finally:
+				if os.path.exists(_t):
+					os.remove(_t)
 
 		raise Exception('failed to load S3 file %s' % key)
 
