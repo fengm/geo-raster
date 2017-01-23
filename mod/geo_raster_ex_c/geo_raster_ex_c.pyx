@@ -639,12 +639,13 @@ class geo_point:
 
 class band_file:
 
-	def __init__(self, f, band_idx=1, dataset_name=None, file_unzip=None):
+	def __init__(self, f, band_idx=1, dataset_name=None, file_unzip=None, cache=None):
 		self.file = f
 		self.dataset_name = dataset_name
 		self.band_idx = band_idx
 		self.unzip = file_unzip
 		self.band = None
+		self.cache = cache
 
 	def get_band(self):
 		import geo_raster
@@ -654,13 +655,29 @@ class band_file:
 			return self.band
 
 		_img = None
-		if self.file.endswith('.gz'):
-			if not self.unzip:
-				raise Exception('file unzip is required for *.gz files')
+		_inp = self.file
+		_pat = None
 
-			_img = geo_raster.geo_raster.open(self.unzip.unzip(self.file))
+		if self.cache:
+			_key = _inp[:-3] if _inp.endswith('.gz') else _inp
+			_pat = self.cache.get(_key)
+
+			if not _pat:
+				if _inp.endswith('.gz'):
+					if not self.unzip:
+						raise Exception('file unzip is required for *.gz files')
+					_inp = self.unzip.unzip(self.file)
+				
+				_pat = self.cache.put(_key, _inp)
 		else:
-			_img = geo_raster.geo_raster.open(self.file)
+			if _inp.endswith('.gz'):
+				if not self.unzip:
+					raise Exception('file unzip is required for *.gz files')
+				_inp = self.unzip.unzip(self.file)
+			_pat = _inp
+
+		assert(_pat)
+		_img = geo_raster.geo_raster.open(_pat)
 
 		if _img is None:
 			raise Exception('Failed to open image ' + self.file)
@@ -741,7 +758,7 @@ class geo_band_stack_zip:
 
 	@staticmethod
 	def from_list(cls, f_list, band_idx=1, dataset_name=None, \
-			file_unzip=None, check_layers=False, nodata=None):
+			file_unzip=None, check_layers=False, nodata=None, cache=None):
 		import geo_base as gb
 
 		_bnds = []
@@ -766,7 +783,7 @@ class geo_band_stack_zip:
 				_proj = _bbb.proj
 
 			_poly = gb.geo_polygon.from_raster(_bbb)
-			_bnds.append(geo_band_obj(_poly, _bnd))
+			_bnds.append(geo_band_obj(_poly, _bnd, cache=cache))
 
 		if len(_bnds) == 0:
 			logging.error('No images found')
@@ -776,7 +793,7 @@ class geo_band_stack_zip:
 
 	@staticmethod
 	def from_shapefile(f_list, band_idx=1, dataset_name=None, \
-			file_unzip=None, check_layers=False, nodata=None):
+			file_unzip=None, check_layers=False, nodata=None, cache=None):
 		from osgeo import ogr
 		import geo_base as gb
 
@@ -819,7 +836,7 @@ class geo_band_stack_zip:
 				_name = _ns[1]
 
 			_bnds.append(geo_band_obj(_poly, band_file(_file,
-				band_idx, _name, file_unzip)))
+				band_idx, _name, file_unzip, cache)))
 
 		if len(_bnds) == 0:
 			logging.error('No images found')

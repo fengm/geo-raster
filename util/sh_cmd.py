@@ -70,9 +70,10 @@ def main(opts):
 		_d_log = os.path.join(_d_base, 'log', 'pro')
 		_log_std = os.path.join(_d_log, 'note_%02d.log' % _hosts[i])
 
-		_cmd = 'ssh %s "cd %s;python %s --logging %s -ts %d -in %d -ip %d %s %s" > %s &' % \
+		_cmd = 'ssh %s "cd %s;python %s --logging %s -ts %d -in %d -ip %d %s %s %s" > %s &' % \
 				(_host, _d_envi, ' '.join(_f_prg), log_file(_f_prg[0], _hosts[i]), _task_num, len(_hosts), \
-				i, '-se' if opts.skip_error else '', ('-tw %s' % opts.time_wait) if opts.time_wait > 0 else '', \
+				i, '-se' if opts.skip_error else '', '-to %s' % opts.task_order, \
+				('-tw %s' % opts.time_wait) if opts.time_wait > 0 else '', \
 				_log_std)
 
 		if opts.print_cmd:
@@ -105,6 +106,7 @@ def usage():
 			help='number of task on lower and higer nodes')
 	_p.add_argument('-se', '--skip-error', dest='skip_error', action='store_true')
 	_p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=0)
+	_p.add_argument('-to', '--task-order', dest='task_order', type=int, default=0)
 
 	return _p
 
