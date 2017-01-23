@@ -5,7 +5,10 @@ Version: 0.1
 Create: 2014-03-18 02:02:29
 Description: help locate and read the configuration file
 '''
+# updated (2017-01-20 02:05:18): updated to support use all config files in a dir or listed in a list file as config inputs
+
 import collections
+import logging
 
 cfg = None
 
@@ -55,6 +58,32 @@ def _detect_file(f_cfg):
 	_f = _detect_sys(_f, 'conf') or _detect_sys(_f, 'ini')
 	return _f
 
+def _load_dir(d):
+	import os
+
+	_fs = []
+	for _root, _dirs, _files in os.walk(d):
+		for _file in _files:
+			_ext = os.path.splitext(_file)[-1]
+			if _ext in ['.ini', '.conf']:
+				_fs.append(os.path.join(_root, _file))
+
+	return _fs
+
+def _load_file(f):
+	_fs = []
+
+	with open(f) as _fi:
+		_ls = _fi.read().strip().splitlines()
+		for _l in _ls:
+			_l = _l.strip()
+			if _l.startswith('#') or _l.startwith(';'):
+				continue
+
+			_fs.append(_l)
+
+	return _fs
+
 def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_value=False):
 	global cfg
 
@@ -65,13 +94,26 @@ def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_
 	import ConfigParser
 	cfg = ConfigParser.ConfigParser(_defaults, dict_type, allow_no_value)
 
+	import os
 	_fs = []
 	for _f in (f_cfg if (isinstance(f_cfg, list) or isinstance(f_cfg, tuple)) else [f_cfg]):
+		if os.path.exists(_f):
+			if os.path.isdir(_f):
+				_fs.extend(_load_dir(_f))
+				continue
+
+			if os.path.path.splitext(_f)[-1] in ['.txt']:
+				_fs.extend(_load_file(_f))
+				continue
+
 		_l = _detect_file(_f)
 		if _l == None:
 			continue
 
 		_fs.append(_l)
+
+	for _l in _fs:
+		logging.info('loading config file: %s' % _l)
 
 	cfg.read(_fs)
 
