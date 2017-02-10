@@ -53,7 +53,7 @@ def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exc
 		_rs.append(None)
 
 	import logging
-	if debug:
+	if debug or _p.returncode != 0:
 		logging.info('Output message:%s\n' % _rs[0])
 		logging.info('Error message:%s' % _rs[1])
 
