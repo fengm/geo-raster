@@ -97,12 +97,12 @@ def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_
 	import os
 	_fs = []
 	for _f in (f_cfg if (isinstance(f_cfg, list) or isinstance(f_cfg, tuple)) else [f_cfg]):
-		if os.path.exists(_f):
+		if _f and os.path.exists(_f):
 			if os.path.isdir(_f):
 				_fs.extend(_load_dir(_f))
 				continue
 
-			if os.path.path.splitext(_f)[-1] in ['.txt']:
+			if os.path.splitext(_f)[-1] in ['.txt']:
 				_fs.extend(_load_file(_f))
 				continue
 
