@@ -15,18 +15,46 @@ def add_task_opts(p):
 	p.add_argument('-ts', '--task-num', dest='task_num', type=int, default=1)
 	p.add_argument('-se', '--skip-error', dest='skip_error', default=False, action='store_true')
 	p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=0)
+	p.add_argument('-to', '--task-order', dest='task_order', type=int, default=0)
 
 def load_from_list(f_ls, opts):
 	return load_list(f_ls, opts.instance_num, opts.instance_pos)
+
+def _list_sub_list(ls, opts):
+	logging.info('load sub list with type %s' % opts.task_order)
+
+	if opts.task_order <= 1:
+		return [ls[i] for i in xrange(opts.instance_pos, len(ls), opts.instance_num)]
+
+	# if opts.task_order == 1:
+	# 	import math
+	# 	_sz = int(math.ceil(len(ls) / float(opts.instance_num)))
+
+	# 	_ns = _sz * opts.instance_pos
+	# 	_ne = min(_ns + _sz, len(ls))
+
+	# 	return ls[_ns: _ne]
+
+	import math
+	_nd = int(math.ceil(float(len(ls)) / opts.task_order))
+
+	_ss = []
+	for _id in xrange(opts.instance_pos, _nd, opts.instance_num):
+		_ps = _id * opts.task_order
+		_ss.extend(ls[min(len(ls), _ps): min(_ps + opts.task_order, len(ls))])
+
+	return _ss
+
+	raise Exception('unsupported order type %s' % opts.task_order)
 
 def load(ls, opts):
 	import os
 
 	if isinstance(ls, str) and os.path.exists(ls):
-		return load_list(ls, opts.instance_num, opts.instance_pos)
+		return _list_sub_list(load_list(ls), opts)
 
 	if isinstance(ls, list) or isinstance(ls, tuple):
-		return [ls[i] for i in xrange(opts.instance_pos, len(ls), opts.instance_num)]
+		return _list_sub_list(ls, opts)
 
 	raise Exception('unsupported list type %r' % ls)
 
@@ -34,12 +62,8 @@ def load_list(f_ls, num, pos):
 	logging.debug('loading ' + f_ls)
 
 	with open(f_ls) as _fi:
-		_ls_a = _fi.read().splitlines()
-		_ls_a = [_l.strip() for _l in _ls_a if _l.strip()]
-		_ls_s = [_ls_a[i] for i in xrange(pos, len(_ls_a), num)]
-		logging.debug('select %s from %s' % (len(_ls_s), len(_ls_a)))
-
-		return _ls_s
+		_ls_a = _fi.strip().read().splitlines()
+		return _ls_a
 
 def run(func, ps, opts, vs=[]):
 	_pool = Pool(func, ps, opts.task_num, opts.skip_error, opts.time_wait)
