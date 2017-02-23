@@ -162,6 +162,19 @@ def _generate_extents(fs, proj, opts):
 
 	return _res
 
+def _get_tag(f):
+	import re
+
+	_m = re.search('h\d+v\d+', f)
+	if _m:
+		return _m.group()
+
+	_m = re.search('p\d+r\d+', f)
+	if _m:
+		return _m.group()
+
+	return ''
+
 def generate_shp(fs, proj, f_out, fzip, opts):
 	from gio import geo_raster as ge
 	from osgeo import ogr
@@ -187,6 +200,10 @@ def generate_shp(fs, proj, f_out, fzip, opts):
 	_fld.SetWidth(254)
 	_lyr.CreateField(_fld)
 
+	_fld = ogr.FieldDefn('TAG', ogr.OFTString)
+	_fld.SetWidth(25)
+	_lyr.CreateField(_fld)
+
 	_perc = progress_percentage(len(_pols.keys()))
 	for _f, _ps in _pols.items():
 		_perc.next()
@@ -197,6 +214,8 @@ def generate_shp(fs, proj, f_out, fzip, opts):
 
 			_ftr = ogr.Feature(_lyr.GetLayerDefn())
 			_ftr.SetField('file', _f)
+			_ftr.SetField('tag', _get_tag(_f))
+
 			_ftr.SetGeometry(ogr.CreateGeometryFromWkb(_p))
 			_lyr.CreateFeature(_ftr)
 			_ftr.Destroy()
