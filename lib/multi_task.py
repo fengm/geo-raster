@@ -21,7 +21,7 @@ def load_from_list(f_ls, opts):
 	return load_list(f_ls, opts.instance_num, opts.instance_pos)
 
 def _list_sub_list(ls, opts):
-	logging.info('load sub list with type %s' % opts.task_order)
+	logging.debug('load sub list with type %s' % opts.task_order)
 
 	if opts.task_order <= 1:
 		return [ls[i] for i in xrange(opts.instance_pos, len(ls), opts.instance_num)]
@@ -90,9 +90,9 @@ def print_percent(nu, tn, perc_step, end=False):
 	_p2 = int((nu+0) * _ss // (perc_step * tn))
 
 	if end:
-		logging.info('-> task end %d/%d' % (nu, tn))
+		logging.debug('-> task end %d/%d' % (nu, tn))
 	else:
-		logging.info('<- task start %d/%d' % (nu, tn))
+		logging.debug('<- task start %d/%d' % (nu, tn))
 
 	if _p1 < _p2 or nu >= tn:
 		if end:

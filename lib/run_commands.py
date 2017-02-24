@@ -3,7 +3,7 @@
 
 def run_exe(cmd, shell=True):
 	import logging
-	logging.info('run cmd: ' + str(cmd))
+	logging.debug('run cmd: ' + str(cmd))
 
 	_shell = shell
 	if type(cmd) == tuple or type(cmd) == list:
@@ -13,7 +13,7 @@ def run_exe(cmd, shell=True):
 	_p = subprocess.Popen(cmd, shell=_shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	_rs = _p.communicate()
 
-	logging.info('return code: %s' % _p.returncode)
+	logging.debug('return code: %s' % _p.returncode)
 	if _p.returncode != 0:
 		import logging
 		logging.error('Failed running cmd: %s %s\n' % (cmd, _p.returncode))
@@ -32,16 +32,16 @@ def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exc
 	if type(cmd) == tuple or type(cmd) == list:
 		_shell = False
 
-	logging.info('run %scmd: "%s"' % ('shell ' if _shell else '', str(cmd)))
+	logging.debug('run %scmd: "%s"' % ('shell ' if _shell else '', str(cmd)))
 
 	import subprocess
 	_stdout = stdout if stdout else subprocess.PIPE
 	_stderr = stderr if stderr else subprocess.PIPE
 
 	if cwd:
-		logging.info('cwd: %s' % cwd)
+		logging.debug('cwd: %s' % cwd)
 	if env:
-		logging.info('env: %s' % str(env))
+		logging.debug('env: %s' % str(env))
 
 	_p = subprocess.Popen(cmd, shell=_shell, stdout=_stdout, stderr=_stderr, cwd=cwd, env=env)
 	_rs = list(_p.communicate())
@@ -54,10 +54,10 @@ def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exc
 
 	import logging
 	if debug or _p.returncode != 0:
-		logging.info('Output message:%s\n' % _rs[0])
-		logging.info('Error message:%s' % _rs[1])
+		logging.warning('Output message:%s\n' % _rs[0])
+		logging.warning('Error message:%s' % _rs[1])
 
-	logging.info('return code: %s' % _p.returncode)
+	logging.debug('return code: %s' % _p.returncode)
 	if _p.returncode != 0:
 		logging.error('Failed running cmd: %s %s\n' % (cmd, _p.returncode))
 		if raise_exception:

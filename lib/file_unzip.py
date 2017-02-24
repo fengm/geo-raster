@@ -245,7 +245,7 @@ class file_unzip:
 		import config
 		self._debug = debug | config.getboolean('conf', 'debug', False)
 
-		logging.info('temp: %s' % self.fd_out)
+		logging.debug('temp: %s' % self.fd_out)
 		if self._debug:
 			print 'temp:', self.fd_out
 
