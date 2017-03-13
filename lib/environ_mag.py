@@ -42,7 +42,7 @@ def config(p):
 	# 	_opts.logging = os.path.join(_opts.output, 'log.txt')
 
 	for _k, _v in _opts.__dict__.items():
-		if _v != None:
+		if _v is not None:
 			config.cfg.set('conf', _k, str(_v))
 
 	from gio import logging_util
