@@ -757,7 +757,7 @@ class geo_band_stack_zip:
 		self.bands[0].clean()
 
 	@staticmethod
-	def from_list(cls, f_list, band_idx=1, dataset_name=None, \
+	def from_list(f_list, band_idx=1, dataset_name=None, \
 			file_unzip=None, check_layers=False, nodata=None, cache=None):
 		import geo_base as gb
 
@@ -775,7 +775,7 @@ class geo_band_stack_zip:
 				_file = _ns[0]
 				_name = _ns[1]
 
-			_bnd = band_file(_file, band_idx, _name, file_unzip)
+			_bnd = band_file(_file, band_idx, _name, file_unzip, cache)
 			_bbb = _bnd.get_band()
 			assert(_bbb is not None)
 
@@ -783,7 +783,7 @@ class geo_band_stack_zip:
 				_proj = _bbb.proj
 
 			_poly = gb.geo_polygon.from_raster(_bbb)
-			_bnds.append(geo_band_obj(_poly, _bnd, cache=cache))
+			_bnds.append(geo_band_obj(_poly, _bnd))
 
 		if len(_bnds) == 0:
 			logging.error('No images found')

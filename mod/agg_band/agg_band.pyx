@@ -53,7 +53,7 @@ def mean(bnd_in, bnd_ot, float v_min=0, float v_max=100):
 
 def mean_std(bnd_in, bnd_ot):
 	# only support float32 data type
-	assert(bnd_in.data.dtype == np.float32)
+	# assert(bnd_in.data.dtype == np.float32)
 
 	_geo_in = list(bnd_in.geo_transform)
 	_geo_ot = list(bnd_ot.geo_transform)
