@@ -61,11 +61,11 @@ class cache_mag():
 
 		return self.path(key)
 
-	def put(self, key, inp=None):
+	def put(self, key, inp=None, replace=True):
 		_f = self.path(key)
 		_inp = inp if inp else key
 
-		if self.cached(key):
+		if replace == False and self.cached(key):
 			logging.info('loading cached %s' % key)
 			return _f
 
