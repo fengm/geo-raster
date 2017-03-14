@@ -62,14 +62,19 @@ class cache_mag():
 		return self.path(key)
 
 	def put(self, key, inp=None, replace=True):
+		import os
+
 		_f = self.path(key)
 		_inp = inp if inp else key
 
-		if replace == False and self.cached(key):
-			logging.info('loading cached %s' % key)
-			return _f
+		if self.cached(key):
+			if replace:
+				logging.info('clear cached %s' % key)
+				os.remove(_f)
+			else:
+				logging.info('loading cached %s' % key)
+				return _f
 
-		import os
 		try:
 			(lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
 		except Exception:
@@ -107,9 +112,16 @@ class cache_mag():
 		import os
 
 		self._n += 1
-		if self._n < 30:
+		if self._n < 1000:
 			return
 		self._n = 0
+
+		from gio import config
+		_max_file = config.getint('conf', 'max_cached_file', -1)
+		_max_size = config.getfloat('conf', 'max_cached_size', -1)
+
+		if _max_file < 0 and _max_size < 0:
+			return
 
 		_fs = []
 		_sz = 0.0
@@ -128,10 +140,6 @@ class cache_mag():
 				_sz += os.path.getsize(_ff)
 
 		_fs = sorted(_fs)
-
-		from gio import config
-		_max_file = config.getint('conf', 'max_cached_file', -1)
-		_max_size = config.getfloat('conf', 'max_cached_size', -1)
 
 		logging.info('checking cache %s, %s (%s, %s)' % (len(_fs), _sz, _max_file, _max_size))
 
