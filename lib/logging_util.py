@@ -52,7 +52,7 @@ def init(f=None):
 
 	# print 'logging file', _f
 	_handler = sync_file_log_handler(_f)
-	_level = logging.DEBUG if _debug else logging.INFO
+	_level = logging.DEBUG # if _debug else logging.INFO
 
 	_handler.setLevel(_level)
 	if _debug:
@@ -63,6 +63,8 @@ def init(f=None):
 
 	_log = logging.getLogger()
 	_log.addHandler(_handler)
+
+	_level = logging.INFO if _debug else logging.WARNING
 	_log.setLevel(_level)
 
 	# logging.basicConfig(filename=_f, level=logging.DEBUG, filemode=filemode, format=format)

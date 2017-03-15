@@ -65,7 +65,7 @@ def files(bnd, objs):
 
 class tiles:
 
-	def __init__(self, image_size=None, cell_size=None):
+	def __init__(self, image_size=None, cell_size=None, edge=1):
 		import math
 		import geo_base as gb
 		import config
@@ -74,6 +74,7 @@ class tiles:
 		self.s = config.getint('conf', 'image_size', image_size)
 		self.c = config.getint('conf', 'cell_size', cell_size)
 		self.p = self.b * math.pi
+		self.edge = edge
 
 		self.prj = gb.modis_projection()
 
@@ -91,7 +92,8 @@ class tiles:
 			_ppp.next()
 			_x = -self.p
 			for _col in xrange(_cols):
-				_ext = gb.geo_extent(_x, _y, _x + ((self.s + 1) * self.c), _y - ((self.s + 1) * self.c), self.prj)
+				_ext = gb.geo_extent(_x, _y, _x + ((self.s + self.edge) * self.c), _y \
+						- ((self.s + self.edge) * self.c), self.prj)
 				if ext == None or _ext.is_intersect(ext):
 					yield _col, _row
 
@@ -104,7 +106,7 @@ class tiles:
 		_geo = [-self.p + (col * self.s * self.c), self.c, 0, self.p / 2 - (row * self.s * self.c), 0, -self.c]
 
 		import geo_raster as ge
-		return ge.geo_raster_info(_geo, self.s+1, self.s+1, self.prj)
+		return ge.geo_raster_info(_geo, self.s+self.edge, self.s+self.edge, self.prj)
 
 	def files(self, bnd, objs):
 		return files(bnd, objs)
