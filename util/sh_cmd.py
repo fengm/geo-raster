@@ -44,13 +44,15 @@ def log_file(p, node):
 def main(opts):
 	_hosts = range(opts.nodes[0], opts.nodes[1] + 1)
 	for _e in opts.excludes if opts.excludes else []:
-		del _hosts[_hosts.index(_e)]
+		if _e in _hosts:
+			del _hosts[_hosts.index(_e)]
 
-	import os, sys
+	from gio import logging_util
+	import os
 
 	_d_envi = format_path(os.getcwd())
 
-	_d_base = format_path(sys.path[0])
+	_f_log = logging_util.log_file
 	_f_prg = format_command(opts.command)
 
 	# only include nodes for processing
@@ -71,8 +73,7 @@ def main(opts):
 		if _hosts[i] > 20:
 			_task_num = opts.task_num[2]
 
-		_d_log = os.path.join(_d_base, 'log', 'pro')
-		_log_std = os.path.join(_d_log, 'note_%02d.log' % _hosts[i])
+		_log_std = (_f_log[:-4] + '_node_%02d.log' % _hosts[i])
 
 		# _cmd = 'ssh %s "cd %s;python %s --logging %s -ts %d -in %d -ip %d %s %s %s" > %s &' % \
 		# 		(_host, _d_envi, ' '.join(_f_prg), log_file(_f_prg[0], _hosts[i]), _task_num, len(_hosts), \
@@ -84,12 +85,13 @@ def main(opts):
 				i, '-se' if opts.skip_error else '', '-to %s' % opts.task_order, \
 				('-tw %s' % opts.time_wait) if opts.time_wait > 0 else '', \
 				_log_std)
-
-		if opts.print_cmd:
-			print _cmd
-			continue
+		# _cmd = 'ssh %s "cd %s; %s -ts %d -in %d -ip %d %s %s %s" &' % \
+		# 		(_host, _d_envi, ' '.join(_f_prg), _task_num, len(_hosts), \
+		# 		i, '-se' if opts.skip_error else '', '-to %s' % opts.task_order, \
+		# 		('-tw %s' % opts.time_wait) if opts.time_wait > 0 else '')
 
 		try:
+			_d_log = os.path.dirname(_log_std)
 			os.path.exists(_d_log) or os.makedirs(_d_log)
 		except Exception:
 			pass
@@ -99,8 +101,12 @@ def main(opts):
 		except Exception:
 			pass
 
+		if opts.print_cmd:
+			print _cmd
+			continue
+
 		import subprocess
-		subprocess.Popen(_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		subprocess.Popen(_cmd, shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
 
 def usage():
 	_p = environ_mag.usage(False)
