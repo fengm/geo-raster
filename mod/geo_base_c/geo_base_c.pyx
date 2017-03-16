@@ -844,12 +844,23 @@ class projection_transform:
 		return _x, _y
 
 def modis_projection():
+	return proj_from_proj4('+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs')
+
+def proj_from_proj4(txt):
 	from osgeo import osr
 
-	_modis_proj = osr.SpatialReference()
-	_modis_proj.ImportFromProj4('+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs')
+	_proj = osr.SpatialReference()
+	_proj.ImportFromProj4(txt)
 
-	return _modis_proj
+	return _proj
+
+def proj_from_epsg(code=4326):
+	from osgeo import osr
+
+	_proj = osr.SpatialReference()
+	_proj.ImportFromEPSG(code)
+
+	return _proj
 
 def output_geometries(geos, proj, geo_type, f_shp):
 	from osgeo import ogr, gdal
