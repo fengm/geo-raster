@@ -415,13 +415,13 @@ class geo_band_cache(geo_band_info):
 		return geo_band_cache(_dat, _geo2, self.proj, _fill,
 						self.pixel_type, self.color_table)
 
-	def read_block(self, bnd):
+	def read_block(self, bnd, check_proj=True):
 		if bnd is None:
 			return None
 
 		if (bnd.geo_transform[1] == self.geo_transform[1]) and \
 				((None in [bnd.proj, self.proj]) or bnd.proj.IsSame(self.proj)):
-			_bnd = self.read_ext(bnd.extent(), True)
+			_bnd = self.read_ext(bnd.extent(), True, False)
 			assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
 			return _bnd
 
@@ -686,8 +686,11 @@ class geo_band(geo_band_info):
 		return geo_band_cache(_dat, _img.geo_transform, _img.proj,
 				self.nodata, self.pixel_type, self.color_table)
 
-	def read_ext(self, ext, roundup=False):
-		if ext.proj is not None and self.proj.ExportToProj4() != ext.proj.ExportToProj4():
+	def read_ext(self, ext, roundup=False, check_proj=True):
+		if check_proj and ext.proj is not None and self.proj.ExportToProj4() != ext.proj.ExportToProj4():
+			logging.warning('proj1: %s' % self.proj.ExportToProj4() if self.proj else None)
+			logging.warning('proj2: %s' % ext.proj.ExportToProj4() if ext.proj else None)
+
 			raise Exception('The extent is supposed to be in the same CRS as the band does')
 
 		_ext1 = self.extent()
@@ -741,13 +744,13 @@ class geo_band(geo_band_info):
 		return geo_band_cache(_dat, _geo2, self.proj, _fill,
 						self.pixel_type, self.color_table)
 
-	def read_block(self, bnd):
+	def read_block(self, bnd, check_proj=True):
 		if bnd is None:
 			return None
 
 		if (bnd.geo_transform[1] == self.geo_transform[1]) and \
 				(None in [bnd.proj, self.proj] or bnd.proj.IsSame(self.proj)):
-			_bnd = self.read_ext(bnd.extent(), True)
+			_bnd = self.read_ext(bnd.extent(), True, check_proj)
 			assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
 			return _bnd
 
