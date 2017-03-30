@@ -52,7 +52,7 @@ def init(f=None):
 
 	# print 'logging file', _f
 	_handler = sync_file_log_handler(_f)
-	_level = logging.DEBUG if _debug else logging.INFO
+	_level = logging.DEBUG if _debug else logging.WARNING
 
 	_handler.setLevel(_level)
 	if _debug:
