@@ -23,6 +23,8 @@ def convert_file(f_img, f_clr, d_out):
 
 		_clr = _bnd.color_table
 		if f_clr:
+			# from gio import color_table
+			# _clr = color_table.color_table(f_clr).ogr_color_table()
 			_clr = ge.load_colortable(f_clr)
 
 		_bnd.cache().save(os.path.join(_d_tmp, _f.replace('.img', '.tif').replace('.gz', '')), \
@@ -39,7 +41,7 @@ def main(opts):
 	multi_task.run(convert_file, _ps, opts)
 
 def usage():
-	_p = environ_mag.usage(False)
+	_p = environ_mag.usage(True)
 
 	_p.add_argument('-i', '--input', dest='input', required=True)
 	_p.add_argument('-c', '--color', dest='color')

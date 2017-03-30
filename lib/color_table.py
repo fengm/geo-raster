@@ -40,7 +40,7 @@ class color_table:
 
 	def __init__(self, ccs):
 		_rs = ccs if isinstance(ccs, dict) else self._load_color_file(ccs)
-		_vs = sorted(ccs.keys())
+		_vs = sorted(_rs.keys())
 		_cs = [map(int, list(_rs[_v]) + ([] if len(_rs[_v]) > 3 else [255])) for _v in _vs]
 
 		self._vs = _vs

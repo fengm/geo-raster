@@ -8,7 +8,7 @@ Description: prepare and run the processes to process global data
 
 import logging
 
-def load_shp(f, column=None, ext=None):
+def load_shp(f, column=None, ext=None, proj=None):
 	from osgeo import ogr
 	import geo_base as gb
 
@@ -22,10 +22,13 @@ def load_shp(f, column=None, ext=None):
 	if ext:
 		_lyr.SetSpatialFilter(ext.project_to(_lyr.GetSpatialRef()).poly)
 
+	if _lyr.GetGeomType() != 3:
+		raise Exception('the input boundary file needs to be polygon type (%s)' % _lyr.GetGeomType())
+
 	_objs = []
 	_area = None
 
-	_prj = gb.modis_projection()
+	_prj = proj or gb.modis_projection()
 
 	for _f in _lyr:
 		_obj = gb.geo_polygon(_f.geometry().Clone())
@@ -51,6 +54,7 @@ def files(bnd, objs):
 
 	if len(objs) > 0:
 		_obj = objs[0][2]
+
 		_pol = _pol.project_to(_obj.proj)
 		_ext = _pol.extent()
 
@@ -65,7 +69,7 @@ def files(bnd, objs):
 
 class tiles:
 
-	def __init__(self, image_size=None, cell_size=None):
+	def __init__(self, image_size=None, cell_size=None, edge=1, proj=None):
 		import math
 		import geo_base as gb
 		import config
@@ -74,8 +78,9 @@ class tiles:
 		self.s = config.getint('conf', 'image_size', image_size)
 		self.c = config.getint('conf', 'cell_size', cell_size)
 		self.p = self.b * math.pi
+		self.edge = edge
 
-		self.prj = gb.modis_projection()
+		self.proj = proj if proj else gb.modis_projection()
 
 	def list(self, ext=None):
 		import geo_base as gb
@@ -91,7 +96,8 @@ class tiles:
 			_ppp.next()
 			_x = -self.p
 			for _col in xrange(_cols):
-				_ext = gb.geo_extent(_x, _y, _x + ((self.s + 1) * self.c), _y - ((self.s + 1) * self.c), self.prj)
+				_ext = gb.geo_extent(_x, _y, _x + ((self.s + self.edge) * self.c), _y \
+						- ((self.s + self.edge) * self.c), self.proj)
 				if ext == None or _ext.is_intersect(ext):
 					yield _col, _row
 
@@ -104,14 +110,14 @@ class tiles:
 		_geo = [-self.p + (col * self.s * self.c), self.c, 0, self.p / 2 - (row * self.s * self.c), 0, -self.c]
 
 		import geo_raster as ge
-		return ge.geo_raster_info(_geo, self.s+1, self.s+1, self.prj)
+		return ge.geo_raster_info(_geo, self.s+self.edge, self.s+self.edge, self.proj)
 
 	def files(self, bnd, objs):
 		return files(bnd, objs)
 
 class tile:
 
-	def __init__(self, image_size, cell_size, col, row, fs, ps=None):
+	def __init__(self, image_size, cell_size, col, row, fs, ps=None, edge=1, proj=None):
 		self.image_size = image_size
 		self.cell_size = cell_size
 		self.col = col
@@ -119,9 +125,15 @@ class tile:
 		self.files = fs
 		self.params = ps
 		self.tag = 'h%03dv%03d' % (col, row)
+		self.edge = edge
+		self.proj = proj.ExportToProj4() if proj else None
+
+	def proj_obj(self):
+		from gio import geo_base as gb
+		return gb.proj_from_proj4(self.proj)
 
 	def extent(self):
-		return tiles(self.image_size, self.cell_size).extent(self.col, self.row)
+		return tiles(self.image_size, self.cell_size, self.edge, self.proj_obj()).extent(self.col, self.row)
 
 	def obj(self):
 		return {
@@ -131,12 +143,14 @@ class tile:
 				'row': self.row,
 				'files': self.files,
 				'params': self.params,
-				'tag': self.tag
+				'tag': self.tag,
+				'edge': self.edge,
+				'proj': self.proj
 				}
 
 	def filter_files(self, f, column='file'):
 		_ext = self.extent()
-		_reg, _objs = load_shp(f, column, _ext.extent().to_polygon())
+		_reg, _objs = load_shp(f, column, _ext.extent().to_polygon(), proj=self.proj_obj())
 		if _reg == None:
 			return []
 
@@ -144,8 +158,14 @@ class tile:
 
 	@staticmethod
 	def from_obj(obj):
+		_t_proj = obj.get('proj', None)
+		_t_edge = obj.get('edge', 1)
+
+		from gio import geo_base as gb
+		_proj = gb.proj_from_proj4(obj['proj']) if _t_proj else None
+
 		return tile(obj['image_size'], obj['cell_size'], obj['col'],
-				obj['row'], obj['files'], obj['params'])
+				obj['row'], obj['files'], obj['params'], _t_edge, _proj)
 
 def _output_geometries(geos, proj, geo_type, f_shp):
 	from osgeo import ogr
@@ -181,12 +201,16 @@ def _output_polygons(polys, f_shp):
 	logging.debug('output polygon to ' + f_shp)
 	_output_geometries(polys, polys[0][0].proj, ogr.wkbPolygon, f_shp)
 
-def make(f_inp, column, image_size=1000, cell_size=30, ps=None, f_shp=None):
-	_ext, _objs = load_shp(f_inp, column)
+def make(f_inp, column, image_size=1000, cell_size=30, ps=None, f_shp=None, edge=1, proj=None):
+	from gio import geo_base as gb
+
+	_proj = proj or gb.modis_projection()
+	_ext, _objs = load_shp(f_inp, column, proj=_proj)
+
 	if _ext == None:
 		return []
 
-	_tils = tiles(image_size, cell_size)
+	_tils = tiles(image_size, cell_size, edge, _proj)
 
 	logging.info('detected extent %s' % str(_ext))
 
@@ -201,7 +225,7 @@ def make(f_inp, column, image_size=1000, cell_size=30, ps=None, f_shp=None):
 		if len(_fs) == 0:
 			continue
 
-		_tile = tile(image_size, cell_size, _col, _row, _fs, ps)
+		_tile = tile(image_size, cell_size, _col, _row, _fs, ps, edge, _proj)
 		_ps.append(_tile)
 
 		if f_shp:
@@ -209,6 +233,9 @@ def make(f_inp, column, image_size=1000, cell_size=30, ps=None, f_shp=None):
 
 	if f_shp:
 		_output_polygons(_pp, f_shp)
+
+	# _pps = [_g[2] for _g in _objs]
+	# gb.output_polygons(_pps, f_shp[:-4] + '_test.shp')
 
 	return _ps
 

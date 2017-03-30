@@ -23,7 +23,7 @@ class sync_file_log_handler(logging.FileHandler):
 			with self.t_lock:
 				logging.FileHandler.emit(self, record)
 
-def init(f=None):
+def find_log(f=None):
 	import sys, os, re
 
 	_f = f
@@ -40,6 +40,18 @@ def init(f=None):
 			_f = os.path.join(os.environ['G_LOG'], _f + '.log')
 		else:
 			_f = os.path.join(sys.path[0], 'log', _f + '.log')
+
+	return _f
+
+log_file = None
+
+def init(f=None):
+	_f = find_log(f)
+
+	global log_file
+	log_file = _f
+
+	import os
 
 	_d_log = os.path.dirname(_f)
 	os.path.exists(_d_log) or os.makedirs(_d_log)
@@ -63,6 +75,8 @@ def init(f=None):
 
 	_log = logging.getLogger()
 	_log.addHandler(_handler)
+
+	_level = logging.INFO if _debug else logging.WARNING
 	_log.setLevel(_level)
 
 	# logging.basicConfig(filename=_f, level=logging.DEBUG, filemode=filemode, format=format)

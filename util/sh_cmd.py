@@ -5,8 +5,8 @@ def format_command(cmd):
 	import re
 	_vs = re.split('\s+', cmd.strip())
 
-	if _vs[0] == 'python':
-		_vs = _vs[1:]
+	# if _vs[0] == 'python':
+	# 	_vs = _vs[1:]
 
 	if '--logging' in _vs:
 		raise Exception('the --logging parameter will be took over by the parallel script')
@@ -44,13 +44,15 @@ def log_file(p, node):
 def main(opts):
 	_hosts = range(opts.nodes[0], opts.nodes[1] + 1)
 	for _e in opts.excludes if opts.excludes else []:
-		del _hosts[_hosts.index(_e)]
+		if _e in _hosts:
+			del _hosts[_hosts.index(_e)]
 
-	import os, sys
+	from gio import logging_util
+	import os
 
 	_d_envi = format_path(os.getcwd())
 
-	_d_base = format_path(sys.path[0])
+	_f_log = logging_util.log_file
 	_f_prg = format_command(opts.command)
 
 	# only include nodes for processing
@@ -65,22 +67,31 @@ def main(opts):
 
 		print '>>', _host
 
-		_task_num = opts.task_num[0] if _hosts[i] <= 10 else opts.task_num[1]
+		_task_num = opts.task_num[0]
+		if _hosts[i] > 10:
+			_task_num = opts.task_num[1]
+		if _hosts[i] > 20:
+			_task_num = opts.task_num[2]
 
-		_d_log = os.path.join(_d_base, 'log', 'pro')
-		_log_std = os.path.join(_d_log, 'note_%02d.log' % _hosts[i])
+		_log_std = (_f_log[:-4] + '_node_%02d.log' % _hosts[i])
 
-		_cmd = 'ssh %s "cd %s;python %s --logging %s -ts %d -in %d -ip %d %s %s %s" > %s &' % \
-				(_host, _d_envi, ' '.join(_f_prg), log_file(_f_prg[0], _hosts[i]), _task_num, len(_hosts), \
+		# _cmd = 'ssh %s "cd %s;python %s --logging %s -ts %d -in %d -ip %d %s %s %s" > %s &' % \
+		# 		(_host, _d_envi, ' '.join(_f_prg), log_file(_f_prg[0], _hosts[i]), _task_num, len(_hosts), \
+		# 		i, '-se' if opts.skip_error else '', '-to %s' % opts.task_order, \
+		# 		('-tw %s' % opts.time_wait) if opts.time_wait > 0 else '', \
+		# 		_log_std)
+		_cmd = 'ssh %s "cd %s; %s -ts %d -in %d -ip %d %s %s %s" > %s &' % \
+				(_host, _d_envi, ' '.join(_f_prg), _task_num, len(_hosts), \
 				i, '-se' if opts.skip_error else '', '-to %s' % opts.task_order, \
 				('-tw %s' % opts.time_wait) if opts.time_wait > 0 else '', \
 				_log_std)
-
-		if opts.print_cmd:
-			print _cmd
-			continue
+		# _cmd = 'ssh %s "cd %s; %s -ts %d -in %d -ip %d %s %s %s" &' % \
+		# 		(_host, _d_envi, ' '.join(_f_prg), _task_num, len(_hosts), \
+		# 		i, '-se' if opts.skip_error else '', '-to %s' % opts.task_order, \
+		# 		('-tw %s' % opts.time_wait) if opts.time_wait > 0 else '')
 
 		try:
+			_d_log = os.path.dirname(_log_std)
 			os.path.exists(_d_log) or os.makedirs(_d_log)
 		except Exception:
 			pass
@@ -90,8 +101,12 @@ def main(opts):
 		except Exception:
 			pass
 
+		if opts.print_cmd:
+			print _cmd
+			continue
+
 		import subprocess
-		subprocess.Popen(_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		subprocess.Popen(_cmd, shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
 
 def usage():
 	_p = environ_mag.usage(False)
@@ -102,7 +117,7 @@ def usage():
 	_p.add_argument('-i', '--include', dest='include', type=int, nargs='*', \
 			help='Only nodes listed in the param will be run. Used for reruning jobs for specified nodes.')
 	_p.add_argument('-p', '--print', dest='print_cmd', default=False, action='store_true')
-	_p.add_argument('-ts', '--task-num', dest='task_num', type=int, nargs=2, default=[5, 12], \
+	_p.add_argument('-ts', '--task-num', dest='task_num', type=int, nargs=3, default=[5, 12, 24], \
 			help='number of task on lower and higer nodes')
 	_p.add_argument('-se', '--skip-error', dest='skip_error', action='store_true')
 	_p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=0)

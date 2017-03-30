@@ -73,7 +73,6 @@ cdef int within_extent(int col, int row, int width, int height, int row_start, i
 
 	return 1
 
-
 cdef align_min(val, ref, div):
 	import math
 	return math.floor((val - ref) / div) * div + ref
@@ -81,6 +80,18 @@ cdef align_min(val, ref, div):
 cdef align_max(val, ref, div):
 	import math
 	return math.ceil((val - ref) / div) * div + ref
+
+def is_same_projs(proj1, proj2):
+	if None is [proj1, proj2]:
+		return True
+
+	if proj1.ExportToProj4() == proj2.ExportToProj4():
+		return True
+
+	if proj1.IsSame(proj2):
+		return True
+
+	return False
 
 class geo_raster_info:
 	def __init__(self, geo_transform, width, height, proj):
@@ -365,8 +376,14 @@ class geo_band_cache(geo_band_info):
 		write_raster(f, self.geo_transform, self.proj.ExportToWkt(),
 				self.data, nodata=self.nodata, pixel_type=_pixel_type, driver=driver, color_table=color_table, opts=opts)
 
-	def read_ext(self, ext, roundup=False):
-		if ext.proj is not None and self.proj.ExportToProj4() != ext.proj.ExportToProj4():
+	def read_ext(self, ext, roundup=False, check_proj=True):
+		if ext is None:
+			return None
+
+		if check_proj and not is_same_projs(ext.proj, self.proj):
+			logging.warning('proj1: %s' % self.proj.ExportToProj4() if self.proj else None)
+			logging.warning('proj2: %s' % ext.proj.ExportToProj4() if ext.proj else None)
+
 			raise Exception('The extent is supposed to be in the same CRS as the band does')
 
 		_ext1 = self.extent()
@@ -415,14 +432,14 @@ class geo_band_cache(geo_band_info):
 		return geo_band_cache(_dat, _geo2, self.proj, _fill,
 						self.pixel_type, self.color_table)
 
-	def read_block(self, bnd):
+	def read_block(self, bnd, check_proj=True):
 		if bnd is None:
 			return None
 
-		if (bnd.geo_transform[1] == self.geo_transform[1]) and \
-				((None in [bnd.proj, self.proj]) or bnd.proj.IsSame(self.proj)):
-			_bnd = self.read_ext(bnd.extent(), True)
-			assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
+		if (bnd.geo_transform[1] == self.geo_transform[1]) and is_same_projs(bnd.proj, self.proj):
+			_bnd = self.read_ext(bnd.extent(), True, False)
+			if _bnd:
+				assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
 			return _bnd
 
 		import geo_base
@@ -624,6 +641,9 @@ class geo_band(geo_band_info):
 			_cols = self.width
 
 		_d = self.band.ReadAsArray(col, row, _cols, _rows, _cols, _rows)
+		if _d is None:
+			return None
+
 		self.data = _d
 		self.buf_row_start = row
 		self.buf_row_end = row + _d.shape[0]
@@ -686,8 +706,14 @@ class geo_band(geo_band_info):
 		return geo_band_cache(_dat, _img.geo_transform, _img.proj,
 				self.nodata, self.pixel_type, self.color_table)
 
-	def read_ext(self, ext, roundup=False):
-		if ext.proj is not None and self.proj.ExportToProj4() != ext.proj.ExportToProj4():
+	def read_ext(self, ext, roundup=False, check_proj=True):
+		if ext is None:
+			return None
+
+		if check_proj and not is_same_projs(ext.proj, self.proj):
+			logging.warning('proj1: %s' % self.proj.ExportToProj4() if self.proj else None)
+			logging.warning('proj2: %s' % ext.proj.ExportToProj4() if ext.proj else None)
+
 			raise Exception('The extent is supposed to be in the same CRS as the band does')
 
 		_ext1 = self.extent()
@@ -731,6 +757,9 @@ class geo_band(geo_band_info):
 		_h = min(_h, self.height - _off_y1, _rows)
 
 		_ddd = self.read_rows(_off_y1, _h)
+		if _ddd is None:
+			return None
+
 		_dat[_off_y2: _off_y2 + _h, _off_x2: _off_x2 + _w] = _ddd[0: _h, _off_x1: _off_x1 + _w]
 
 		_geo2 = list(_geo1)
@@ -741,14 +770,14 @@ class geo_band(geo_band_info):
 		return geo_band_cache(_dat, _geo2, self.proj, _fill,
 						self.pixel_type, self.color_table)
 
-	def read_block(self, bnd):
+	def read_block(self, bnd, check_proj=True):
 		if bnd is None:
 			return None
 
-		if (bnd.geo_transform[1] == self.geo_transform[1]) and \
-				(None in [bnd.proj, self.proj] or bnd.proj.IsSame(self.proj)):
-			_bnd = self.read_ext(bnd.extent(), True)
-			assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
+		if (bnd.geo_transform[1] == self.geo_transform[1]) and is_same_projs(bnd.proj, self.proj):
+			_bnd = self.read_ext(bnd.extent(), True, check_proj)
+			if _bnd:
+				assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
 			return _bnd
 
 		import geo_base
