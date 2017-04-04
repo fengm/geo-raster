@@ -29,20 +29,38 @@ def main(opts):
 				if not opts.pattern or re.search(opts.pattern, _file):
 					_fs.append(os.path.join(format_path(_root), _file))
 
+	if len(_fs) == 0:
+		print ' * no file was found'
+		return
+
 	if opts.output:
 		print 'found', len(_fs), 'files'
 		with open(opts.output, 'w') as _fo:
 			_fo.write('\n'.join(_fs))
+
+		if opts.extent:
+			print 'generate raster extent'
+
+			_cmd = 'raster_extent2shp.py -i %s ' % opts.output
+			_tsk = '-in %s -ip %s -ts %s %s -tw %s -to %s' % ( \
+					opts.instance_num, opts.instance_pos, opts.task_num, \
+							'-se' if opts.skip_error else '', opts.time_wait, opts.task_order)
+
+			from gio import run_commands
+			run_commands.run(_cmd + _tsk)
 	else:
 		for _l in _fs:
 			print _l
 
 def usage():
-	_p = environ_mag.usage(False)
+	_p = environ_mag.usage(True)
 
 	_p.add_argument('-i', '--input', dest='input', required=True, action='append')
 	_p.add_argument('-o', '--output', dest='output')
 	_p.add_argument('-p', '--pattern', dest='pattern')
+
+	_p.add_argument('-e', '--extent', dest='extent', action='store_true', \
+			help='run raster_extent2shp after the list is generated')
 
 	return _p
 
