@@ -29,12 +29,13 @@ def load_shp(f, column=None, ext=None, proj=None):
 	_area = None
 
 	_prj = proj or gb.modis_projection()
-
 	for _f in _lyr:
 		_obj = gb.geo_polygon(_f.geometry().Clone())
 		_ext = _obj.extent()
 
 		_ooo = _obj.project_to(_prj)
+		logging.debug('loading %s from %s (%s)' % (column, _f, ', '.join(_f.keys())))
+
 		_objs.append((_f[column] if column else _f.GetFID(), _ooo.extent(), _ooo))
 
 		if _area == None:
@@ -126,7 +127,12 @@ class tile:
 		self.params = ps
 		self.tag = 'h%03dv%03d' % (col, row)
 		self.edge = edge
-		self.proj = proj.ExportToProj4() if proj else None
+		self.proj = None
+		if proj is not None:
+			if isinstance(proj, str):
+				self.proj = proj
+			else:
+				self.proj = proj.ExportToProj4()
 
 	def proj_obj(self):
 		from gio import geo_base as gb
@@ -161,11 +167,11 @@ class tile:
 		_t_proj = obj.get('proj', None)
 		_t_edge = obj.get('edge', 1)
 
-		from gio import geo_base as gb
-		_proj = gb.proj_from_proj4(obj['proj']) if _t_proj else None
+		# from gio import geo_base as gb
+		# _proj = gb.proj_from_proj4(str(_t_proj)) if _t_proj else None
 
 		return tile(obj['image_size'], obj['cell_size'], obj['col'],
-				obj['row'], obj['files'], obj['params'], _t_edge, _proj)
+				obj['row'], obj['files'], obj['params'], _t_edge, str(_t_proj) if _t_proj else _t_proj)
 
 def _output_geometries(geos, proj, geo_type, f_shp):
 	from osgeo import ogr
