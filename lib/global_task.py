@@ -162,7 +162,7 @@ class tile:
 		_t_edge = obj.get('edge', 1)
 
 		from gio import geo_base as gb
-		_proj = gb.proj_from_proj4(obj['proj']) if _t_proj else None
+		_proj = gb.proj_from_proj4(str(_t_proj)) if _t_proj else None
 
 		return tile(obj['image_size'], obj['cell_size'], obj['col'],
 				obj['row'], obj['files'], obj['params'], _t_edge, _proj)
