@@ -20,15 +20,26 @@ class file_obj():
 	def __cmp__(self, f):
 		return cmp(self._t, f._t)
 
+_w_lock = None
+
 class cache_mag():
 	"""manage Landsat cache files"""
 
-	def __init__(self, tag, cache=None):
+	def __init__(self, tag, cache=None, max_file=-1, max_size=-1):
 		import config
 
 		self._t = tag
-		self._d = cache if cache else config.get('conf', 'cache')
+		self._d = config.get('conf', 'cache', cache)
+
+		self._max_file = config.getint('conf', 'max_cached_file', max_file)
+		self._max_size = config.getfloat('conf', 'max_cached_size', max_size)
+
 		self._n = 0
+
+		global _w_lock
+		if _w_lock is None:
+			import multi_task
+			_w_lock = multi_task.create_lock()
 
 	def cached(self, key):
 		_f = self.path(key)
@@ -53,7 +64,13 @@ class cache_mag():
 			# remove the root path if it exists
 			_p = _p[1:]
 
-		return os.path.join(self._d, self._t, _p)
+		_f = os.path.join(self._d, self._t, _p)
+
+		import os
+		if os.path.exists(_f):
+			os.utime(_f, None)
+
+		return _f
 
 	def get(self, key):
 		if not self.cached(key):
@@ -75,23 +92,28 @@ class cache_mag():
 				logging.info('loading cached %s' % key)
 				return _f
 
-		try:
-			(lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
-		except Exception:
-			pass
+		global _w_lock
+		with _w_lock:
+			if os.path.exists(_f):
+				return _f
 
-		import random
-		_f_out = _f + str(random.randint(0, 1000)) + '.bak'
+			self._clean()
 
-		import shutil
-		shutil.copy(_inp, _f_out)
+			try:
+				(lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
+			except Exception:
+				pass
 
-		if os.path.exists(_f) == False:
-			shutil.move(_f_out, _f)
-		else:
-			os.remove(_f_out)
+			import random
+			_f_out = _f + str(random.randint(0, 1000)) + '.bak'
 
-		self._clean()
+			import shutil
+			shutil.copy(_inp, _f_out)
+
+			if os.path.exists(_f) == False:
+				shutil.move(_f_out, _f)
+			else:
+				os.remove(_f_out)
 
 		return _f
 
@@ -111,17 +133,16 @@ class cache_mag():
 	def _clean(self):
 		import os
 
-		self._n += 1
-		if self._n < 1000:
+		if self._max_file < 0 and self._max_size < 0:
 			return
+
+		self._n += 1
+
+		if self._n < (self._max_file / 10 if self._max_file > 0 else 1000):
+			return
+
 		self._n = 0
 
-		from gio import config
-		_max_file = config.getint('conf', 'max_cached_file', -1)
-		_max_size = config.getfloat('conf', 'max_cached_size', -1)
-
-		if _max_file < 0 and _max_size < 0:
-			return
 
 		_fs = []
 		_sz = 0.0
@@ -141,24 +162,24 @@ class cache_mag():
 
 		_fs = sorted(_fs)
 
-		logging.info('checking cache %s, %s (%s, %s)' % (len(_fs), _sz, _max_file, _max_size))
+		logging.info('checking cache %s, %s (%s, %s)' % (len(_fs), _sz, self._max_file, self._max_size))
 
 		_fd1 = []
-		if _max_file > 0 and len(_fs) > _max_file:
-			_fd = _fs[:_max_file-len(_fs)]
+		if self._max_file > 0 and len(_fs) > self._max_file:
+			_fd = _fs[:self._max_file-len(_fs)]
 
 		_fd2 = []
-		if _max_size > 0:
+		if self._max_size > 0:
 			# convert from GB
-			_max_size *= (1024 * 1024 * 1024)
+			self._max_size *= (1024 * 1024 * 1024)
 
-		if _max_size > 0 and _sz > _max_size:
+		if self._max_size > 0 and _sz > self._max_size:
 			_zz = _sz
 			for _f in _fs:
 				_fd2.append(_f)
 				_zz -= _f._z
 
-				if _zz <= _max_size:
+				if _zz <= self._max_size:
 					break
 
 		_fd = _fd1 if len(_fd1) > len(_fd2) else _fd2

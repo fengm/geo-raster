@@ -847,10 +847,13 @@ def modis_projection():
 	return proj_from_proj4('+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs')
 
 def proj_from_proj4(txt):
+	if not txt:
+		return None
+
 	from osgeo import osr
 
 	_proj = osr.SpatialReference()
-	_proj.ImportFromProj4(txt)
+	_proj.ImportFromProj4(str(txt))
 
 	return _proj
 

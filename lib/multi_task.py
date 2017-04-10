@@ -14,7 +14,7 @@ def add_task_opts(p):
 	p.add_argument('-ip', '--instance-pos', dest='instance_pos', type=int, default=0)
 	p.add_argument('-ts', '--task-num', dest='task_num', type=int, default=1)
 	p.add_argument('-se', '--skip-error', dest='skip_error', default=False, action='store_true')
-	p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=0)
+	p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=1)
 	p.add_argument('-to', '--task-order', dest='task_order', type=int, default=0)
 
 def load_from_list(f_ls, opts):
