@@ -36,7 +36,7 @@ def main(opts):
 	if opts.output:
 		print 'found', len(_fs), 'files'
 		with open(opts.output, 'w') as _fo:
-			_fo.write('\n'.join(_fs))
+			_fo.write('\n'.join(_fs) + '\n')
 
 		if opts.extent:
 			print 'generate raster extent'
