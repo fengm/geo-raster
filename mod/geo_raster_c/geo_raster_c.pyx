@@ -737,6 +737,9 @@ class geo_band(geo_band_info):
 			_cols = int(round((ext.width() / _cell)))
 			_rows = int(round((ext.height() / _cell)))
 
+		if _cols == 0 or _rows == 0:
+			return None
+
 		import numpy
 		_dat = numpy.empty((_rows, _cols))
 		_dat.fill(_fill)
@@ -756,8 +759,23 @@ class geo_band(geo_band_info):
 		_w = min(_w, self.width - _off_x1, _cols)
 		_h = min(_h, self.height - _off_y1, _rows)
 
+		if _w <= 0 or _h <= 0:
+			logging.warning('the size of the target arrange is too small (%s, %s)' % (_w, _h))
+			return None
+
 		_ddd = self.read_rows(_off_y1, _h)
 		if _ddd is None:
+			logging.warning('failed to return arrange for the target')
+			return None
+
+		if _ddd.shape[0] <= 0 or _ddd.shape[1] <= 0:
+			logging.warning('the size of the returned arrange is too small (%s, %s)' % (_w, _h))
+			return None
+
+		if _off_y2 + _h > _dat.shape[0]:
+			return None
+
+		if _off_x2 + _w > _dat.shape[1]:
 			return None
 
 		_dat[_off_y2: _off_y2 + _h, _off_x2: _off_x2 + _w] = _ddd[0: _h, _off_x1: _off_x1 + _w]
@@ -776,9 +794,10 @@ class geo_band(geo_band_info):
 
 		if (bnd.geo_transform[1] == self.geo_transform[1]) and is_same_projs(bnd.proj, self.proj):
 			_bnd = self.read_ext(bnd.extent(), True, check_proj)
+			
 			if _bnd:
 				assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
-			return _bnd
+				return _bnd
 
 		import geo_base
 
