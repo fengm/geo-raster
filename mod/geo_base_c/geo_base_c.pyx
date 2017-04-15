@@ -514,8 +514,8 @@ class geo_polygon:
 
 		return _poly1.Intersect(_poly2)
 
-	def buffer(self, dis):
-		_poly = geo_polygon(self.poly.Buffer(dis))
+	def buffer(self, dis, nsegs=30):
+		_poly = geo_polygon(self.poly.Buffer(dis, nsegs))
 		if self.proj is not None:
 			_poly.set_proj(self.proj)
 		return _poly
