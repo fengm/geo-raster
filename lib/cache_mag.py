@@ -20,7 +20,8 @@ class file_obj():
 	def __cmp__(self, f):
 		return cmp(self._t, f._t)
 
-_w_lock = None
+_w_lock = {}
+_w_nums = {}
 
 class cache_mag():
 	"""manage Landsat cache files"""
@@ -34,12 +35,16 @@ class cache_mag():
 		self._max_file = config.getint('conf', 'max_cached_file', max_file)
 		self._max_size = config.getfloat('conf', 'max_cached_size', max_size)
 
-		self._n = 0
+		# self._n = 0
+
+		global _w_nums
+		if self._t not in _w_nums:
+			_w_nums[self._t] = 0.0
 
 		global _w_lock
-		if _w_lock is None:
+		if self._t not in _w_lock:
 			import multi_task
-			_w_lock = multi_task.create_lock()
+			_w_lock[self._t] = multi_task.create_lock()
 
 	def cached(self, key):
 		_f = self.path(key)
@@ -93,23 +98,31 @@ class cache_mag():
 				return _f
 
 		global _w_lock
-		with _w_lock:
+		with _w_lock[self._t]:
 			if os.path.exists(_f):
 				return _f
 
-			self._clean()
+			if self._max_file > 0 or self._max_size > 0:
+				global _w_nums
+				_w_nums[self._t] += 1
 
+				if _w_nums[self._t] > (self._max_file / 10 if self._max_file > 0 else 1000):
+					self._clean()
+					_w_nums[self._t] = 0
+
+		with _w_lock[self._t]:
 			try:
 				(lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
 			except Exception:
 				pass
 
-			import random
-			_f_out = _f + str(random.randint(0, 1000)) + '.bak'
+		import random
+		_f_out = _f + str(random.randint(0, 1000)) + '.bak'
 
-			import shutil
-			shutil.copy(_inp, _f_out)
+		import shutil
+		shutil.copy(_inp, _f_out)
 
+		with _w_lock[self._t]:
 			if os.path.exists(_f) == False:
 				shutil.move(_f_out, _f)
 			else:
@@ -133,16 +146,10 @@ class cache_mag():
 	def _clean(self):
 		import os
 
-		if self._max_file < 0 and self._max_size < 0:
-			return
+		logging.info('clean cache')
 
-		self._n += 1
-
-		if self._n < (self._max_file / 10 if self._max_file > 0 else 1000):
-			return
-
-		self._n = 0
-
+		# self._n = 0
+		_w_nums[self._t] == 0
 
 		_fs = []
 		_sz = 0.0
