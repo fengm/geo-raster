@@ -24,13 +24,14 @@ def main(opts):
 		_n += 1
 		print 'run command', _n, _d
 
-		run_commands.run(opts.command)
+		_rs = run_commands.run(opts.command)
+		print _rs[1]
 
 def usage():
 	_p = environ_mag.usage(False)
 
 	_p.add_argument('-c', '--command', dest='command', required=True)
-	_p.add_argument('-h', '--hour', dest='hour', required=True, type=int)
+	_p.add_argument('--hour', dest='hour', required=True, type=int)
 
 	return _p
 
