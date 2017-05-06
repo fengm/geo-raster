@@ -10,17 +10,24 @@ def main(opts):
 	from gio import run_commands
 	import datetime
 	import time
+	import sys
 
 	_d = datetime.datetime.now()
 	_n = 0
+
 	while(True):
 		_c = datetime.datetime.now()
-		if _n > 0 and (_c - _d).hour < 24:
-			time.sleep(60 * 10)
+		if _n > 0 and (_c - _d).total_seconds() < opts.second:
+			time.sleep(opts.second / 100)
+
+			print '.',
+			sys.std.flush()
 			continue
 
-		_d = _c
+		if _n > 0:
+			print ''
 
+		_d = _c
 		_n += 1
 		print 'run command', _n, _d
 
@@ -31,7 +38,7 @@ def usage():
 	_p = environ_mag.usage(False)
 
 	_p.add_argument('-c', '--command', dest='command', required=True)
-	_p.add_argument('--hour', dest='hour', required=True, type=int)
+	_p.add_argument('-s', '--second', dest='second', required=True, type=int)
 
 	return _p
 
