@@ -62,7 +62,7 @@ def run(func, opts):
 		return func(*opts)
 	else:
 		try:
-			func(*opts)
+			return func(*opts)
 		except KeyboardInterrupt:
 			print '\n\n* User stopped the program'
 		except Exception, err:
@@ -72,6 +72,9 @@ def run(func, opts):
 			logging.error(str(err))
 
 			print '\n\n* Error:', err
+
+		import sys
+		sys.exit(1)
 
 if __name__ == '__main__':
 	init_path()

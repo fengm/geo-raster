@@ -45,6 +45,26 @@ def find_log(f=None):
 
 log_file = None
 
+def _to_level(level):
+	if not level:
+		return None
+
+	_level = level.upper().strip()
+
+	if _level == 'DEBUG':
+		return logging.DEBUG
+
+	if _level == 'INFO':
+		return logging.INFO
+
+	if _level == 'WARNING':
+		return logging.WARNING
+
+	if _level == 'ERROR':
+		return logging.ERROR
+
+	raise Exception('unknown log level (%s)' % _level)
+
 def init(f=None):
 	_f = find_log(f)
 
@@ -53,7 +73,7 @@ def init(f=None):
 
 	import os
 
-	_d_log = os.path.dirname(_f)
+	_d_log = os.path.dirname(os.path.abspath(_f))
 	os.path.exists(_d_log) or os.makedirs(_d_log)
 
 	import config
@@ -62,22 +82,44 @@ def init(f=None):
 		print ' - debugging'
 		print ' - log file', _f
 
-	# print 'logging file', _f
-	_handler = sync_file_log_handler(_f)
-	_level = logging.DEBUG if _debug else logging.WARNING
-
-	_handler.setLevel(_level)
-	if _debug:
-		_handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s:%(message)s'))
-	else:
-		_handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s:%(message)s'))
-		# _handler.setFormatter(logging.Formatter('%(process)d:%(levelname)s:%(message)s'))
+	_level_out = config.get('conf', 'log_out_level', None)
+	_level_std = config.get('conf', 'log_std_level', None)
 
 	_log = logging.getLogger()
-	_log.addHandler(_handler)
+	_log.setLevel(logging.DEBUG)
 
-	_level = logging.INFO if _debug else logging.WARNING
-	_log.setLevel(_level)
+	if len(_log.handlers) == 0:
+		import sys
+		_log.addHandler(logging.StreamHandler(sys.stdout))
+
+	_handler = _log.handlers[0]
+
+	_level = logging.INFO if not _debug else logging.DEBUG
+	if _level_std:
+		_level = _to_level(_level_std)
+	_handler.setLevel(_level)
+
+	if _debug:
+		_handler.setFormatter(logging.Formatter('%(asctime)-15s:%(levelname)s: %(message)s'))
+	else:
+		_handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+
+	# print 'logging file', _f
+	_handler = sync_file_log_handler(_f)
+
+	_level = logging.DEBUG
+	if _level_out:
+		_level = _to_level(_level_out)
+
+	_handler.setLevel(_level)
+
+	if _debug:
+		_handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s: %(message)s'))
+	else:
+		_handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s: %(message)s'))
+		# _handler.setFormatter(logging.Formatter('%(process)d:%(levelname)s:%(message)s'))
+
+	_log.addHandler(_handler)
 
 	# logging.basicConfig(filename=_f, level=logging.DEBUG, filemode=filemode, format=format)
 
