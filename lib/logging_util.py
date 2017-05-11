@@ -45,26 +45,6 @@ def find_log(f=None):
 
 log_file = None
 
-def _to_level(level):
-	if not level:
-		return None
-
-	_level = level.upper().strip()
-
-	if _level == 'DEBUG':
-		return logging.DEBUG
-
-	if _level == 'INFO':
-		return logging.INFO
-
-	if _level == 'WARNING':
-		return logging.WARNING
-
-	if _level == 'ERROR':
-		return logging.ERROR
-
-	raise Exception('unknown log level (%s)' % _level)
-
 def init(f=None):
 	_f = find_log(f)
 
@@ -82,8 +62,8 @@ def init(f=None):
 		print ' - debugging'
 		print ' - log file', _f
 
-	_level_out = config.get('conf', 'log_out_level', None)
-	_level_std = config.get('conf', 'log_std_level', None)
+	_level_out = config.getint('conf', 'log_out_level', -1)
+	_level_std = config.getint('conf', 'log_std_level', -1)
 
 	_log = logging.getLogger()
 	_log.setLevel(logging.DEBUG)
@@ -94,9 +74,10 @@ def init(f=None):
 
 	_handler = _log.handlers[0]
 
-	_level = logging.INFO if not _debug else logging.DEBUG
-	if _level_std:
-		_level = _to_level(_level_std)
+	_level = 20 if not _debug else 10
+	if _level_std >= 0:
+		_level = _level_std
+
 	_handler.setLevel(_level)
 
 	if _debug:
@@ -107,9 +88,9 @@ def init(f=None):
 	# print 'logging file', _f
 	_handler = sync_file_log_handler(_f)
 
-	_level = logging.DEBUG
-	if _level_out:
-		_level = _to_level(_level_out)
+	_level = 20 if not _debug else 10
+	if _level_out >= 0:
+		_level = _level_out
 
 	_handler.setLevel(_level)
 
