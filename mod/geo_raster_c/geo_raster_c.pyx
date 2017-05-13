@@ -191,7 +191,7 @@ class geo_band_info(geo_raster_info):
 				raise Exception('Unsupport data type %s' % self.pixel_type)
 
 			_nodata = _default_nodata[self.pixel_type]
-			logging.warning('No nodata value provided, using default value (%s)' % _nodata)
+			logging.info('No nodata value provided, using default value (%s)' % _nodata)
 
 		return _nodata
 
@@ -381,8 +381,8 @@ class geo_band_cache(geo_band_info):
 			return None
 
 		if check_proj and not is_same_projs(ext.proj, self.proj):
-			logging.warning('proj1: %s' % self.proj.ExportToProj4() if self.proj else None)
-			logging.warning('proj2: %s' % ext.proj.ExportToProj4() if ext.proj else None)
+			logging.info('proj1: %s' % self.proj.ExportToProj4() if self.proj else None)
+			logging.info('proj2: %s' % ext.proj.ExportToProj4() if ext.proj else None)
 
 			raise Exception('The extent is supposed to be in the same CRS as the band does')
 
@@ -711,8 +711,8 @@ class geo_band(geo_band_info):
 			return None
 
 		if check_proj and not is_same_projs(ext.proj, self.proj):
-			logging.warning('proj1: %s' % self.proj.ExportToProj4() if self.proj else None)
-			logging.warning('proj2: %s' % ext.proj.ExportToProj4() if ext.proj else None)
+			logging.info('proj1: %s' % self.proj.ExportToProj4() if self.proj else None)
+			logging.info('proj2: %s' % ext.proj.ExportToProj4() if ext.proj else None)
 
 			raise Exception('The extent is supposed to be in the same CRS as the band does')
 
