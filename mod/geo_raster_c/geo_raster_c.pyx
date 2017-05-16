@@ -376,7 +376,7 @@ class geo_band_cache(geo_band_info):
 		write_raster(f, self.geo_transform, self.proj.ExportToWkt(),
 				self.data, nodata=self.nodata, pixel_type=_pixel_type, driver=driver, color_table=color_table, opts=opts)
 
-	def read_ext(self, ext, roundup=False, check_proj=True):
+	def read_ext(self, ext, roundup=True, check_proj=True):
 		if ext is None:
 			return None
 
@@ -411,11 +411,18 @@ class geo_band_cache(geo_band_info):
 		import geo_base as gb
 		_ext = gb.geo_extent.from_raster(self).intersect(ext)
 
-		_off_x1 = int((_ext.minx - _geo1[0]) / _cell)
-		_off_y1 = int((_geo1[3] - _ext.maxy) / _cell)
+		if roundup:
+			_off_x1 = int(round((_ext.minx - _geo1[0]) / _cell))
+			_off_y1 = int(round((_geo1[3] - _ext.maxy) / _cell))
 
-		_off_x2 = int((_ext.minx - ext.minx) / _cell)
-		_off_y2 = int((ext.maxy - _ext.maxy) / _cell)
+			_off_x2 = int(round((_ext.minx - ext.minx) / _cell))
+			_off_y2 = int(round((ext.maxy - _ext.maxy) / _cell))
+		else:
+			_off_x1 = int((_ext.minx - _geo1[0]) / _cell)
+			_off_y1 = int((_geo1[3] - _ext.maxy) / _cell)
+
+			_off_x2 = int((_ext.minx - ext.minx) / _cell)
+			_off_y2 = int((ext.maxy - _ext.maxy) / _cell)
 
 		import math
 		_w = int(math.ceil((_ext.width() / _cell)))
@@ -432,11 +439,12 @@ class geo_band_cache(geo_band_info):
 		return geo_band_cache(_dat, _geo2, self.proj, _fill,
 						self.pixel_type, self.color_table)
 
-	def read_block(self, bnd, check_proj=True):
+	def read_block(self, bnd, check_proj=True, apply_nni=True):
 		if bnd is None:
 			return None
 
-		if (bnd.geo_transform[1] == self.geo_transform[1]) and is_same_projs(bnd.proj, self.proj):
+		if apply_nni and (bnd.geo_transform[1] == self.geo_transform[1]) and is_same_projs(bnd.proj, self.proj):
+			logging.debug('reading from ext')
 			_bnd = self.read_ext(bnd.extent(), True, False)
 			if _bnd:
 				assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
@@ -706,7 +714,7 @@ class geo_band(geo_band_info):
 		return geo_band_cache(_dat, _img.geo_transform, _img.proj,
 				self.nodata, self.pixel_type, self.color_table)
 
-	def read_ext(self, ext, roundup=False, check_proj=True):
+	def read_ext(self, ext, roundup=True, check_proj=True):
 		if ext is None:
 			return None
 
@@ -728,14 +736,12 @@ class geo_band(geo_band_info):
 
 		import math
 
-		# _cols = int(math.ceil((ext.width() / _cell)))
-		# _rows = int(math.ceil((ext.height() / _cell)))
 		if roundup:
 			_cols = int(round((ext.width() / _cell)))
 			_rows = int(round((ext.height() / _cell)))
 		else:
-			_cols = int(round((ext.width() / _cell)))
-			_rows = int(round((ext.height() / _cell)))
+			_cols = int(math.ceil((ext.width() / _cell)))
+			_rows = int(math.ceil((ext.height() / _cell)))
 
 		if _cols == 0 or _rows == 0:
 			return None
@@ -747,11 +753,18 @@ class geo_band(geo_band_info):
 		import geo_base as gb
 		_ext = gb.geo_extent.from_raster(self).intersect(ext)
 
-		_off_x1 = int((_ext.minx - _geo1[0]) / _cell)
-		_off_y1 = int((_geo1[3] - _ext.maxy) / _cell)
+		if roundup:
+			_off_x1 = int(round((_ext.minx - _geo1[0]) / _cell))
+			_off_y1 = int(round((_geo1[3] - _ext.maxy) / _cell))
 
-		_off_x2 = int((_ext.minx - ext.minx) / _cell)
-		_off_y2 = int((ext.maxy - _ext.maxy) / _cell)
+			_off_x2 = int(round((_ext.minx - ext.minx) / _cell))
+			_off_y2 = int(round((ext.maxy - _ext.maxy) / _cell))
+		else:
+			_off_x1 = int((_ext.minx - _geo1[0]) / _cell)
+			_off_y1 = int((_geo1[3] - _ext.maxy) / _cell)
+
+			_off_x2 = int((_ext.minx - ext.minx) / _cell)
+			_off_y2 = int((ext.maxy - _ext.maxy) / _cell)
 
 		import math
 		_w = int(math.ceil((_ext.width() / _cell)))
@@ -788,11 +801,12 @@ class geo_band(geo_band_info):
 		return geo_band_cache(_dat, _geo2, self.proj, _fill,
 						self.pixel_type, self.color_table)
 
-	def read_block(self, bnd, check_proj=True):
+	def read_block(self, bnd, check_proj=True, apply_nni=True):
 		if bnd is None:
 			return None
 
-		if (bnd.geo_transform[1] == self.geo_transform[1]) and is_same_projs(bnd.proj, self.proj):
+		if apply_nni and (bnd.geo_transform[1] == self.geo_transform[1]) and is_same_projs(bnd.proj, self.proj):
+			logging.debug('reading from ext')
 			_bnd = self.read_ext(bnd.extent(), True, check_proj)
 			
 			if _bnd:
