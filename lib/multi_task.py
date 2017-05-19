@@ -51,7 +51,9 @@ def load(ls, opts):
 	import os
 
 	if isinstance(ls, str) and os.path.exists(ls):
-		return _list_sub_list(load_list(ls), opts)
+		with open(ls) as _fi:
+			_ls = _fi.read().strip().splitlines()
+			return _list_sub_list(_ls, opts)
 
 	if isinstance(ls, list) or isinstance(ls, tuple):
 		return _list_sub_list(ls, opts)
