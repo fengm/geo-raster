@@ -111,17 +111,19 @@ def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_
 
 	import sys
 	_df = {'root': sys.path[0]}
-	_df['config_path'] = os.path.dirname(_fs[0])
-	_df['config_file'] = os.path.basename(_fs[0])
 
-	if len(_fs) > 1:
-		logging.warning('config file %s is used for config_path and config_file parameters' % _fs[0])
+	if len(_fs) > 0:
+		_df['config_path'] = os.path.dirname(_fs[0])
+		_df['config_file'] = os.path.basename(_fs[0])
+
+		if len(_fs) > 1:
+			logging.warning('config file %s is used for config_path and config_file parameters' % _fs[0])
 
 	defaults != None and _df.update(defaults)
 
 	import ConfigParser
 	cfg = ConfigParser.ConfigParser(_df, dict_type, allow_no_value)
-	cfg.read(_fs)
+	len(_fs) and cfg.read(_fs)
 
 def get_attr(section, name):
 	global cfg
