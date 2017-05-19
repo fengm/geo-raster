@@ -11,7 +11,7 @@ def usage(multi_task=False):
 
 	_p = argparse.ArgumentParser()
 	_p.add_argument('--logging', dest='logging')
-	_p.add_argument('--config', dest='config')
+	_p.add_argument('--config', dest='config', nargs='+')
 	_p.add_argument('--debug', dest='debug', action='store_true')
 	_p.add_argument('--temp', dest='temp')
 

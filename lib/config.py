@@ -87,15 +87,9 @@ def _load_file(f):
 def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_value=False):
 	global cfg
 
-	import sys
-	_defaults = {'root': sys.path[0]}
-	defaults != None and _defaults.update(defaults)
-
-	import ConfigParser
-	cfg = ConfigParser.ConfigParser(_defaults, dict_type, allow_no_value)
-
 	import os
 	_fs = []
+
 	for _f in (f_cfg if (isinstance(f_cfg, list) or isinstance(f_cfg, tuple)) else [f_cfg]):
 		if _f and os.path.exists(_f):
 			if os.path.isdir(_f):
@@ -115,6 +109,18 @@ def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_
 	for _l in _fs:
 		logging.info('loading config file: %s' % _l)
 
+	import sys
+	_df = {'root': sys.path[0]}
+	_df['config_path'] = os.path.dirname(_fs[0])
+	_df['config_file'] = os.path.basename(_fs[0])
+
+	if len(_fs) > 1:
+		logging.warning('config file %s is used for config_path and config_file parameters' % _fs[0])
+
+	defaults != None and _df.update(defaults)
+
+	import ConfigParser
+	cfg = ConfigParser.ConfigParser(_df, dict_type, allow_no_value)
 	cfg.read(_fs)
 
 def get_attr(section, name):
@@ -212,4 +218,21 @@ def has_option(section, name):
 	"""
 	global cfg
 	return cfg.has_option(section, name)
+
+def main(opts):
+	from gio import config
+	print '#', config.get('conf', 'test1')
+	print '*', config.get('conf', 'test2')
+	print '#', config.get('conf', 'test3')
+	print '*', config.get('conf', 'test4')
+
+def usage():
+	_p = environ_mag.usage(False)
+
+	return _p
+
+if __name__ == '__main__':
+	from gio import environ_mag
+	environ_mag.init_path()
+	environ_mag.run(main, [environ_mag.config(usage())])
 

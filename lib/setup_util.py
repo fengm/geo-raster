@@ -63,19 +63,26 @@ def init(tag):
 
 	if os.path.exists(_path('etc')):
 		import os
+		import shutil
+
 		if 'G_INI' in os.environ and (os.environ['G_INI']):
 			print ' == copying config file =='
 			_d_ini = os.environ['G_INI']
 			if not os.path.exists(_d_ini):
 				os.makedirs(_d_ini)
 
-			import shutil
-			for _f in os.listdir(_path('etc')):
-				_fo = os.path.join(_d_ini, _f)
-				if not os.path.exists(_fo):
-					print ' + copy config file', os.path.join(_d_ini, _f)
-					shutil.copy(os.path.join('etc', _f), _fo)
-				else:
-					print ' - skip existed config file'
+			for _root, _dirs, _files in os.walk(_path('etc')):
+				for _file in _files:
+					_f_inp = os.path.join(_root, _file)
+					_f_out = os.path.join(_root.replace(_path('etc'), _d_ini), _file)
 
+					if os.path.exists(_f_out):
+						print ' - skip existed config file', _file
+						continue
+
+					_d_out = os.path.dirname(_f_out)
+					os.path.exists(_d_out) or os.makedirs(_d_out)
+
+					print ' + copy config file', _f_out
+					shutil.copy2(_f_inp, _f_out)
 
