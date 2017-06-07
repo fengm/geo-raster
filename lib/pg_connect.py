@@ -22,7 +22,7 @@ class obj(dict):
 
 	def __str__(self):
 		_ls = []
-		for _k, _v in self._obj.items():
+		for _k, _v in self.items():
 			_ls.append('%15s: %s' % (_k, _v))
 		return '\n'.join(_ls)
 
