@@ -9,12 +9,13 @@ Description:
 def main(opts):
 	from gio import run_commands
 	import time
+	import datetime
 
 	_nu = -1.0
 	while True:
 		_nu += 1
 
-		print 'run command #%d' % _nu
+		print 'run command #%d' % _nu, datetime.datetime.now()
 		try:
 			run_commands.run(opts.command, shell=True)
 		except Exception:
