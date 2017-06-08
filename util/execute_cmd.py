@@ -34,6 +34,9 @@ def main(opts):
 		_rs = run_commands.run(opts.command)
 		print _rs[1]
 
+		if opts.second <= 0:
+			break
+
 def usage():
 	_p = environ_mag.usage(False)
 

@@ -191,7 +191,7 @@ class geo_band_info(geo_raster_info):
 				raise Exception('Unsupport data type %s' % self.pixel_type)
 
 			_nodata = _default_nodata[self.pixel_type]
-			logging.info('No nodata value provided, using default value (%s)' % _nodata)
+			logging.debug('No nodata value provided, using default value (%s)' % _nodata)
 
 		return _nodata
 

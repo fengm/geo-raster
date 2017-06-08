@@ -21,13 +21,20 @@ def format_path(f):
 def main(opts):
 	import os
 	import re
+	import logging
 
 	_fs = []
 	for _dd in opts.input:
 		for _root, _dirs, _files in os.walk(os.path.abspath(_dd)):
 			for _file in _files:
 				if not opts.pattern or re.search(opts.pattern, _file):
-					_fs.append(os.path.join(format_path(_root), _file))
+					_f = os.path.join(format_path(_root), _file)
+
+					if os.path.getsize(_f) <= 0:
+						logging.warning('skip zero size file: %s' % _f)
+						continue
+
+					_fs.append(_f)
 
 	if len(_fs) == 0:
 		print ' * no file was found'
@@ -58,7 +65,8 @@ def main(opts):
 def usage():
 	_p = environ_mag.usage(True)
 
-	_p.add_argument('-i', '--input', dest='input', required=True, nargs='+')
+	_p.add_argument('-i', '--input', dest='input', required=True, action='+')
+	_p.add_argument('-z', '--skip-zero-file', dest='skip_zero_file', action='store_true')
 	_p.add_argument('-o', '--output', dest='output')
 	_p.add_argument('-p', '--pattern', dest='pattern')
 

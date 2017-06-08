@@ -92,9 +92,9 @@ def print_percent(nu, tn, perc_step, end=False):
 	_p2 = int((nu+0) * _ss // (perc_step * tn))
 
 	if end:
-		logging.debug('-> task end %d/%d' % (nu, tn))
+		logging.info('-> task end %d/%d' % (nu, tn))
 	else:
-		logging.debug('<- task start %d/%d' % (nu, tn))
+		logging.info('<- task start %d/%d' % (nu, tn))
 
 	if _p1 < _p2 or nu >= tn:
 		if end:
@@ -227,7 +227,7 @@ class Pool:
 				if _task_num != _task_tmp:
 					_task_num = _task_tmp
 
-					logging.debug('alive tasks num: %s' % _task_num)
+					logging.info('alive tasks num: %s' % _task_num)
 					text('\r\t\t\t\t\t\t(%3d)' % _task_num)
 
 					if _task_num <= 0:

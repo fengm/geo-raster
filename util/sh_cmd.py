@@ -74,17 +74,25 @@ def main(opts):
 			_task_num = opts.task_num[2]
 
 		_log_std = (_f_log[:-4] + '_node_%02d.log' % _hosts[i])
+		_log_err = (_f_log[:-4] + '_node_%02d_err.log' % _hosts[i])
+
+		os.path.exists(_log_std) and os.remove(_log_std)
+		os.path.exists(_log_err) and os.remove(_log_err)
 
 		# _cmd = 'ssh %s "cd %s;python %s --logging %s -ts %d -in %d -ip %d %s %s %s" > %s &' % \
 		# 		(_host, _d_envi, ' '.join(_f_prg), log_file(_f_prg[0], _hosts[i]), _task_num, len(_hosts), \
 		# 		i, '-se' if opts.skip_error else '', '-to %s' % opts.task_order, \
 		# 		('-tw %s' % opts.time_wait) if opts.time_wait > 0 else '', \
 		# 		_log_std)
-		_cmd = 'ssh %s "cd %s; %s -ts %d -in %d -ip %d %s %s %s" > %s &' % \
+		# _cmd = 'ssh %s "cd %s; %s -ts %d -in %d -ip %d %s %s %s" &' % \
+		# 		(_host, _d_envi, ' '.join(_f_prg), _task_num, len(_hosts), \
+		# 		i, '-se' if opts.skip_error else '', '-to %s' % opts.task_order, \
+		# 		('-tw %s' % opts.time_wait) if opts.time_wait > 0 else '')
+		_cmd = 'ssh %s "cd %s; %s -ts %d -in %d -ip %d %s %s %s" >> %s 2>> %s &' % \
 				(_host, _d_envi, ' '.join(_f_prg), _task_num, len(_hosts), \
 				i, '-se' if opts.skip_error else '', '-to %s' % opts.task_order, \
 				('-tw %s' % opts.time_wait) if opts.time_wait > 0 else '', \
-				_log_std)
+				_log_std, _log_err)
 		# _cmd = 'ssh %s "cd %s; %s -ts %d -in %d -ip %d %s %s %s" &' % \
 		# 		(_host, _d_envi, ' '.join(_f_prg), _task_num, len(_hosts), \
 		# 		i, '-se' if opts.skip_error else '', '-to %s' % opts.task_order, \
@@ -106,7 +114,8 @@ def main(opts):
 			continue
 
 		import subprocess
-		subprocess.Popen(_cmd, shell=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+		subprocess.Popen(_cmd, shell=True)
+		# subprocess.Popen(_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 def usage():
 	_p = environ_mag.usage(False)

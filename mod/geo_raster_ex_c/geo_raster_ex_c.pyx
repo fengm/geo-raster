@@ -1069,7 +1069,7 @@ class geo_band_stack_zip:
 		_nodata = self.nodata
 		if _nodata is None:
 			_nodata = _default_nodata[self.pixel_type]
-			logging.warning('No nodata value provided, using default value (%s)' % _nodata)
+			logging.debug('No nodata value provided, using default value (%s)' % _nodata)
 	
 		_dat_out.fill(_nodata)
 
