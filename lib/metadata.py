@@ -59,7 +59,7 @@ class metadata(object):
 	def save(self, f_out):
 		import json
 		with open(f_out, 'w') as _fo:
-			_fo.write(json.dumps(self, indent=4, default=_convert))
+			_fo.write(json.dumps(self, indent=4, ensure_ascii=False, default=_convert))
 		return
 
 	def save_txt(self, f_out):
@@ -75,7 +75,7 @@ class metadata(object):
 def load(f):
 	with open(f) as _fi:
 		import json
-		import collections
+		# import collections
 		# _obj = json.load(_fi, object_hook=_to_obj, object_pairs_hook=collections.OrderedDict)
 		_obj = json.load(_fi, object_pairs_hook=_to_obj_ex)
 		return _obj
@@ -106,8 +106,6 @@ def _object(obj):
 	return obj
 
 def main():
-	_opts = _init_env()
-
 	_m = metadata()
 	_m['name'] = 'mfeng'
 	_m['test1']['test2'] = 23
