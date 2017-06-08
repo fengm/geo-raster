@@ -35,6 +35,9 @@ def main(opts):
 
 	if opts.output:
 		print 'found', len(_fs), 'files'
+
+		(lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(os.path.abspath(opts.output)))
+
 		with open(opts.output, 'w') as _fo:
 			_fo.write('\n'.join(_fs) + '\n')
 
@@ -55,7 +58,7 @@ def main(opts):
 def usage():
 	_p = environ_mag.usage(True)
 
-	_p.add_argument('-i', '--input', dest='input', required=True, action='append')
+	_p.add_argument('-i', '--input', dest='input', required=True, nargs='+')
 	_p.add_argument('-o', '--output', dest='output')
 	_p.add_argument('-p', '--pattern', dest='pattern')
 
