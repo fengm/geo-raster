@@ -65,7 +65,7 @@ def main(opts):
 def usage():
 	_p = environ_mag.usage(True)
 
-	_p.add_argument('-i', '--input', dest='input', required=True, action='+')
+	_p.add_argument('-i', '--input', dest='input', nargs='+', required=True)
 	_p.add_argument('-z', '--skip-zero-file', dest='skip_zero_file', action='store_true')
 	_p.add_argument('-o', '--output', dest='output')
 	_p.add_argument('-p', '--pattern', dest='pattern')
