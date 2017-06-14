@@ -59,8 +59,8 @@ class metadata(object):
 	def save(self, f_out):
 		import json
 		with open(f_out, 'w') as _fo:
-			# _fo.write(json.dumps(self, indent=4, ensure_ascii=False, default=_convert))
-			_fo.write(json.dumps(self, indent=4, default=_convert))
+			_fo.write(json.dumps(self, indent=4, ensure_ascii=False, default=_convert))
+			# _fo.write(json.dumps(self, indent=4, default=_convert))
 		return
 
 	def save_txt(self, f_out):

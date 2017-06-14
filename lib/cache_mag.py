@@ -83,7 +83,7 @@ class cache_mag():
 
 		return self.path(key)
 
-	def put(self, key, inp=None, replace=True):
+	def put(self, key, inp=None, replace=False):
 		import os
 
 		_f = self.path(key)
@@ -92,7 +92,10 @@ class cache_mag():
 		if self.cached(key):
 			if replace:
 				logging.info('clear cached %s' % key)
-				os.remove(_f)
+				try:
+					os.remove(_f)
+				except Exception:
+					pass
 			else:
 				logging.info('loading cached %s' % key)
 				return _f
@@ -211,10 +214,12 @@ class s3():
 
 		return _bk
 
-	def get(self, key, lock=None):
-		_f = self._c.path(key.key)
+	def get(self, k, lock=None):
+		_key = k if isinstance(k, str) or isinstance(k, unicode) else k.key
+		_f = self._c.path(_key)
 
-		if self._c.cached(key.key):
+		if self._c.cached(_key):
+			logging.debug('found cached file %s' % _f)
 			return _f
 
 		import os
@@ -226,6 +231,11 @@ class s3():
 		import shutil
 		import file_unzip
 
+		_kkk = self.bucket.get_key(k) if isinstance(k, str) or isinstance(k, unicode) else k
+		if _kkk is None:
+			logging.warning('no key was found: %s' % k)
+			return None
+
 		for _i in xrange(3):
 			_t = file_unzip.generate_file(os.path.dirname(_f), '', '.bak')
 
@@ -235,7 +245,7 @@ class s3():
 					_fo.write('')
 
 				with open(_t, 'wb') as _fo:
-					self.bucket.get_key(key).get_contents_to_file(_fo)
+					self.bucket.get_key(_kkk).get_contents_to_file(_fo)
 					if os.path.exists(_t) and os.path.getsize(_t) > 0:
 						if lock is None:
 							if os.path.exists(_f) == False:
@@ -250,5 +260,5 @@ class s3():
 				if os.path.exists(_t):
 					os.remove(_t)
 
-		raise Exception('failed to load S3 file %s' % key)
+		raise Exception('failed to load S3 file %s' % _key)
 
