@@ -231,11 +231,6 @@ class s3():
 		import shutil
 		import file_unzip
 
-		_kkk = self.bucket.get_key(k) if isinstance(k, str) or isinstance(k, unicode) else k
-		if _kkk is None:
-			logging.warning('no key was found: %s' % k)
-			return None
-
 		for _i in xrange(3):
 			_t = file_unzip.generate_file(os.path.dirname(_f), '', '.bak')
 
@@ -244,8 +239,13 @@ class s3():
 				with open(_t, 'wb') as _fo:
 					_fo.write('')
 
+				_kkk = self.bucket.get_key(k) if isinstance(k, str) or isinstance(k, unicode) else k
+				if _kkk is None:
+					logging.warning('no key was found: %s' % k)
+					return None
+
 				with open(_t, 'wb') as _fo:
-					self.bucket.get_key(_kkk).get_contents_to_file(_fo)
+					_kkk.get_contents_to_file(_fo)
 					if os.path.exists(_t) and os.path.getsize(_t) > 0:
 						if lock is None:
 							if os.path.exists(_f) == False:
