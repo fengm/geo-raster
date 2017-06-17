@@ -116,7 +116,7 @@ class _cursor():
 class _connect():
 
 	def __init__(self, **kwargs):
-		logging.info('connect to DB')
+		logging.info('connect to DB %s' % (kwargs))
 		self._con = psycopg2.connect(**kwargs)
 
 	def __enter__(self):
@@ -125,18 +125,22 @@ class _connect():
 	def __exit__(self, exc_type, exc_value, traceback):
 		logging.info('closing DB connection')
 		self._con.close()
+		logging.info('DB connection closed')
 
 	def cursor(self):
 		logging.info('create DB cursor')
 		return _cursor(self._con.cursor())
 
 	def close(self):
+		logging.info('closing DB connection')
 		self._con.close()
+		logging.info('DB connection closed')
 
 	def commit(self):
+		logging.info('commit the change')
 		self._con.commit()
 
-def connect(host=None, database=None, user=None, password=None):
+def connect(host=None, database=None, user=None, password=None, timeout=30):
 	from gio import config
 	import logging
 
@@ -144,5 +148,6 @@ def connect(host=None, database=None, user=None, password=None):
 	return _connect(host=host or config.get('pg', 'host'),
 			database=database or config.get('pg', 'database'),
 			user=user or config.get('pg', 'user'),
-			password=password or config.get('pg', 'password'))
+			password=password or config.get('pg', 'password'),
+			connect_timeout=config.getint('pg', 'timeout', timeout))
 
