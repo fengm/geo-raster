@@ -123,14 +123,6 @@ class sr_dir(sr):
 					_bs.append(_b)
 				continue
 
-			_m = self._is_img(_f) and re.search('_b(\d+)\.img', _f)
-			if _m:
-				_fs['toa_b%s' % _m.group(1)] = _p
-				_b = int(_m.group(1))
-				if _b not in _bs:
-					_bs.append(_b)
-				continue
-
 			_m = self._is_img(_f) and re.search('_cfmask\.', _f)
 			if _m:
 				_fs['cloud'] = _p
