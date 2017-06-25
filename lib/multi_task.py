@@ -92,9 +92,9 @@ def print_percent(nu, tn, perc_step, end=False):
 	_p2 = int((nu+0) * _ss // (perc_step * tn))
 
 	if end:
-		logging.info('-> task end %d/%d' % (nu, tn))
+		logging.debug('-> task end %d/%d' % (nu, tn))
 	else:
-		logging.info('<- task start %d/%d' % (nu, tn))
+		logging.debug('<- task start %d/%d' % (nu, tn))
 
 	if _p1 < _p2 or nu >= tn:
 		if end:
