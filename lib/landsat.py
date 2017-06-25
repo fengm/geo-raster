@@ -115,6 +115,10 @@ def parseLandsatId(id):
 
 		return _m.group(3), _m.group(1), _date.strftime('%Y%m%d'), None
 
+	_m = re.search('(L\w)(\d+)_L[^_]+_(\d{3})(\d{3})_(\d{8})', id)
+	if _m:
+		return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _m.group(5), int(_m.group(2))
+
 	_m = re.search('(L\w)(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
 	if _m:
 		_year = int(_m.group(4))
