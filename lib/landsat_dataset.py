@@ -123,6 +123,14 @@ class sr_dir(sr):
 					_bs.append(_b)
 				continue
 
+			_m = self._is_img(_f) and re.search('bt_band(\d+)\.', _f)
+			if _m:
+				_fs['toa_b%s' % _m.group(1)] = _p
+				_b = int(_m.group(1))
+				if _b not in _bs:
+					_bs.append(_b)
+				continue
+
 			_m = self._is_img(_f) and re.search('_cfmask\.', _f)
 			if _m:
 				_fs['cloud'] = _p
@@ -222,9 +230,9 @@ class sr_hdf(sr):
 			raise Exception('only support HDF file')
 
 		import landsat
-		self._inf = landsat.parse(p)
+		self._inf = landsat.parse(f)
 		if not self._inf:
-			raise Exception('failed to parse %s' % p)
+			raise Exception('failed to parse %s' % f)
 
 		import geo_raster as ge
 		import re
