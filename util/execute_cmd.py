@@ -21,7 +21,7 @@ def main(opts):
 			time.sleep(opts.second / 100)
 
 			print '.',
-			sys.std.flush()
+			sys.stdout.flush()
 			continue
 
 		if _n > 0:
