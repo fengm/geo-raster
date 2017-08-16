@@ -30,7 +30,11 @@ def load_shp(f, column=None, ext=None, proj=None):
 
 	_prj = proj or gb.modis_projection()
 	for _f in _lyr:
-		_obj = gb.geo_polygon(_f.geometry().Clone())
+		_g = _f.geometry()
+		if _g is None:
+			continue
+
+		_obj = gb.geo_polygon(_g.Clone())
 		_ext = _obj.extent()
 
 		_ooo = _obj.project_to(_prj)
