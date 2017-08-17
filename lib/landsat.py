@@ -72,6 +72,18 @@ def band_to_text(b):
 	return band_txts[band_vals.index(b)]
 
 def parseLandsatId(id):
+	_m = re.search('(L)(\d)(\w?)_(p\d{3}r\d{3})_(\d{8})', id)
+	if _m:
+		return _m.group(1) + _m.group(3), _m.group(4), _m.group(5), int(_m.group(2))
+
+	_m = re.search('(L\w)(\d+)_L[^_]+_(\d{3})(\d{3})_(\d{8})', id)
+	if _m:
+		return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _m.group(5), int(_m.group(2))
+
+	_m = re.search('(L\w)(\d{2})(\d{3})(\d{3})(\d{8})\d{2}T\d', id)
+	if _m:
+		return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _m.group(5), int(_m.group(2))
+
 	_m = re.search('(p\d{3}r\d{3})_(\d)\w+(\d{8})', id)
 	if _m:
 		return '', _m.group(1), _m.group(3), '', int(_m.group(2))
@@ -94,10 +106,6 @@ def parseLandsatId(id):
 		_date = datetime.datetime.strptime(_m.group(5), '%Y%j')
 		return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _date.strftime('%Y%m%d'), int(_m.group(2))
 
-	_m = re.search('(L)(\d)(\w?)_(p\d{3}r\d{3})_(\d{8})', id)
-	if _m:
-		return _m.group(1) + _m.group(3), _m.group(4), _m.group(5), int(_m.group(2))
-
 	_m = re.search('(\d)(\w?)_(p\d{3}r\d{3})_(\d{8})', id)
 	if _m:
 		return 'L' + _m.group(2), _m.group(3), _m.group(4), int(_m.group(1))
@@ -114,10 +122,6 @@ def parseLandsatId(id):
 		_date = datetime.datetime.strptime(_m.group(2), '%Y%j')
 
 		return _m.group(3), _m.group(1), _date.strftime('%Y%m%d'), None
-
-	_m = re.search('(L\w)(\d+)_L[^_]+_(\d{3})(\d{3})_(\d{8})', id)
-	if _m:
-		return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _m.group(5), int(_m.group(2))
 
 	_m = re.search('(L\w)(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
 	if _m:
