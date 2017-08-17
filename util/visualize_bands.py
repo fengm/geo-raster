@@ -29,17 +29,24 @@ def convert_band_sr(bnd, row, line, ref, sh=0.2, met={}):
 
 	# _bnd = bnd.cache()
 	_dat = bnd.read_rows(row, line)
+	_base = 10
 
 	import math
-	_low = math.log(150)
-	_top = math.log(5000)
+	_min = 500
+	_max = 5500
 
-	_dat[_dat > 0] = (np.log(_dat.astype(np.float32)[_dat > 0]) - _low) * (256.0 / (_top - _low))
+	_low = math.log(_min, _base)
+	_top = math.log(_max, _base)
 
-	_dat[_dat > 255] = 255
-	_dat[_dat < 0] = 0
+	_dat[_dat > (_max - 10)] = (_max - 10)
 
-	return _dat
+	_ddd = np.zeros(_dat.shape, dtype=np.uint8)
+	_ddd[_dat > _min] = (np.log10(_dat.astype(np.float32)[_dat > _min]) - _low) * (256.0 / (_top - _low))
+
+	# _ddd[_ddd > 255] = 255
+	_ddd[_dat <= 0] = 0
+
+	return _ddd
 	# return bnd.from_grid(_dat, nodata=0)
 
 def convert_band(bnd, row, line, ref, sh=0.2, met={}):
@@ -155,7 +162,10 @@ def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
 	_opt = []
 	if compress:
 		if f_out.endswith('.tif'):
-			_opt.append('compress=lzw')
+			# _opt.append('compress=lzw')
+			_opt.append('compress=jpeg')
+			_opt.append('tiled=yes')
+			_opt.append('predictor=2')
 		if f_out.endswith('.img'):
 			_opt.append('COMPRESS=YES')
 
