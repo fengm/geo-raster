@@ -33,21 +33,18 @@ def convert_band_sr(bnd, row, line, ref, sh=0.2, met={}):
 
 	import math
 	_min = 500
-	_max = 5500
+	_max = 4500
 
 	_low = math.log(_min, _base)
 	_top = math.log(_max, _base)
 
-	_dat[_dat > (_max - 10)] = (_max - 10)
+	_dat[_dat > (_max - _min)] = (_max - _min)
+	_dat[_dat < _min] = _min
 
 	_ddd = np.zeros(_dat.shape, dtype=np.uint8)
 	_ddd[_dat > _min] = (np.log10(_dat.astype(np.float32)[_dat > _min]) - _low) * (256.0 / (_top - _low))
 
-	# _ddd[_ddd > 255] = 255
-	_ddd[_dat <= 0] = 0
-
 	return _ddd
-	# return bnd.from_grid(_dat, nodata=0)
 
 def convert_band(bnd, row, line, ref, sh=0.2, met={}):
 	import numpy as np
