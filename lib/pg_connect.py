@@ -26,6 +26,12 @@ class obj(dict):
 			_ls.append('%15s: %s' % (_k, _v))
 		return '\n'.join(_ls)
 
+	def __getstate__(self):
+		return self.__dict__
+
+	def __setstate__(self, s):
+		self.__dict__ = s
+
 class table:
 
 	def __init__(self, cur, name):
@@ -150,4 +156,21 @@ def connect(host=None, database=None, user=None, password=None, timeout=30):
 			user=user or config.get('pg', 'user'),
 			password=password or config.get('pg', 'password'),
 			connect_timeout=config.getint('pg', 'timeout', timeout))
+
+def main(opts):
+	_obj = obj()
+
+	import pickle
+	print pickle.dumps(_obj)
+	print _obj.__dict__
+
+def usage():
+	_p = environ_mag.usage(False)
+
+	return _p
+
+if __name__ == '__main__':
+	from gio import environ_mag
+	environ_mag.init_path()
+	environ_mag.run(main, [environ_mag.config(usage())])
 
