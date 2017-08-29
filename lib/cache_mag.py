@@ -198,6 +198,8 @@ class cache_mag():
 		for _f in _fd:
 			self._clean_file(_f)
 
+_get_cache_que = None
+
 class s3():
 	"""manage Landsat cache files"""
 
@@ -215,6 +217,16 @@ class s3():
 		return _bk
 
 	def get(self, k, lock=None):
+		global _get_cache_que
+		if _get_cache_que is None:
+			from gio import config
+			import multiprocessing
+			_get_cache_que = multiprocessing.Semaphore(value=config.getint('conf', 'max_cache_rec_num', 2))
+
+		with _get_cache_que:
+			return self._get(k, lock)
+
+	def _get(self, k, lock=None):
 		_key = k if isinstance(k, str) or isinstance(k, unicode) else k.key
 		_f = self._c.path(_key)
 
@@ -246,16 +258,21 @@ class s3():
 
 				with open(_t, 'wb') as _fo:
 					_kkk.get_contents_to_file(_fo)
-					if os.path.exists(_t) and os.path.getsize(_t) > 0:
-						if lock is None:
-							if os.path.exists(_f) == False:
-								shutil.move(_t, _f)
-						else:
-							with lock:
-								if os.path.exists(_f) == False:
-									shutil.move(_t, _f)
 
-						return _f
+				if not os.path.exists(_t) or os.path.getsize(_t) < _kkk.size:
+					logging.warning('received partial file from S3 (%s, %s)' % (os.path.getsize(_f), _kkk.size))
+					continue
+
+				if lock is None:
+					if os.path.exists(_f) == False:
+						shutil.move(_t, _f)
+				else:
+					with lock:
+						if os.path.exists(_f) == False:
+							shutil.move(_t, _f)
+
+				return _f
+
 			finally:
 				if os.path.exists(_t):
 					os.remove(_t)
