@@ -786,7 +786,7 @@ class geo_band_stack_zip:
 			_bnds.append(geo_band_obj(_poly, _bnd))
 
 		if len(_bnds) == 0:
-			logging.error('No images found')
+			logging.debug('No images found')
 			return None
 
 		return geo_band_stack_zip(_bnds, _proj, check_layers, nodata)
@@ -839,7 +839,7 @@ class geo_band_stack_zip:
 				band_idx, _name, file_unzip, cache)))
 
 		if len(_bnds) == 0:
-			logging.error('No images found')
+			logging.debug('No images found')
 			return None
 
 		return geo_band_stack_zip(_bnds, _lyr.GetSpatialRef(), check_layers, nodata)
