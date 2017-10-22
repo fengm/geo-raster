@@ -73,8 +73,8 @@ def main(opts):
 		if _hosts[i] > 20:
 			_task_num = opts.task_num[2]
 
-		_log_std = (_f_log[:-4] + '_node_%02d.log' % _hosts[i])
-		_log_err = (_f_log[:-4] + '_node_%02d_err.log' % _hosts[i])
+		_log_std = (_f_log[:-4] + '_%s_%02d.log' % (opts.tag, _hosts[i]))
+		_log_err = (_f_log[:-4] + '_%s_%02d_err.log' % (opts.tag, _hosts[i]))
 
 		os.path.exists(_log_std) and os.remove(_log_std)
 		os.path.exists(_log_err) and os.remove(_log_err)
@@ -125,6 +125,7 @@ def usage():
 	_p.add_argument('-e', '--excludes', dest='excludes', type=int, nargs='*')
 	_p.add_argument('-i', '--include', dest='include', type=int, nargs='*', \
 			help='Only nodes listed in the param will be run. Used for reruning jobs for specified nodes.')
+	_p.add_argument('-t', '--tag', dest='tag', required=True)
 	_p.add_argument('-p', '--print', dest='print_cmd', default=False, action='store_true')
 	_p.add_argument('-ts', '--task-num', dest='task_num', type=int, nargs=3, default=[5, 12, 24], \
 			help='number of task on lower and higer nodes')
