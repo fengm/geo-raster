@@ -74,7 +74,7 @@ def init(f=None):
 
 	_handler = _log.handlers[0]
 
-	_level = 20 if not _debug else 10
+	_level = 30 if not _debug else 20
 	if _level_std >= 0:
 		_level = _level_std
 

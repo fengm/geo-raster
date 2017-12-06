@@ -10,272 +10,275 @@ import logging
 
 class file_obj():
 
-	def __init__(self, f):
-		import os
+    def __init__(self, f):
+        import os
 
-		self._f = f
-		self._t = os.path.getatime(f)
-		self._z = os.path.getsize(f)
+        self._f = f
+        self._t = os.path.getatime(f)
+        self._z = os.path.getsize(f)
 
-	def __cmp__(self, f):
-		return cmp(self._t, f._t)
+    def __cmp__(self, f):
+        return cmp(self._t, f._t)
 
 _w_lock = {}
 _w_nums = {}
 
 class cache_mag():
-	"""manage Landsat cache files"""
+    """manage Landsat cache files"""
 
-	def __init__(self, tag, cache=None, max_file=-1, max_size=-1):
-		import config
+    def __init__(self, tag, cache=None, max_file=-1, max_size=-1):
+        import config
 
-		self._t = tag
-		self._d = config.get('conf', 'cache', cache)
+        self._t = tag
+        self._d = config.get('conf', 'cache', cache)
 
-		self._max_file = config.getint('conf', 'max_cached_file', max_file)
-		self._max_size = config.getfloat('conf', 'max_cached_size', max_size)
+        if not self._d:
+            raise Exception('no cache folder specified')
 
-		# self._n = 0
+        self._max_file = config.getint('conf', 'max_cached_file', max_file)
+        self._max_size = config.getfloat('conf', 'max_cached_size', max_size)
 
-		global _w_nums
-		if self._t not in _w_nums:
-			_w_nums[self._t] = 0.0
+        # self._n = 0
 
-		global _w_lock
-		if self._t not in _w_lock:
-			import multi_task
-			_w_lock[self._t] = multi_task.create_lock()
+        global _w_nums
+        if self._t not in _w_nums:
+            _w_nums[self._t] = 0.0
 
-	def cached(self, key):
-		_f = self.path(key)
-		import os
-		return os.path.exists(_f) and os.path.getsize(_f) > 0
+        global _w_lock
+        if self._t not in _w_lock:
+            import multi_task
+            _w_lock[self._t] = multi_task.create_lock()
 
-	def _format_str(self, t):
-		import re
-		_k = list(re.sub('[^\w\d_]', '_', t))
+    def cached(self, key):
+        _f = self.path(key)
+        import os
+        return os.path.exists(_f) and os.path.getsize(_f) > 0
 
-		for i in xrange(len(_k)):
-			if t[i] in ['\\', '/', '.', '-']:
-				_k[i] = t[i]
+    def _format_str(self, t):
+        import re
+        _k = list(re.sub('[^\w\d_]', '_', t))
 
-		return ''.join(_k)
+        for i in xrange(len(_k)):
+            if t[i] in ['\\', '/', '.', '-']:
+                _k[i] = t[i]
 
-	def path(self, key):
-		import os
+        return ''.join(_k)
 
-		_p = self._format_str(key)
-		if _p and _p[0] in ['/', '\\']:
-			# remove the root path if it exists
-			_p = _p[1:]
+    def path(self, key):
+        import os
 
-		_f = os.path.join(self._d, self._t, _p)
+        _p = self._format_str(key)
+        if _p and _p[0] in ['/', '\\']:
+            # remove the root path if it exists
+            _p = _p[1:]
 
-		import os
-		if os.path.exists(_f):
-			os.utime(_f, None)
+        _f = os.path.join(self._d, self._t, _p)
 
-		return _f
+        import os
+        if os.path.exists(_f):
+            os.utime(_f, None)
 
-	def get(self, key):
-		if not self.cached(key):
-			return None
+        return _f
 
-		return self.path(key)
+    def get(self, key):
+        if not self.cached(key):
+            return None
 
-	def put(self, key, inp=None, replace=False):
-		import os
+        return self.path(key)
 
-		_f = self.path(key)
-		_inp = inp if inp else key
+    def put(self, key, inp=None, replace=False):
+        import os
 
-		if self.cached(key):
-			if replace:
-				logging.info('clear cached %s' % key)
-				try:
-					os.remove(_f)
-				except Exception:
-					pass
-			else:
-				logging.info('loading cached %s' % key)
-				return _f
+        _f = self.path(key)
+        _inp = inp if inp else key
 
-		global _w_lock
-		with _w_lock[self._t]:
-			if os.path.exists(_f):
-				return _f
+        if self.cached(key):
+            if replace:
+                logging.info('clear cached %s' % key)
+                try:
+                    os.remove(_f)
+                except Exception:
+                    pass
+            else:
+                logging.info('loading cached %s' % key)
+                return _f
 
-			if self._max_file > 0 or self._max_size > 0:
-				global _w_nums
-				_w_nums[self._t] += 1
+        global _w_lock
+        with _w_lock[self._t]:
+            if os.path.exists(_f):
+                return _f
 
-				if _w_nums[self._t] > (self._max_file / 10 if self._max_file > 0 else 1000):
-					self._clean()
-					_w_nums[self._t] = 0
+            if self._max_file > 0 or self._max_size > 0:
+                global _w_nums
+                _w_nums[self._t] += 1
 
-		with _w_lock[self._t]:
-			try:
-				(lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
-			except Exception:
-				pass
+                if _w_nums[self._t] > (self._max_file / 10 if self._max_file > 0 else 1000):
+                    self._clean()
+                    _w_nums[self._t] = 0
 
-		import random
-		_f_out = _f + str(random.randint(0, 1000)) + '.bak'
+        with _w_lock[self._t]:
+            try:
+                (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
+            except Exception:
+                pass
 
-		import shutil
-		shutil.copy(_inp, _f_out)
+        import random
+        _f_out = _f + str(random.randint(0, 1000)) + '.bak'
 
-		with _w_lock[self._t]:
-			if os.path.exists(_f) == False:
-				shutil.move(_f_out, _f)
-			else:
-				os.remove(_f_out)
+        import shutil
+        shutil.copy(_inp, _f_out)
 
-		return _f
+        with _w_lock[self._t]:
+            if os.path.exists(_f) == False:
+                shutil.move(_f_out, _f)
+            else:
+                os.remove(_f_out)
 
-	def _clean_file(self, f):
-		try:
-			import os
-			os.remove(f._f)
-			logging.info('clean cached file %s' % f._f)
-		except Exception, err:
-			import traceback
+        return _f
 
-			logging.error(traceback.format_exc())
-			logging.error(str(err))
+    def _clean_file(self, f):
+        try:
+            import os
+            os.remove(f._f)
+            logging.info('clean cached file %s' % f._f)
+        except Exception, err:
+            import traceback
 
-			print '\n\n* Error:', err
+            logging.error(traceback.format_exc())
+            logging.error(str(err))
 
-	def _clean(self):
-		import os
+            print '\n\n* Error:', err
 
-		logging.info('clean cache')
+    def _clean(self):
+        import os
 
-		# self._n = 0
-		_w_nums[self._t] == 0
+        logging.info('clean cache')
 
-		_fs = []
-		_sz = 0.0
-		for _root, _dirs, _files in os.walk(self._d):
-			for _file in _files:
-				_ff = os.path.join(_root, _file)
-				if _file.endswith('.bak'):
-					import time
-					# remove bak files that has not been used for 24 hours
-					if (time.time() - os.path.getatime(_ff)) > 60 * 60 * 24:
-						logging.warning('remove bak file %s' % _ff)
-						os.remove(_ff)
-					continue
+        # self._n = 0
+        _w_nums[self._t] == 0
 
-				_fs.append(file_obj(_ff))
-				_sz += os.path.getsize(_ff)
+        _fs = []
+        _sz = 0.0
+        for _root, _dirs, _files in os.walk(self._d):
+            for _file in _files:
+                _ff = os.path.join(_root, _file)
+                if _file.endswith('.bak'):
+                    import time
+                    # remove bak files that has not been used for 24 hours
+                    if (time.time() - os.path.getatime(_ff)) > 60 * 60 * 24:
+                        logging.warning('remove bak file %s' % _ff)
+                        os.remove(_ff)
+                    continue
 
-		_fs = sorted(_fs)
+                _fs.append(file_obj(_ff))
+                _sz += os.path.getsize(_ff)
 
-		logging.info('checking cache %s, %s (%s, %s)' % (len(_fs), _sz, self._max_file, self._max_size))
+        _fs = sorted(_fs)
 
-		_fd1 = []
-		if self._max_file > 0 and len(_fs) > self._max_file:
-			_fd = _fs[:self._max_file-len(_fs)]
+        logging.info('checking cache %s, %s (%s, %s)' % (len(_fs), _sz, self._max_file, self._max_size))
 
-		_fd2 = []
-		if self._max_size > 0:
-			# convert from GB
-			self._max_size *= (1024 * 1024 * 1024)
+        _fd1 = []
+        if self._max_file > 0 and len(_fs) > self._max_file:
+            _fd = _fs[:self._max_file-len(_fs)]
 
-		if self._max_size > 0 and _sz > self._max_size:
-			_zz = _sz
-			for _f in _fs:
-				_fd2.append(_f)
-				_zz -= _f._z
+        _fd2 = []
+        if self._max_size > 0:
+            # convert from GB
+            self._max_size *= (1024 * 1024 * 1024)
 
-				if _zz <= self._max_size:
-					break
+        if self._max_size > 0 and _sz > self._max_size:
+            _zz = _sz
+            for _f in _fs:
+                _fd2.append(_f)
+                _zz -= _f._z
 
-		_fd = _fd1 if len(_fd1) > len(_fd2) else _fd2
-		logging.info('identified cached files to clean %s %s %s' % (len(_fd), len(_fd1), len(_fd2)))
+                if _zz <= self._max_size:
+                    break
 
-		for _f in _fd:
-			self._clean_file(_f)
+        _fd = _fd1 if len(_fd1) > len(_fd2) else _fd2
+        logging.info('identified cached files to clean %s %s %s' % (len(_fd), len(_fd1), len(_fd2)))
+
+        for _f in _fd:
+            self._clean_file(_f)
 
 _get_cache_que = None
 
 class s3():
-	"""manage Landsat cache files"""
+    """manage Landsat cache files"""
 
-	def __init__(self, bucket):
-		self._t = bucket
-		self._c = cache_mag(bucket)
-		self.bucket = self._bucket()
+    def __init__(self, bucket):
+        self._t = bucket
+        self._c = cache_mag(bucket)
+        self.bucket = self._bucket()
 
-	def _bucket(self):
-		import boto
+    def _bucket(self):
+        import boto
 
-		_s3 = boto.connect_s3()
-		_bk = _s3.get_bucket(self._t)
+        _s3 = boto.connect_s3()
+        _bk = _s3.get_bucket(self._t)
 
-		return _bk
+        return _bk
 
-	def get(self, k, lock=None):
-		global _get_cache_que
-		if _get_cache_que is None:
-			from gio import config
-			import multiprocessing
-			_get_cache_que = multiprocessing.Semaphore(value=config.getint('conf', 'max_cache_rec_num', 2))
+    def get(self, k, lock=None):
+        global _get_cache_que
+        if _get_cache_que is None:
+            from gio import config
+            import multiprocessing
+            _get_cache_que = multiprocessing.Semaphore(value=config.getint('conf', 'max_cache_rec_num', 2))
 
-		with _get_cache_que:
-			return self._get(k, lock)
+        with _get_cache_que:
+            return self._get(k, lock)
 
-	def _get(self, k, lock=None):
-		_key = k if isinstance(k, str) or isinstance(k, unicode) else k.key
-		_f = self._c.path(_key)
+    def _get(self, k, lock=None):
+        _key = k if isinstance(k, str) or isinstance(k, unicode) else k.key
+        _f = self._c.path(_key)
 
-		if self._c.cached(_key):
-			logging.debug('found cached file %s' % _f)
-			return _f
+        if self._c.cached(_key):
+            logging.debug('found cached file %s' % _f)
+            return _f
 
-		import os
-		try:
-			(lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
-		except Exception:
-			pass
+        import os
+        try:
+            (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
+        except Exception:
+            pass
 
-		import shutil
-		import file_unzip
+        import shutil
+        import file_unzip
 
-		for _i in xrange(3):
-			_t = file_unzip.generate_file(os.path.dirname(_f), '', '.bak')
+        for _i in xrange(3):
+            _t = file_unzip.generate_file(os.path.dirname(_f), '', '.bak')
 
-			try:
-				# write an empty file to prevent other process to use the same file name
-				with open(_t, 'wb') as _fo:
-					_fo.write('')
+            try:
+                # write an empty file to prevent other process to use the same file name
+                with open(_t, 'wb') as _fo:
+                    _fo.write('')
 
-				_kkk = self.bucket.get_key(k) if isinstance(k, str) or isinstance(k, unicode) else k
-				if _kkk is None:
-					logging.warning('no key was found: %s' % k)
-					return None
+                _kkk = self.bucket.get_key(k) if isinstance(k, str) or isinstance(k, unicode) else k
+                if _kkk is None:
+                    logging.warning('no key was found: %s' % k)
+                    return None
 
-				with open(_t, 'wb') as _fo:
-					_kkk.get_contents_to_file(_fo)
+                with open(_t, 'wb') as _fo:
+                    _kkk.get_contents_to_file(_fo)
 
-				if not os.path.exists(_t) or os.path.getsize(_t) < _kkk.size:
-					logging.warning('received partial file from S3 (%s, %s)' % (os.path.getsize(_f), _kkk.size))
-					continue
+                if not os.path.exists(_t) or os.path.getsize(_t) < _kkk.size:
+                    logging.warning('received partial file from S3 (%s, %s)' % (os.path.getsize(_f), _kkk.size))
+                    continue
 
-				if lock is None:
-					if os.path.exists(_f) == False:
-						shutil.move(_t, _f)
-				else:
-					with lock:
-						if os.path.exists(_f) == False:
-							shutil.move(_t, _f)
+                if lock is None:
+                    if os.path.exists(_f) == False:
+                        shutil.move(_t, _f)
+                else:
+                    with lock:
+                        if os.path.exists(_f) == False:
+                            shutil.move(_t, _f)
 
-				return _f
+                return _f
 
-			finally:
-				if os.path.exists(_t):
-					os.remove(_t)
+            finally:
+                if os.path.exists(_t):
+                    os.remove(_t)
 
-		raise Exception('failed to load S3 file %s' % _key)
+        raise Exception('failed to load S3 file %s' % _key)
 
