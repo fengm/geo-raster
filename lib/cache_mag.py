@@ -282,3 +282,34 @@ class s3():
 
         raise Exception('failed to load S3 file %s' % _key)
 
+    def get_key(self, k):
+        _kk = self.bucket.get_key(k) if isinstance(k, str) or isinstance(k, unicode) else k
+        return _kk
+
+    def new_key(self, k):
+        _kk = self.bucket.new_key(k) if isinstance(k, str) or isinstance(k, unicode) else k
+        return _kk
+
+    def put(self, k, f, update=False, lock=None):
+        _kk = self.get_key(k)
+        if _kk is not None:
+            if update == False:
+                logging.info('skip existing file %s: %s' % (_kk.bucket, _kk.name))
+                return
+
+        if lock is None:
+            if _kk is None:
+                _kk = self.new_key(k)
+
+            with open(f, 'rb') as _fi:
+                _kk.set_contents_from_file(_fi)
+        else:
+            with lock:
+                if _kk is None:
+                    _kk = self.new_key(k)
+
+                with open(f, 'rb') as _fi:
+                    _kk.set_contents_from_file(_fi)
+
+        logging.info('upload file %s: %s' % (_kk.bucket, _kk.name))
+
