@@ -105,7 +105,7 @@ def compress_file(f_src, f_dst=None, remove_src=True):
         if f_dst.startswith('s3://'):
             send_to_s3(_f_tmp, _f_dst)
         else:
-            (lambda x: os.path.exists(fd_ot) or os.makedirs(fd_ot))(os.path.dirname(_f_dst))
+            (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f_dst))
 
             import shutil
             shutil.move(_f_tmp, _f_dst)
