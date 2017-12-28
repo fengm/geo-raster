@@ -86,6 +86,7 @@ def compress_file(f_src, f_dst=None, remove_src=True):
     try:
         logging.debug('compress %s to %s' % (f_src, _f_dst))
         with open(f_src, 'rb') as _zip_src:
+            (lambda x: (os.path.exists(x) or os.makedirs(x)))(os.path.dirname(_f_tmp))
             with open(_f_tmp, 'wb') as _ft:
                 with gzip.GzipFile(_f_dst, 'wb', fileobj=_ft) as _zip_tar:
                     while True:
@@ -160,6 +161,7 @@ def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include
         if check_prefix(_file, compress_exts):
             _f_ot = _f_ot + '.gz'
             logging.debug('zipping %s to %s' %(_f_in, _f_ot))
+
             compress_file(_f_in, _f_ot)
         else:
             logging.debug('copying %s to %s' %(_f_in, _f_ot))
