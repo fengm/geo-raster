@@ -935,12 +935,15 @@ class geo_raster(geo_raster_info):
 
 	@staticmethod
 	def open(f, update=False):
+		if os.path.exists(f) == False:
+			raise Exception('file %s does not exist' % f)
+
 		if update:
 			_img = gdal.Open(f, gdal.GA_Update)
 		else:
 			_img = gdal.Open(f)
 
-		if not _img:
+		if _img is None or _img.data is None:
 			raise Exception('failed to load file ' + f)
 
 		return geo_raster(f, _img)
