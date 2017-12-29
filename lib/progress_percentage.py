@@ -13,83 +13,84 @@ Note: Option for showing the progress bar
 '''
 import datetime, logging, sys
 
-show=True
-
 class progress_percentage:
 
-	def __init__(self, size, title=None, step=100, txt_format='%(p)3d%%', bar=False):
-		self.pos = -1
-		self.cur = -1
-		self.size = size
-		self.step = step
-		self.txt_format = txt_format
-		self.time_s = datetime.datetime.now()
-		self.title = title
-		self.bar = bar
-		self.text = ''
+    def __init__(self, size, title=None, step=100, txt_format='%(p)3d%%', bar=False):
+        self.pos = -1
+        self.cur = -1
+        self.size = size
+        self.step = step
+        self.txt_format = txt_format
+        self.time_s = datetime.datetime.now()
+        self.title = title
+        self.bar = bar
+        self.text = ''
 
-		logging.debug('+ start process :' + title if title != None \
-				else '<no name>')
-		if title != None:
-			print '>', title
+        from gio import config
+        self.show = config.getboolean('conf', 'show_progress', True)
 
-	def _print(self, txt):
-		print '\r', txt,
-		if len(self.text) > len(txt):
-			print ' ' * (len(self.text) - len(txt)),
-		sys.stdout.flush()
+        logging.debug('+ start process :' + title if title != None \
+                else '<no name>')
+        if title != None:
+            print '>', title
 
-		self.text = txt
+    def _print(self, txt):
+        print '\r', txt,
+        if len(self.text) > len(txt):
+            print ' ' * (len(self.text) - len(txt)),
+        sys.stdout.flush()
 
-	def print_prog(self, pos):
-		if not show:
-			return
+        self.text = txt
 
-		_pos = pos if pos <= 100 else 100
+    def print_prog(self, pos):
+        if not self.show:
+            return
 
-		_out = []
-		if self.bar:
-			_len_l = _pos / 2
-			if _len_l == 0:
-				_len_l = 1
-			_len_r = 100 / 2 - _len_l
+        _pos = pos if pos <= 100 else 100
 
-			_txt = ''
-			_txt += '=' * (_len_l - 1)
-			_txt += '>'
-			_txt += '-' * _len_r
-			_out.append(_txt)
+        _out = []
+        if self.bar:
+            _len_l = _pos / 2
+            if _len_l == 0:
+                _len_l = 1
+            _len_r = 100 / 2 - _len_l
 
-		_out.append(self.txt_format % {'p': _pos})
-		_out.append('(%s)' % (datetime.datetime.now() - self.time_s))
+            _txt = ''
+            _txt += '=' * (_len_l - 1)
+            _txt += '>'
+            _txt += '-' * _len_r
+            _out.append(_txt)
 
-		self._print(' '.join(_out))
+        _out.append(self.txt_format % {'p': _pos})
+        _out.append('(%s)' % (datetime.datetime.now() - self.time_s))
 
-	def next(self, step=1, count=False, message=None):
-		self.cur += step
+        self._print(' '.join(_out))
 
-		if count:
-			if show:
-				_out = ['']
-				_out.append('%s/%s: %s' % (self.cur, self.size, message if message else ''))
-				_out.append('(%s)' % (datetime.datetime.now() - self.time_s))
+    def next(self, step=1, count=False, message=None):
+        self.cur += step
 
-				self._print(' '.join(_out))
-		else:
-			_pos = self.cur * self.step // self.size
+        if count:
+            if self.show:
+                _out = ['']
+                _out.append('%s/%s: %s' % (self.cur, self.size, message if message else ''))
+                _out.append('(%s)' % (datetime.datetime.now() - self.time_s))
 
-			if self.pos != _pos:
-				self.pos = _pos
-				self.print_prog(self.pos * 100 / self.step)
+                self._print(' '.join(_out))
+        else:
+            _pos = self.cur * self.step // self.size
 
-	def done(self, format_end='\r%(p)3d%% | duration: %(time_duration)s'):
-		self.print_prog(100)
-		if show:
-			print ''
+            if self.pos != _pos:
+                self.pos = _pos
+                self.print_prog(self.pos * 100 / self.step)
 
-		self.time_e = datetime.datetime.now()
-		_d = self.time_e - self.time_s
+    def done(self, format_end='\r%(p)3d%% | duration: %(time_duration)s'):
+        self.print_prog(100)
+        if self.show:
+            print ''
 
-		logging.debug('- end process ' + format_end % {'p': 100, 'time_duration': _d, \
-				'time_start': self.time_s, 'time_end': self.time_e})
+        self.time_e = datetime.datetime.now()
+        _d = self.time_e - self.time_s
+
+        logging.debug('- end process ' + format_end % {'p': 100, 'time_duration': _d, \
+                'time_start': self.time_s, 'time_end': self.time_e})
 
