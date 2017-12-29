@@ -116,7 +116,8 @@ class geo_raster_info:
         _geo = self.geo_transform
 
         _pt1 = (_geo[0], _geo[3])
-        _pt2 = (_geo[0] + self.width * _geo[1] + self.height * _geo[2], _geo[3] + self.width * _geo[4] + self.height * _geo[5])
+        _pt2 = (_geo[0] + self.width * _geo[1] + self.height * _geo[2], \
+                _geo[3] + self.width * _geo[4] + self.height * _geo[5])
 
         import geo_base as gb
         return gb.geo_extent(_pt1[0], _pt2[1], _pt2[0], _pt1[1], self.proj)
@@ -133,8 +134,8 @@ class geo_raster_info:
         return gb.geo_extent(_pt0[0] - _cell_x, _pt0[1] - _cell_y,
                 _pt0[0] + _cell_x, _pt0[1] + _cell_y, self.proj)
 
-        def scale(self, ratio, ceil=False):
-            _cols = int(math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio))
+    def scale(self, ratio, ceil=False):
+        _cols = int(math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio))
         _rows = int(math.ceil(self.height * ratio) if ceil else math.floor(self.height * ratio))
 
         _geo = list(self.geo_transform)
@@ -252,8 +253,8 @@ class geo_band_info(geo_raster_info):
         return geo_band_info([_min_x, _cell, 0, _max_y, 0, _cell * -1], _cols, _rows, self.proj, \
                 self.nodata, self.pixel_type)
 
-        def scale(self, ratio, ceil=False):
-            _cols = int(math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio))
+    def scale(self, ratio, ceil=False):
+        _cols = int(math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio))
         _rows = int(math.ceil(self.height * ratio) if ceil else math.floor(self.height * ratio))
 
         _geo = list(self.geo_transform)
