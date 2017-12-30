@@ -75,7 +75,10 @@ def _parse_sid(d):
     import os
 
     _id = _parse_item(d)
-    if _id or os.path.isdir(d):
+    if _id:
+        return _id
+
+    if os.path.isdir(d):
         for _root, _dirs, _files in os.walk(d):
             for _file in _files:
                 _id = _parse_item(_file)
