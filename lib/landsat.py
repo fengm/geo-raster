@@ -58,7 +58,10 @@ class landsat_info:
 	def __cmp__(self, obj):
 		return cmp(str(self), str(obj))
 
-def parse(code):
+def parse(code, file_only=False):
+    if file_only:
+        return _parse_item(code)
+
     return _parse_sid(code)
 
 def _parse_item(code):
