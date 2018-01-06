@@ -527,7 +527,14 @@ class geo_band(geo_band_info):
         self.buf_row_end = -1
         self.buf_col_start = -1
         self.buf_col_end = -1
-        self.color_table = band.GetColorTable()
+
+        _clr = band.GetColorTable()
+        if _clr is None:
+            self.color_table = None
+        else:
+            self.color_table = _clr.Clone()
+        del _clr
+
         self.test = None
         self.convert_list = convert_list
 

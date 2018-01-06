@@ -677,7 +677,7 @@ class band_file:
 			_pat = _inp
 
 		assert(_pat)
-		_img = geo_raster.geo_raster.open(_pat)
+		_img = geo_raster.open(_pat)
 
 		if _img is None:
 			raise Exception('Failed to open image ' + self.file)
@@ -1101,7 +1101,8 @@ class geo_band_stack_zip:
 			_bnd_info.clean()
 
 		import geo_raster
-		return geo_raster.geo_band_cache(_dat_out, bnd.geo_transform, bnd.proj, _nodata, self.pixel_type)
+		return geo_raster.geo_band_cache(_dat_out, bnd.geo_transform, bnd.proj, _nodata, \
+                self.pixel_type, self.color_table)
 
 class geo_band_reader:
 
