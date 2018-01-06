@@ -58,12 +58,34 @@ class landsat_info:
 	def __cmp__(self, obj):
 		return cmp(str(self), str(obj))
 
-def parse(code):
+def parse(code, file_only=False):
+    if file_only:
+        return _parse_item(code)
+
+    return _parse_sid(code)
+
+def _parse_item(code):
 	_vs = parseLandsatId(code)
 	if _vs == None:
 		return None
 
 	return landsat_info(_vs[0], _vs[1], _vs[2], code, mission=_vs[3])
+
+def _parse_sid(d):
+    import os
+
+    _id = _parse_item(d)
+    if _id:
+        return _id
+
+    if os.path.isdir(d):
+        for _root, _dirs, _files in os.walk(d):
+            for _file in _files:
+                _id = _parse_item(_file)
+                if _id:
+                    return _id
+
+    return None
 
 def band_to_text(b):
 	if b not in band_vals:
