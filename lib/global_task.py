@@ -74,14 +74,13 @@ def files(bnd, objs):
 
 class tiles:
 
-    def __init__(self, image_size=None, cell_size=None, edge=1, proj=None):
+    def __init__(self, image_size, cell_size, edge, proj=None):
         import math
         import geo_base as gb
-        import config
 
         self.b = 6371007.181 #6378137.0
-        self.s = config.getint('conf', 'image_size', image_size)
-        self.c = config.getint('conf', 'cell_size', cell_size)
+        self.s = image_size
+        self.c = cell_size
         self.p = self.b * math.pi
         self.edge = edge
 
@@ -220,7 +219,7 @@ def _output_polygons(polys, f_shp):
 
         f_shp.put(_f_tmp)
 
-def make(f_inp, column, image_size=1000, cell_size=30, ps=None, f_shp=None, edge=1, proj=None):
+def make(f_inp, column=None, image_size=1000, cell_size=30, ps=None, f_shp=None, edge=1, proj=None):
     from gio import geo_base as gb
 
     _proj = proj or gb.modis_projection()
@@ -236,7 +235,6 @@ def make(f_inp, column, image_size=1000, cell_size=30, ps=None, f_shp=None, edge
     _pp = []
     _ps = []
 
-    print 'checking tiles'
     for _col, _row in _tils.list(_ext):
         _bnd = _tils.extent(_col, _row)
 
