@@ -93,11 +93,11 @@ class _cursor():
 		self._cur = cur
 
 	def __enter__(self):
-		logging.info('receiving DB cursor')
+		logging.debug('receiving DB cursor')
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):
-		logging.info('closing DB cursor')
+		logging.debug('closing DB cursor')
 		self._cur.close()
 
 	def execute(self, oper, pars=None):
@@ -122,35 +122,35 @@ class _cursor():
 class _connect():
 
 	def __init__(self, **kwargs):
-		logging.info('connect to DB %s' % (kwargs))
+		logging.debug('connect to DB %s' % (kwargs))
 		self._con = psycopg2.connect(**kwargs)
 
 	def __enter__(self):
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):
-		logging.info('closing DB connection')
+		logging.debug('closing DB connection')
 		self._con.close()
-		logging.info('DB connection closed')
+		logging.debug('DB connection closed')
 
 	def cursor(self):
-		logging.info('create DB cursor')
+		logging.debug('create DB cursor')
 		return _cursor(self._con.cursor())
 
 	def close(self):
-		logging.info('closing DB connection')
+		logging.debug('closing DB connection')
 		self._con.close()
-		logging.info('DB connection closed')
+		logging.debug('DB connection closed')
 
 	def commit(self):
-		logging.info('commit the change')
+		logging.debug('commit the change')
 		self._con.commit()
 
 def connect(host=None, database=None, user=None, password=None, timeout=30):
 	from gio import config
 	import logging
 
-	logging.info('create DB connection')
+	logging.debug('create DB connection')
 	return _connect(host=host or config.get('pg', 'host'),
 			database=database or config.get('pg', 'database'),
 			user=user or config.get('pg', 'user'),
