@@ -42,7 +42,7 @@ class file_mag(obj_mag):
             for _e in ['.prj' '.shx', '.dbf']:
                 _f = f[:-4] + _e
                 if os.path.exists(_f):
-                    shutil.move(_f, self._f[:-4] + _e)
+                    shutil.copy(_f, self._f[:-4] + _e)
 
     def __str__(self):
         return self._f
