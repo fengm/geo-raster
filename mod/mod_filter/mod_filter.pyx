@@ -134,7 +134,7 @@ cdef _stat(np.ndarray[np.uint8_t, ndim=2] dat, int col, int row, float dis, int 
     rep[row, col] = _max_k
     return _max_k
 
-def expand(np.ndarray[np.uint8_t, ndim=2] dat, np.ndarray[np.uint8_t, ndim=2, cast=True] ref, val, non):
+def expand(np.ndarray[np.uint8_t, ndim=2] dat, np.ndarray[np.uint8_t, ndim=2, cast=True] ref, val, non, dist, min_num):
     from gio import config
 
     cdef int _rows = dat.shape[0], _cols = dat.shape[1]
@@ -142,8 +142,8 @@ def expand(np.ndarray[np.uint8_t, ndim=2] dat, np.ndarray[np.uint8_t, ndim=2, ca
 
     cdef int _t = 0
 
-    cdef int _dis = config.getint('expand', 'search_dist', 2)
-    cdef int _min_num = config.getint('expand', 'min_num', 20)
+    cdef int _dis = dist
+    cdef int _min_num = min_num
 
     logging.info('expand dis: %s, min num: %s' % (_dis, _min_num))
 
