@@ -146,6 +146,21 @@ class geo_raster_info:
 
         return geo_raster_info(_geo, _cols, _rows, self.proj)
 
+    def subset(self, col, row, width, height):
+        _geo = list(self.geo_transform)
+
+        _geo[0] += col * _geo[1] + row * _geo[2]
+        _geo[3] += col * _geo[4] + row * _geo[5]
+
+        _cols = min(width, self.width - col)
+        _rows = min(height, self.height - row)
+
+        if _cols <= 0 or _rows <= 0:
+            logging.warning('out of the band extent')
+            return None
+
+        return geo_raster_info(_geo, _cols, _rows, self.proj)
+
     def from_ma_grid(self, grid, update_type=True, nodata=None):
         _nodata = nodata
         if _nodata is None:
@@ -196,7 +211,7 @@ class geo_band_info(geo_raster_info):
 
         return _nodata
 
-    def sub_band(self, col, row, width, height):
+    def subset(self, col, row, width, height):
         _geo = list(self.geo_transform)
 
         _geo[0] += col * _geo[1] + row * _geo[2]
@@ -210,6 +225,9 @@ class geo_band_info(geo_raster_info):
             return None
 
         return geo_band_info(_geo, _cols, _rows, self.proj, self.nodata, self.pixel_type)
+
+    def sub_band(self, col, row, width, height):
+        return self.subset(col, row, width, height)
 
     def align(self, ext, clip=False):
         _geo = self.geo_transform
@@ -450,7 +468,7 @@ class geo_band_cache(geo_band_info):
         # calculate the intersection area for both data sets
         _pol_c_s = _pol_s.intersect(_pol_t2)
         if _pol_c_s.poly is None:
-            logging.warning('The raster does not cover the request bnd')
+            logging.debug('The raster does not cover the request bnd')
             return None
 
         _pol_c_s.set_proj(_bnd.proj)
@@ -820,7 +838,7 @@ class geo_band(geo_band_info):
         # calculate the intersection area for both data sets
         _pol_c_s = _pol_s.intersect(_pol_t2)
         if _pol_c_s is None or _pol_c_s.poly is None:
-            logging.warning('The raster does not cover the request bnd')
+            logging.debug('The raster does not cover the request bnd')
             return None
 
         _pol_c_s.set_proj(_bnd.proj)
@@ -843,7 +861,7 @@ class geo_band(geo_band_info):
         _row_s_s = max(0, _row_s_s - 1)
         _row_num = min(_row_s_e + 2, _bnd.height) - _row_s_s
         if _row_num <= 0:
-            logging.warning('The raster does not cover the request bnd')
+            logging.debug('The raster does not cover the request bnd')
             return None
 
         _dat = _bnd.read_rows(_row_s_s, _row_num)
