@@ -99,6 +99,7 @@ class geo_raster_info:
         self.width = width
         self.height = height
         self.proj = proj
+        self.cell_size = self.geo_transform[1]
 
     def __del__(self):
         self.geo_transform = None
