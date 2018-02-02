@@ -376,9 +376,10 @@ class geo_band_cache(geo_band_info):
             from osgeo import gdal
             _pixel_type = gdal.GDT_Byte
 
+        _color_table = color_table if color_table else self.color_table
         write_raster(f, self.geo_transform, self.proj.ExportToWkt(), \
                 self.data, nodata=self.nodata, pixel_type=_pixel_type, \
-                driver=driver, color_table=color_table, opts=opts)
+                driver=driver, color_table=_color_table, opts=opts)
 
     def read_ext(self, ext, roundup=True, check_proj=True):
         if ext is None:
