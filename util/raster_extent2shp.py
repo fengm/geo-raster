@@ -151,33 +151,13 @@ def _generate_extent(f, proj):
                 continue
             _pols.append(_geo.poly.ExportToWkb())
 
-        from gio import config
-        if config.getboolean('conf', 'check_nodata', False):
-            print 'check nodata value'
-            if _bnd.read_cell(0, 0) != _bnd.nodata and \
-                _bnd.read_cell(0, _bnd.height -1) != _bnd.nodata and \
-                _bnd.read_cell(_bnd.width-1, 0) != _bnd.nodata and \
-                _bnd.read_cell(_bnd.width-1, _bnd.height -1) != _bnd.nodata:
-                raise Exception('nodata value %s (%s, %s)' % (_f, _bnd.read_cell(0, 0), _bnd.nodata))
-
-        return [_f, _pols, _bnd.nodata, _bnd.pixel_type]
+        return [_f, _pols]
 
 def _generate_extents(fs, proj, opts):
     from gio import multi_task
 
     _res = {}
-    _att = None
-
-    for _f, _p, _nd, _px in multi_task.run(_generate_extent, [(_f, proj) for _f in fs], opts):
-        if _att is None:
-            _att = [_nd, _px, _f]
-        else:
-            if _nd != _att[0]:
-                raise Exception('different nodata: %s (%s), %s (%s)' % (_att[2], _att[0], _f, _nd))
-
-            if _px != _att[1]:
-                raise Exception('different pixel type: %s (%s), %s (%s)' % (_att[2], _att[1], _f, _px))
-
+    for _f, _p in multi_task.run(_generate_extent, [(_f, proj) for _f in fs], opts):
         _res[_f] = _p
 
     return _res
@@ -320,10 +300,9 @@ def usage():
     _p = environ_mag.usage(True)
 
     _p.add_argument('-i', '--input', dest='input', nargs='+')
-    _p.add_argument('-p', '--projection', dest='projection', type=int)
+    _p.add_argument('-p', '--projection', dest='projection')
     _p.add_argument('-n', '--dataset', dest='dataset')
     _p.add_argument('-o', '--ouput-file', dest='output')
-    _p.add_argument('--check-nodata', dest='check_nodata', action='store_true')
     _p.add_argument('-a', '--absolute-path', dest='absolutepath',
             action='store_true')
 
