@@ -10,7 +10,9 @@ def main(opts):
     from gio import geo_raster as ge
     from gio import geo_raster_ex as gx
 
+    _clr = None if not opts.color else ge.load_colortable(opts.color)
     _bnd = None
+
     if opts.input.endswith('.shp'):
         _bnd = gx.geo_band_stack_zip.from_shapefile(opts.input)
     else:
@@ -19,7 +21,8 @@ def main(opts):
     _mak = ge.open(opts.mask).get_band().cache()
     _bnd = _bnd.read_block(_mak)
     _bnd.data[_mak.data == 0] = _bnd.nodata
-    _clr = _bnd.color_table
+
+    _clr = _clr if _clr else _bnd.color_table
 
     from gio import file_unzip
     import os
@@ -28,7 +31,6 @@ def main(opts):
         _f_tmp = os.path.join(_d_tmp, os.path.basename(opts.output))
 
         os.makedirs(_d_tmp)
-        _clr = _clr if not opts.color else ge.load_colortable(opts.color)
         _bnd.save(_f_tmp, color_table=_clr, opts=['compress=lzw', 'tiled=yes'])
 
         file_unzip.compress_folder(_d_tmp, os.path.dirname(os.path.abspath(opts.output)), [])
