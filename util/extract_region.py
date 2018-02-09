@@ -42,6 +42,7 @@ def usage():
     _p.add_argument('-m', '--mask', dest='mask', required=True)
     _p.add_argument('-c', '--color', dest='color')
     _p.add_argument('-o', '--output', dest='output', required=True)
+    _p.add_argument('--cache', dest='cache')
 
     return _p
 

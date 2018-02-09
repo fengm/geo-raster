@@ -17,29 +17,44 @@ class qa:
     qa_snow = 5
     qa_nodata = 255
 
-    cf_land = 1
-    cf_water = 5
-    cf_shadow = 3
-    cf_snow = 4
-    cf_cloud = 2
-    cf_nodata = 255
+    cf0_land = 1
+    cf0_water = 5
+    cf0_shadow = 3
+    cf0_snow = 4
+    cf0_cloud = 2
+    cf0_nodata = 255
+
+    cf1_land = 0
+    cf1_water = 1
+    cf1_shadow = 2
+    cf1_snow = 3
+    cf1_cloud = 4
+    cf1_nodata = 255
 
     def __init__(self):
         pass
 
     @staticmethod
-    def from_fmask(bnd):
+    def from_fmask(bnd, code_set):
         import numpy as np
 
         _dat = np.empty((bnd.height, bnd.width), dtype=np.uint8)
         _dat.fill(qa.qa_nodata)
 
-        _dat[bnd.data == qa.cf_land] = qa.qa_land
-        _dat[bnd.data == qa.cf_shadow] = qa.qa_shadow
-        _dat[bnd.data == qa.cf_cloud] = qa.qa_cloud
-        _dat[bnd.data == qa.cf_water] = qa.qa_water
-        _dat[bnd.data == qa.cf_snow] = qa.qa_snow
-        _dat[bnd.data == qa.cf_nodata] = qa.qa_nodata
+        if code_set == 1:
+            _dat[bnd.data == qa.cf1_land] = qa.qa_land
+            _dat[bnd.data == qa.cf1_shadow] = qa.qa_shadow
+            _dat[bnd.data == qa.cf1_cloud] = qa.qa_cloud
+            _dat[bnd.data == qa.cf1_water] = qa.qa_water
+            _dat[bnd.data == qa.cf1_snow] = qa.qa_snow
+            _dat[bnd.data == qa.cf1_nodata] = qa.qa_nodata
+        else:
+            _dat[bnd.data == qa.cf0_land] = qa.qa_land
+            _dat[bnd.data == qa.cf0_shadow] = qa.qa_shadow
+            _dat[bnd.data == qa.cf0_cloud] = qa.qa_cloud
+            _dat[bnd.data == qa.cf0_water] = qa.qa_water
+            _dat[bnd.data == qa.cf0_snow] = qa.qa_snow
+            _dat[bnd.data == qa.cf0_nodata] = qa.qa_nodata
 
         return bnd.from_grid(_dat, nodata=qa.qa_nodata)
 
@@ -54,7 +69,7 @@ class sr:
     def get_band(self, b):
         _b = self._band_no(self._inf, b)
         if _b not in self._bs:
-            raise Exception('failed to find band %s (%s)' % (b, str(self._bs)))
+            raise Exception('failed to find band %s (%s) (%s)' % (b, _b, str(self._bs)))
 
         logging.info('loading TM band %s (%s)' % (b, _b))
         return self._load_band(_b)
@@ -82,6 +97,8 @@ class sr:
 
     def _band_no_tm_etm(self, b):
         if b == 6:
+            if b in self._bs:
+                return b
             return 61
 
         return b
@@ -178,7 +195,7 @@ class sr_dir(sr):
 
         return self._bnds[_b]
 
-    def get_cloud(self):
+    def get_cloud(self, code_set=0):
         _b = 'cloud'
         if _b in self._bnds.keys():
             return self._bnds[_b]
@@ -196,7 +213,7 @@ class sr_dir(sr):
         _b = 'cfmask'
         if _b in self._fs:
             import geo_raster as ge
-            _bnd = qa.from_fmask(ge.open(self._fzip.unzip(self._fs[_b])).get_band().cache())
+            _bnd = qa.from_fmask(ge.open(self._fzip.unzip(self._fs[_b])).get_band().cache(), code_set)
             self._bnds['cloud'] = _bnd
 
             return _bnd
