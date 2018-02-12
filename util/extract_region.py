@@ -6,6 +6,48 @@ Create: 2018-01-04 16:53:27
 Description:
 '''
 
+def filter_noise(bnd):
+    from gio import mod_filter
+    import logging
+
+    if False:
+        logging.debug('expend pixels')
+
+        _vs = range(50)
+        _bv = 255
+
+        _dat = bnd.data
+        for _v in _vs:
+            for _i in xrange(3):
+                _num = mod_filter.expand(_dat, \
+                        _dat != bnd.nodata,\
+                        _v, _bv, 2, 20)
+                logging.debug('filtered %s %s pixels' % (_i, _num))
+                if _num < 10:
+                    break
+
+        for _v in _vs:
+            for _i in xrange(3):
+                _num = mod_filter.expand(_dat, \
+                        _dat != bnd.nodata,\
+                        _v, _bv, 1, 5)
+                logging.info('filtered %s %s pixels' % (_i, _num))
+                if _num < 10:
+                    break
+
+    logging.debug('filter noise (dis: %s, num: %s)' % (4, 10))
+    for _i in xrange(10):
+        _num = mod_filter.clean(bnd, 4, 20)
+        logging.debug('filtered %s %s pixels' % (_i, _num))
+        if _num < 30:
+            break
+
+    for _i in xrange(5):
+        _num = mod_filter.clean(bnd, 1, 3)
+        logging.debug('filtered %s %s pixels' % (_i, _num))
+        if _num < 20:
+            break
+
 def main(opts):
     from gio import geo_raster as ge
     from gio import geo_raster_ex as gx
@@ -21,6 +63,12 @@ def main(opts):
     _mak = ge.open(opts.mask).get_band().cache()
     _bnd = _bnd.read_block(_mak)
     _bnd.data[_mak.data == 0] = _bnd.nodata
+
+    if opts.exclude_noises:
+        print 'exclude noises'
+        if _bnd.pixel_type != ge.pixel_type():
+            raise Exception('only exclude noises for byte type raster')
+        filter_noise(_bnd)
 
     _clr = _clr if _clr else _bnd.color_table
 
@@ -42,6 +90,7 @@ def usage():
     _p.add_argument('-m', '--mask', dest='mask', required=True)
     _p.add_argument('-c', '--color', dest='color')
     _p.add_argument('-o', '--output', dest='output', required=True)
+    _p.add_argument('-e', '--exclude-noises', dest='exclude_noises', action='store_true')
     _p.add_argument('--cache', dest='cache')
 
     return _p
