@@ -6,9 +6,12 @@ Create: 2018-01-04 16:53:27
 Description:
 '''
 
-def filter_noise(bnd):
+def filter_noise(bnd, s):
     from gio import mod_filter
     import logging
+
+    _nodata = bnd.nodata
+    bnd.nodata = 300
 
     if False:
         logging.debug('expend pixels')
@@ -37,16 +40,20 @@ def filter_noise(bnd):
 
     logging.debug('filter noise (dis: %s, num: %s)' % (4, 10))
     for _i in xrange(10):
-        _num = mod_filter.clean(bnd, 4, 20)
+        _min = 5 * s
+        _num = mod_filter.clean(bnd, 4, _min)
+
         logging.debug('filtered %s %s pixels' % (_i, _num))
         if _num < 30:
             break
 
     for _i in xrange(5):
-        _num = mod_filter.clean(bnd, 1, 3)
+        _num = mod_filter.clean(bnd, 1, s)
         logging.debug('filtered %s %s pixels' % (_i, _num))
         if _num < 20:
             break
+
+    bnd.nodata = _nodata
 
 def main(opts):
     from gio import geo_raster as ge
@@ -64,11 +71,13 @@ def main(opts):
     _bnd = _bnd.read_block(_mak)
     _bnd.data[_mak.data == 0] = _bnd.nodata
 
-    if opts.exclude_noises:
-        print 'exclude noises'
+    if opts.exclude_noises > 0:
+        print 'exclude noises (%s)' % opts.exclude_noises
+
         if _bnd.pixel_type != ge.pixel_type():
             raise Exception('only exclude noises for byte type raster')
-        filter_noise(_bnd)
+
+        filter_noise(_bnd, opts.exclude_noises)
 
     _clr = _clr if _clr else _bnd.color_table
 
@@ -90,7 +99,7 @@ def usage():
     _p.add_argument('-m', '--mask', dest='mask', required=True)
     _p.add_argument('-c', '--color', dest='color')
     _p.add_argument('-o', '--output', dest='output', required=True)
-    _p.add_argument('-e', '--exclude-noises', dest='exclude_noises', action='store_true')
+    _p.add_argument('-e', '--exclude-noises', dest='exclude_noises', type=int, default=0)
     _p.add_argument('--cache', dest='cache')
 
     return _p
