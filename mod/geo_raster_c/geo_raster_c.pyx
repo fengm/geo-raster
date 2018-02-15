@@ -964,7 +964,7 @@ class geo_raster(geo_raster_info):
         return _s3.get(_path)
 
     @staticmethod
-    def open(f, update=False):
+    def open(f, update=False, check_exist=True):
         import re
 
         _f = f
@@ -974,7 +974,7 @@ class geo_raster(geo_raster_info):
 
         import os
 
-        if not os.path.exists(_f):
+        if check_exist and (not os.path.exists(_f)):
             raise Exception('failed to find the image %s' % f)
 
         if update:
@@ -1025,7 +1025,7 @@ class geo_raster(geo_raster_info):
         _band = str(band)
         for _n, _d in self.raster.GetSubDatasets():
             if _n.endswith(_band):
-                return geo_raster.open(_n.strip())
+                return geo_raster.open(_n.strip(), check_exist=False)
 
         return None
 
@@ -1113,7 +1113,7 @@ class geo_raster(geo_raster_info):
         self.raster.FlushCache()
 
 def open(f, update=False):
-    return geo_raster.open(f, update)
+    return geo_raster.open(f, update, True)
 
 def write_raster(f, geo_transform, proj, img, pixel_type=gdal.GDT_Byte, driver='GTiff', nodata=None, color_table=None, opts=[]):
     if f.lower().endswith('.img'):
