@@ -20,6 +20,9 @@ class obj_mag:
     def get(self):
         raise NotImplementedError()
 
+    def list(self):
+        raise NotImplementedError()
+
 class file_mag(obj_mag):
 
     def __init__(self, f):
@@ -43,6 +46,16 @@ class file_mag(obj_mag):
                 _f = f[:-4] + _e
                 if os.path.exists(_f):
                     shutil.copy(_f, self._f[:-4] + _e)
+    def list(self):
+        import os
+        if not os.path.exists(self._f):
+            return []
+
+        if os.path.isfile(self._f):
+            return [file_mag(self._f)]
+
+        _fs = [file_mag(os.path.join(self._f, _f)) for _f in os.listdir(self._f)]
+        return _fs
 
     def __str__(self):
         return self._f
@@ -80,6 +93,9 @@ class s3_mag(obj_mag):
                 for _e in ['.prj', '.shx', '.dbf']:
                     self._s3.get(self._path[:-4] + _e)
         return _o
+
+    def list(self):
+        return [s3_mag('s3://%s/%s' % (self._bucket, _f)) for _f in list(self._s3.list(self._path))]
 
     def put(self, f, update=False):
         self._s3.put(self._path, f, update=update)
