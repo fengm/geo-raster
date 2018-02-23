@@ -46,12 +46,14 @@ def find_log(f=None):
 log_file = None
 
 def init(f=None):
-    _f = find_log(f)
+    import config
+    import os
 
+    _log = logging.getLogger()
+
+    _f = find_log(f)
     global log_file
     log_file = _f
-
-    import os
 
     _d_log = os.path.dirname(os.path.abspath(_f))
     try:
@@ -59,7 +61,6 @@ def init(f=None):
     except Exception:
         pass
 
-    import config
     _debug = config.getboolean('conf', 'debug') if config.cfg else False
     if _debug:
         print ' - debugging'
@@ -68,7 +69,6 @@ def init(f=None):
     _level_out = config.getint('conf', 'log_out_level', -1)
     _level_std = config.getint('conf', 'log_std_level', -1)
 
-    _log = logging.getLogger()
     _log.setLevel(logging.DEBUG)
 
     if len(_log.handlers) == 0:
@@ -106,4 +106,26 @@ def init(f=None):
     _log.addHandler(_handler)
 
     # logging.basicConfig(filename=_f, level=logging.DEBUG, filemode=filemode, format=format)
+
+    if 'CLOUDWATCH_LOG' in os.environ:
+        if os.environ['CLOUDWATCH_LOG'] in ['yes', '1']:
+            import watchtower
+            logging.getLogger('cloud').addHandler(watchtower.CloudWatchLogHandler())
+
+log_cloud = None
+
+def cloud(tag='cloud'):
+    global log_cloud
+
+    if log_cloud is None:
+        import logging
+        _log = logging.getLogger(tag)
+
+        import watchtower
+        _log.addHandler(watchtower.CloudWatchLogHandler())
+        _log.setLevel(logging.DEBUG)
+
+        log_cloud = _log
+
+    return log_cloud
 
