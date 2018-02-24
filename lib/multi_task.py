@@ -10,320 +10,341 @@ import Queue, signal
 import logging
 
 def add_task_opts(p):
-	p.add_argument('-in', '--instance-num', dest='instance_num', type=int, default=1)
-	p.add_argument('-ip', '--instance-pos', dest='instance_pos', type=int, default=0)
-	p.add_argument('-ts', '--task-num', dest='task_num', type=int, default=1)
-	p.add_argument('-se', '--skip-error', dest='skip_error', default=False, action='store_true')
-	p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=1)
-	p.add_argument('-to', '--task-order', dest='task_order', type=int, default=0)
+    p.add_argument('-in', '--instance-num', dest='instance_num', type=int, default=1)
+    p.add_argument('-ip', '--instance-pos', dest='instance_pos', type=int, default=0)
+    p.add_argument('-ts', '--task-num', dest='task_num', type=int, default=1)
+    p.add_argument('-se', '--skip-error', dest='skip_error', default=False, action='store_true')
+    p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=1)
+    p.add_argument('-to', '--task-order', dest='task_order', type=int, default=0)
 
 def load_from_list(f_ls, opts):
-	return load_list(f_ls, opts.instance_num, opts.instance_pos)
+    return load_list(f_ls, opts.instance_num, opts.instance_pos)
 
 def _list_sub_list(ls, opts):
-	logging.debug('load sub list with type %s' % opts.task_order)
+    logging.debug('load sub list with type %s' % opts.task_order)
 
-	if opts.task_order <= 1:
-		return [ls[i] for i in xrange(opts.instance_pos, len(ls), opts.instance_num)]
+    if opts.task_order <= 1:
+        return [ls[i] for i in xrange(opts.instance_pos, len(ls), opts.instance_num)]
 
-	# if opts.task_order == 1:
-	# 	import math
-	# 	_sz = int(math.ceil(len(ls) / float(opts.instance_num)))
+    # if opts.task_order == 1:
+    #     import math
+    #     _sz = int(math.ceil(len(ls) / float(opts.instance_num)))
 
-	# 	_ns = _sz * opts.instance_pos
-	# 	_ne = min(_ns + _sz, len(ls))
+    #     _ns = _sz * opts.instance_pos
+    #     _ne = min(_ns + _sz, len(ls))
 
-	# 	return ls[_ns: _ne]
+    #     return ls[_ns: _ne]
 
-	import math
-	_nd = int(math.ceil(float(len(ls)) / opts.task_order))
+    import math
+    _nd = int(math.ceil(float(len(ls)) / opts.task_order))
 
-	_ss = []
-	for _id in xrange(opts.instance_pos, _nd, opts.instance_num):
-		_ps = _id * opts.task_order
-		_ss.extend(ls[min(len(ls), _ps): min(_ps + opts.task_order, len(ls))])
+    _ss = []
+    for _id in xrange(opts.instance_pos, _nd, opts.instance_num):
+        _ps = _id * opts.task_order
+        _ss.extend(ls[min(len(ls), _ps): min(_ps + opts.task_order, len(ls))])
 
-	return _ss
+    return _ss
 
-	raise Exception('unsupported order type %s' % opts.task_order)
+    raise Exception('unsupported order type %s' % opts.task_order)
 
 def load(ls, opts):
-	import os
+    import os
 
-	if isinstance(ls, str) and os.path.exists(ls):
-		with open(ls) as _fi:
-			_ls = _fi.read().strip().splitlines()
-			return _list_sub_list(_ls, opts)
+    if isinstance(ls, str) and os.path.exists(ls):
+        with open(ls) as _fi:
+            _ls = _fi.read().strip().splitlines()
+            return _list_sub_list(_ls, opts)
 
-	if isinstance(ls, list) or isinstance(ls, tuple):
-		return _list_sub_list(ls, opts)
+    if isinstance(ls, list) or isinstance(ls, tuple):
+        return _list_sub_list(ls, opts)
 
-	raise Exception('unsupported list type %r' % ls)
+    raise Exception('unsupported list type %r' % ls)
 
 def load_list(f_ls, num, pos):
-	logging.debug('loading ' + f_ls)
+    logging.debug('loading ' + f_ls)
 
-	with open(f_ls) as _fi:
-		_ls_a = _fi.strip().read().splitlines()
-		return _ls_a
+    with open(f_ls) as _fi:
+        _ls_a = _fi.strip().read().splitlines()
+        return _ls_a
 
 def run(func, ps, opts, vs=[]):
-	_pool = Pool(func, ps, opts.task_num, opts.skip_error, opts.time_wait)
-	if opts.task_num == 1:
-		return _pool.run_single(vs)
-	else:
-		return _pool.run(vs)
+    _pool = Pool(func, ps, opts.task_num, opts.skip_error, opts.time_wait)
+    if opts.task_num == 1:
+        return _pool.run_single(vs)
+    else:
+        return _pool.run(vs)
 
 def load_ids(size, num, pos):
-	logging.debug('loading ids %d' % size)
-	return xrange(pos, size, num)
+    logging.debug('loading ids %d' % size)
+    return xrange(pos, size, num)
 
 def text(t):
-	import sys
-	sys.stdout.write(t)
-	sys.stdout.flush()
+    import sys
+    sys.stdout.write(t)
+    sys.stdout.flush()
 
 def create_lock():
-	return multiprocessing.Lock()
+    return multiprocessing.Lock()
 
 def print_percent(nu, tn, perc_step, end=False):
-	_ss = 100.0
-	_p1 = int((nu-1) * _ss // (perc_step * tn))
-	_p2 = int((nu+0) * _ss // (perc_step * tn))
+    _ss = 100.0
+    _p1 = int((nu-1) * _ss // (perc_step * tn))
+    _p2 = int((nu+0) * _ss // (perc_step * tn))
 
-	if end:
-		logging.debug('-> task end %d/%d' % (nu, tn))
-	else:
-		logging.debug('<- task start %d/%d' % (nu, tn))
+    from gio import logging_util
+    if end:
+        logging.debug('-> task end %d/%d' % (nu, tn))
 
-	if _p1 < _p2 or nu >= tn:
-		if end:
-			text('\r+ \t\t\t|  %3.1f%%(%d/%d)     ' % ((_p2 * perc_step) if nu < tn else 100.0, nu, tn))
-		else:
-			text('\r+ %3.1f%%(%d/%d)     ' % ((_p2 * perc_step) if nu < tn else 100.0, nu, tn))
-		# if end:
-		# 	print '--> %3d/%d,%3d%%\r' % (nu, tn, _p2 * perc_step)
-		# else:
-		# 	print '<-- %3d/%d,%3d%%\r' % (nu, tn, _p2 * perc_step)
+        if logging_util.cloud_enabled():
+            logging_util.cloud().info('-> task end %d/%d' % (nu, tn))
+    else:
+        logging.debug('<- task start %d/%d' % (nu, tn))
+
+        if logging_util.cloud_enabled():
+            logging_util.cloud().info('-> task start %d/%d' % (nu, tn))
+
+    if _p1 < _p2 or nu >= tn:
+        if end:
+            text('\r+ \t\t\t|  %3.1f%%(%d/%d)     ' % ((_p2 * perc_step) if nu < tn else 100.0, nu, tn))
+        else:
+            text('\r+ %3.1f%%(%d/%d)     ' % ((_p2 * perc_step) if nu < tn else 100.0, nu, tn))
+        # if end:
+        #     print '--> %3d/%d,%3d%%\r' % (nu, tn, _p2 * perc_step)
+        # else:
+        #     print '<-- %3d/%d,%3d%%\r' % (nu, tn, _p2 * perc_step)
 
 def work_function(obj, job_queue, vs, mag, res, t_lock, pos):
-	signal.signal(signal.SIGINT, signal.SIG_IGN)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-	import time
-	if obj.time_wait > 0:
-		time.sleep(obj.time_wait * pos)
+    import time
+    if obj.time_wait > 0:
+        time.sleep(obj.time_wait * pos)
 
-	while (not job_queue.empty()) and (mag['num_done'] <= len(obj.args)):
-		try:
-			if mag['stop']:
-				return
+    while (not job_queue.empty()) and (mag['num_done'] <= len(obj.args)):
+        try:
+            if mag['stop']:
+                return
 
-			# with t_lock:
-			with t_lock:
-				mag['num_load'] += 1
+            # with t_lock:
+            with t_lock:
+                mag['num_load'] += 1
 
-				_nu = mag['num_load']
-				print_percent(_nu, len(obj.args), obj.perc_step)
+                _nu = mag['num_load']
+                print_percent(_nu, len(obj.args), obj.perc_step)
 
-				_ts = job_queue.get(block=False)
+                _ts = job_queue.get(block=False)
 
-			_ps = tuple(_ts) + tuple(vs)
-			logging.debug('task (%s) params: %s' % (_nu, ','.join([str(_v) for _v in _ps])))
+            _ps = tuple(_ts) + tuple(vs)
+            logging.debug('task (%s) params: %s' % (_nu, ','.join([str(_v) for _v in _ps])))
 
-			if mag['stop']:
-				return
+            if mag['stop']:
+                return
 
-			_rs = None
+            _rs = None
 
-			try:
-				_rs = obj.func(*_ps)
-			except KeyboardInterrupt, _err:
-				raise _err
-			except Exception, _err:
-				import traceback
+            try:
+                _rs = obj.func(*_ps)
+            except KeyboardInterrupt, _err:
+                raise _err
+            except Exception, _err:
+                import traceback
 
-				logging.error('Error (%s): %s' % (_nu, traceback.format_exc()))
-				logging.error('Error (%s): %s' % (_nu, str(_err)))
+                logging.error('Error (%s): %s' % (_nu, traceback.format_exc()))
+                logging.error('Error (%s): %s' % (_nu, str(_err)))
 
-				if obj.continue_exception:
-					continue
-				else:
-					mag['stop'] = True
-					raise _err
+                if obj.continue_exception:
+                    continue
+                else:
+                    mag['stop'] = True
+                    raise _err
 
-			if mag['stop']:
-				return
+            if mag['stop']:
+                return
 
-			res.append(_rs)
-			# logging.info('task (%s/%s) end' % (_nu, obj.perc_step))
+            res.append(_rs)
+            # logging.info('task (%s/%s) end' % (_nu, obj.perc_step))
 
-			# _nu = mag['num_done'] + 1
-			# mag['num_done'] = _nu
-			print_percent(_nu, len(obj.args), obj.perc_step, end=True)
+            # _nu = mag['num_done'] + 1
+            # mag['num_done'] = _nu
+            print_percent(_nu, len(obj.args), obj.perc_step, end=True)
 
-		except Queue.Empty:
-			return
-		finally:
-			# print the progress percentage
-			with t_lock:
-				_nu = mag['num_done'] + 1
-				mag['num_done'] = _nu
-				print_percent(_nu, len(obj.args), obj.perc_step, end=True)
+        except Queue.Empty:
+            return
+        finally:
+            # print the progress percentage
+            with t_lock:
+                _nu = mag['num_done'] + 1
+                mag['num_done'] = _nu
+                print_percent(_nu, len(obj.args), obj.perc_step, end=True)
 
 class Pool:
-	def __init__(self, func, args, t_num, error_continue=False, time_wait=0, perc_step=0.1):
-		assert t_num > 0
+    def __init__(self, func, args, t_num, error_continue=False, time_wait=0, perc_step=0.1):
+        assert t_num > 0
 
-		self.func = func
-		self.args = args
-		self.t_num = min(int(t_num), len(args))
-		self.perc_step = perc_step
-		self.time_wait = time_wait
-		self.continue_exception = error_continue
+        self.func = func
+        self.args = args
+        self.t_num = min(int(t_num), len(args))
+        self.perc_step = perc_step
+        self.time_wait = time_wait
+        self.continue_exception = error_continue
 
-	def run(self, vs=[]):
-		# logging.info('process tasks (%d, %d)' % (len(self.args), self.t_num))
+    def run(self, vs=[]):
+        # logging.info('process tasks (%d, %d)' % (len(self.args), self.t_num))
+        from gio import logging_util
 
-		_mag = multiprocessing.Manager().dict()
-		_mag['stop'] = False
-		_mag['num_load'] = 0
-		_mag['num_done'] = 0
-		_mag['out'] = []
-		_out = multiprocessing.Manager().list()
-		_lock = self.create_lock()
+        _mag = multiprocessing.Manager().dict()
+        _mag['stop'] = False
+        _mag['num_load'] = 0
+        _mag['num_done'] = 0
+        _mag['out'] = []
+        _out = multiprocessing.Manager().list()
+        _lock = self.create_lock()
 
-		# exit if there is no task
-		if len(self.args) <= 0:
-			return
+        # exit if there is no task
+        if len(self.args) <= 0:
+            return
 
-		# call the run_single() when there is only one task
-		if len(self.args) == 1 or self.t_num <= 1:
-			return self.run_single(vs)
+        # call the run_single() when there is only one task
+        if len(self.args) == 1 or self.t_num <= 1:
+            return self.run_single(vs)
 
-		_jobs = multiprocessing.Queue()
-		for _arg in self.args:
-			_jobs.put(_arg if isinstance(_arg, list) or isinstance(_arg, tuple) else (_arg,))
+        _jobs = multiprocessing.Queue()
+        for _arg in self.args:
+            _jobs.put(_arg if isinstance(_arg, list) or isinstance(_arg, tuple) else (_arg,))
 
-		_jobs_num = len(self.args)
-		_procs = []
+        _jobs_num = len(self.args)
+        _procs = []
 
-		for i in range(self.t_num):
-			if _mag['stop']:
-				break
+        for i in range(self.t_num):
+            if _mag['stop']:
+                break
 
-			_proc = multiprocessing.Process(target=work_function,
-						args=(self, _jobs, vs, _mag, _out, _lock, i))
-			_proc.start()
-			_procs.append(_proc)
+            _proc = multiprocessing.Process(target=work_function,
+                        args=(self, _jobs, vs, _mag, _out, _lock, i))
+            _proc.start()
+            _procs.append(_proc)
 
-			import time
-			time.sleep(0.1)
+            import time
+            time.sleep(0.1)
 
-		try:
-			_task_num = 0
-			while True:
-				# _pos = 0
-				_task_tmp = len([_p for _p in _procs if _p != None])
-				if _task_num != _task_tmp:
-					_task_num = _task_tmp
+        try:
+            _task_num = 0
+            while True:
+                # _pos = 0
+                _task_tmp = len([_p for _p in _procs if _p != None])
+                if _task_num != _task_tmp:
+                    _task_num = _task_tmp
 
-					logging.info('alive tasks num: %s' % _task_num)
-					text('\r\t\t\t\t\t\t(%3d)' % _task_num)
+                    logging.info('alive tasks num: %s' % _task_num)
+                    text('\r\t\t\t\t\t\t(%3d)' % _task_num)
 
-					if _task_num <= 0:
-						break
+                    if _task_num <= 0:
+                        break
 
-				for _idx in xrange(len(_procs)):
-					_proc = _procs[_idx]
-					if _proc == None:
-						continue
+                for _idx in xrange(len(_procs)):
+                    _proc = _procs[_idx]
+                    if _proc == None:
+                        continue
 
-					_proc.join(0.1)
-					if _proc.is_alive() == False:
-						_procs[_idx] = None
+                    _proc.join(0.1)
+                    if _proc.is_alive() == False:
+                        _procs[_idx] = None
 
-				if _mag['stop'] or (len(_out) >= _jobs_num and _jobs.empty()):
-					for _proc in _procs:
-						if _proc == None:
-							continue
-						_proc.terminate()
-					break
+                if _mag['stop'] or (len(_out) >= _jobs_num and _jobs.empty()):
+                    for _proc in _procs:
+                        if _proc == None:
+                            continue
+                        _proc.terminate()
+                    break
 
-			# print_percent(len(self.args), len(self.args), True)
-			print ''
+            # print_percent(len(self.args), len(self.args), True)
+            print ''
 
-			_rs = []
-			for _oo in _out:
-				_rs.append(_oo)
+            _rs = []
+            for _oo in _out:
+                _rs.append(_oo)
 
-			return _rs
+            return _rs
 
-		except KeyboardInterrupt:
-			logging.warning('terminated by user')
-			print ''
-			print 'parent received ctrl-c'
+        except KeyboardInterrupt:
+            logging.warning('terminated by user')
+            print ''
+            print 'parent received ctrl-c'
 
-			for _proc in _procs:
-				if _proc == None:
-					continue
-				_proc.terminate()
-				_proc.join(5)
+            if logging_util.cloud_enabled():
+                _log = logging_util.cloud()
+                _log.warning('terminated by user')
 
-			while not _jobs.empty():
-				_jobs.get(block=False)
+            for _proc in _procs:
+                if _proc == None:
+                    continue
+                _proc.terminate()
+                _proc.join(5)
 
-		except Exception, _err:
-			import traceback
+            while not _jobs.empty():
+                _jobs.get(block=False)
 
-			logging.error(traceback.format_exc())
-			logging.error(str(_err))
+        except Exception, _err:
+            import traceback
 
-			print ''
-			print '* error:', _err
+            logging.error(traceback.format_exc())
+            logging.error(str(_err))
 
-			for _proc in _procs:
-				if _proc == None:
-					continue
-				_proc.terminate()
-				_proc.join(5)
+            print ''
+            print '* error:', _err
 
-			while not _jobs.empty():
-				_jobs.get(block=False)
+            if logging_util.cloud_enabled():
+                _log = logging_util.cloud()
+                _log.error(traceback.format_exc())
+                _log.error(str(_err))
 
-		raise Exception('failed with the processing')
+            for _proc in _procs:
+                if _proc == None:
+                    continue
+                _proc.terminate()
+                _proc.join(5)
 
-	def run_single(self, vs=[]):
-		logging.info('process tasks (%d) without parallel' % (len(self.args)))
+            while not _jobs.empty():
+                _jobs.get(block=False)
 
-		_rs = []; _pos = 0
-		for _arg in self.args:
-			print_percent(_pos, len(self.args), self.perc_step)
-			_vs = _arg if isinstance(_arg, list) or isinstance(_arg, tuple) else (_arg,)
+        raise Exception('failed with the processing')
 
-			if not self.continue_exception:
-				_rs.append(self.func(*(tuple(_vs) + tuple(vs))))
-			else:
-				try:
-					_rs.append(self.func(*(tuple(_vs) + tuple(vs))))
-				except KeyboardInterrupt:
-					logging.warning('terminated by user')
-					print ''
-					print 'parent received ctrl-c'
-					break
+    def run_single(self, vs=[]):
+        logging.info('process tasks (%d) without parallel' % (len(self.args)))
 
-				except Exception, _err:
-					import traceback
+        from gio import logging_util
+        if logging_util.cloud_enabled():
+            logging_util.cloud().info('process tasks (%d) without parallel' % (len(self.args)))
 
-					logging.error('Error (%s): %s' % (_pos, traceback.format_exc()))
-					logging.error('Error (%s): %s' % (_pos, str(_err)))
+        _rs = []; _pos = 0
+        for _arg in self.args:
+            print_percent(_pos, len(self.args), self.perc_step)
+            _vs = _arg if isinstance(_arg, list) or isinstance(_arg, tuple) else (_arg,)
 
-					continue
+            if not self.continue_exception:
+                _rs.append(self.func(*(tuple(_vs) + tuple(vs))))
+            else:
+                try:
+                    _rs.append(self.func(*(tuple(_vs) + tuple(vs))))
+                except KeyboardInterrupt:
+                    logging.warning('terminated by user')
+                    print ''
+                    print 'parent received ctrl-c'
+                    break
 
-			_pos += 1
+                except Exception, _err:
+                    import traceback
 
-		return _rs
+                    logging.error('Error (%s): %s' % (_pos, traceback.format_exc()))
+                    logging.error('Error (%s): %s' % (_pos, str(_err)))
 
-	def create_lock(self):
-		return multiprocessing.Lock()
+                    continue
+
+            _pos += 1
+
+        return _rs
+
+    def create_lock(self):
+        return multiprocessing.Lock()
 
 

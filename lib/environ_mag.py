@@ -73,10 +73,11 @@ def run(func, opts):
 
             print '\n\n* Error:', err
 
-            import os
-            if 'CLOUDWATCH_LOG' in os.environ and os.environ['CLOUDWATCH_LOG'] in ['yes', '1']:
-                logging.getLogger('cloud').error(traceback.format_exc())
-                logging.getLogger('cloud').error(str(err))
+            from gio import logging_util
+            if logging_util.cloud_enabled():
+                _log = logging_util.cloud()
+                _log.error(traceback.format_exc())
+                _log.error(str(err))
 
         import sys
         sys.exit(1)

@@ -107,25 +107,22 @@ def init(f=None):
 
     # logging.basicConfig(filename=_f, level=logging.DEBUG, filemode=filemode, format=format)
 
-    if 'CLOUDWATCH_LOG' in os.environ:
-        if os.environ['CLOUDWATCH_LOG'] in ['yes', '1']:
-            import watchtower
-            logging.getLogger('cloud').addHandler(watchtower.CloudWatchLogHandler())
-
-log_cloud = None
-
-def cloud(tag='cloud'):
-    global log_cloud
-
-    if log_cloud is None:
-        import logging
-        _log = logging.getLogger(tag)
+    if cloud_enabled():
+        _log = cloud()
 
         import watchtower
         _log.addHandler(watchtower.CloudWatchLogHandler())
         _log.setLevel(logging.DEBUG)
 
-        log_cloud = _log
+def cloud_enabled():
+    import os
 
-    return log_cloud
+    if 'CLOUDWATCH_LOG' in os.environ:
+        if os.environ['CLOUDWATCH_LOG'] in ['yes', '1']:
+            return True
+
+    return False
+
+def cloud(tag='cloud'):
+    return logging.getLogger(tag)
 
