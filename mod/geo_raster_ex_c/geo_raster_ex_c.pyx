@@ -798,7 +798,12 @@ class geo_band_stack_zip:
         import geo_base as gb
 
         import file_mag
-        _finp = f_list.get() if isinstance(f_list, file_mag.obj_mag) else f_list
+        if isinstance(f_list, file_mag.obj_mag):
+            _finp = f_list.get()
+        elif f_list.startswith('s3://'):
+            _finp = file_mag.get(f_list).get()
+        else:
+            _finp = f_list
 
         _bnds = []
         _shp = ogr.Open(_finp)
