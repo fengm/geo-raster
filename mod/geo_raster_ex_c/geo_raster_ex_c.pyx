@@ -797,16 +797,19 @@ class geo_band_stack_zip:
         from osgeo import ogr
         import geo_base as gb
 
+        import file_mag
+        _finp = f_list.get() if isinstance(f_list, file_mag.obj_mag) else f_list
+
         _bnds = []
-        _shp = ogr.Open(f_list)
+        _shp = ogr.Open(_finp)
         if _shp is None:
-            logging.error('failed to load shapefile (%s)' % f_list)
-            raise Exception('Failed to load shapefile ' + f_list)
+            logging.error('failed to load shapefile (%s)' % _finp)
+            raise Exception('Failed to load shapefile ' + _finp)
 
         _lyr = _shp.GetLayer()
 
         import os
-        _d_shp = os.path.dirname(f_list)
+        _d_shp = os.path.dirname(_finp)
 
         _file_columns = [_col.name for _col in _lyr.schema if _col.name.lower() == 'file']
         if len(_file_columns) != 1:

@@ -961,7 +961,7 @@ class geo_raster(geo_raster_info):
 
         logging.info('loading image from %s at %s' % (_bucket, _path))
 
-        return _s3.get(_path)
+        return _s3, _s3.get(_path)
 
     @staticmethod
     def open(f, update=False, check_exist=True):
@@ -970,7 +970,9 @@ class geo_raster(geo_raster_info):
         _f = f
 
         if _f.startswith('s3://'):
-            _f = geo_raster._load_s3_file(_f)
+            _s3, _f = geo_raster._load_s3_file(_f)
+            if _f is None:
+                raise Exception('failed to load the file %s' % _f)
 
         import os
 
