@@ -31,9 +31,13 @@ def output_shp(f_inp, b, d_out, f_out):
     for _r in _yyy:
         _ftr = ogr.Feature(_lyr.GetLayerDefn())
 
-        _f = update_path(_r.items()['FILE'], b, d_out)
+        _vs = _r.items()
+        _f = update_path(_vs['FILE'], b, d_out)
+
         _ftr.SetField('file', _f)
-        _ftr.SetField('tag', _r.items()['TAG'])
+
+        if 'TAG' in _vs:
+            _ftr.SetField('tag', _vs['TAG'])
 
         _ftr.SetGeometry(_r.geometry())
         _lyr.CreateFeature(_ftr)
@@ -55,6 +59,7 @@ def update_path(p, b, d_out):
 def upload_file(f, k):
     import boto
     import re
+    from gio import config
 
     _mm = re.match('s3://([^/]+)/(.+)', k)
     if not _mm:
@@ -62,7 +67,7 @@ def upload_file(f, k):
 
     _bucket = _mm.group(1)
 
-    _s3 = boto.connect_s3(opts.access_key, opts.secret_key)
+    _s3 = boto.connect_s3(config.get('conf', 'access_key'), config.get('conf', 'opts.secret_key'))
     _bk = _s3.get_bucket(_bucket)
 
     _ff = _mm.group(2)
