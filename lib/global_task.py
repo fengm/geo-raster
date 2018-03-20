@@ -260,19 +260,22 @@ def file_obj(f):
     from gio import file_mag
     return file_mag.get(f) if isinstance(f, str) else f
 
-def save(rs, f_out):
+def save(rs, f_out, ms=None):
     _f_out = file_obj(f_out)
 
     _rs = [_r.obj() for _r in rs]
 
     from gio import file_unzip
-
     with file_unzip.file_unzip() as _zip:
         _f_tmp = _zip.generate_file('', '.txt')
 
         import json
         with open(_f_tmp, 'wb') as _f:
-            json.dump(_rs, _f)
+            _ms = ms if ms else {}
+            _ms['version'] = '2.0'
+
+            _gs = {'params': _ms, 'tiles': _rs}
+            json.dump(_gs, _f)
 
         _f_out.put(_f_tmp)
 
@@ -281,5 +284,22 @@ def load(f_inp):
 
     with open(file_obj(f_inp).get(), 'rb') as _f:
         _rs = json.load(_f)
-        return [tile.from_obj(_r) for _r in _rs]
+        if isinstance(_rs, list):
+            # compatible to the older version
+            return [tile.from_obj(_r) for _r in _rs]
+
+        _ts = [tile.from_obj(_r) for _r in _rs['tiles']]
+        return _ts
+
+def loads(f_inp):
+    import json
+
+    with open(file_obj(f_inp).get(), 'rb') as _f:
+        _rs = json.load(_f)
+        if isinstance(_rs, list):
+            _ts = [tile.from_obj(_r) for _r in _rs]
+            return {'tiles': _ts, 'params': {}}
+
+        _ts = [tile.from_obj(_r) for _r in _rs['tiles']]
+        return {'tiles': _ts, 'params': _rs['params']}
 
