@@ -92,7 +92,14 @@ def main(opts):
 
     from gio import multi_task
     _rs = multi_task.run(_task, [(_r, opts) for _r in multi_task.load(_ts, opts)], opts)
-    generate_shp(_rs, opts.output)
+
+    from gio import file_unzip
+    with file_unzip.file_unzip() as _zip:
+        _d_tmp = _zip.generate_file()
+        os.makedirs(_d_tmp)
+
+        generate_shp(_rs, os.path.join(_d_tmp, os.path.basename(opts.output)))
+        file_unzip.compress_folder(_d_tmp, os.path.dirname(opts.output), [])
 
 def usage():
     _p = environ_mag.usage(True)

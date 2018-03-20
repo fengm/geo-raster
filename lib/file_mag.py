@@ -37,6 +37,9 @@ class file_mag(obj_mag):
         return self._f
 
     def put(self, f):
+        import os
+        (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(self._f))
+
         import shutil
         shutil.move(f, self._f)
 
