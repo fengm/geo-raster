@@ -41,7 +41,7 @@ class file_mag(obj_mag):
         (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(self._f))
 
         import shutil
-        shutil.move(f, self._f)
+        shutil.copy(f, self._f)
 
         if self._f.endswith('.shp') and f.endswith('.shp'):
             import os
