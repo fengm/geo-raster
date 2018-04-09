@@ -44,7 +44,7 @@ def band_idw(bnd, bnd_tar, int dist, float power, float nodata=-9999):
 	_bnd = ge.geo_band_cache(_dat, bnd_tar.geo_transform, bnd_tar.proj, _nodata, ge.pixel_type('float'))
 	return _bnd
 
-cdef float band_idw_loc(bnd, float x, float y, float dist, float power) :
+def band_idw_loc(bnd, float x, float y, float dist, float power) :
 	cdef np.ndarray[np.float32_t, ndim=2] _dat = bnd.data
 	cdef int _col0, _row0
 	cdef float _x1, _y1

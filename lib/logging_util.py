@@ -45,7 +45,7 @@ def find_log(f=None):
 
 log_file = None
 
-def init(f=None):
+def init(f=None, enable_multi_processing=False):
     import config
     import os
 
@@ -89,24 +89,24 @@ def init(f=None):
         _handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
 
     # print 'logging file', _f
-    _handler = sync_file_log_handler(_f)
+    if enable_multi_processing:
+        _handler = sync_file_log_handler(_f)
 
-    _level = 20 if not _debug else 10
-    if _level_out >= 0:
-        _level = _level_out
+        _level = 20 if not _debug else 10
+        if _level_out >= 0:
+            _level = _level_out
 
-    _handler.setLevel(_level)
+        _handler.setLevel(_level)
 
-    if _debug:
-        _handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s: %(message)s'))
-    else:
-        _handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s: %(message)s'))
-        # _handler.setFormatter(logging.Formatter('%(process)d:%(levelname)s:%(message)s'))
+        if _debug:
+            _handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s: %(message)s'))
+        else:
+            _handler.setFormatter(logging.Formatter('%(process)d:%(asctime)-15s:%(levelname)s: %(message)s'))
+            # _handler.setFormatter(logging.Formatter('%(process)d:%(levelname)s:%(message)s'))
 
-    _log.addHandler(_handler)
+        _log.addHandler(_handler)
 
     # logging.basicConfig(filename=_f, level=logging.DEBUG, filemode=filemode, format=format)
-
     if cloud_enabled():
         _log = cloud()
 
