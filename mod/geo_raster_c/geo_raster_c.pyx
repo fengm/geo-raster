@@ -604,7 +604,6 @@ class geo_band(geo_band_info):
         _col, _row = self.raster.to_cell(x, y)
         return self.read_cell(_col, _row, row_num)
 
-
     def is_cached(self, int row):
         if not (0 <= row < self.height):
             return False
@@ -624,8 +623,12 @@ class geo_band(geo_band_info):
 
         if _s == 0:
             return None
-        if _s == 2:
+
+        if _s == 2 or self.data is None:
             self.read_rows(max(0, row - row_num / 3), row_num)
+
+        if self.data is None:
+            return None
 
         cdef int _row = row - self.buf_row_start
         if self.pixel_type == 1:
@@ -818,7 +821,6 @@ class geo_band(geo_band_info):
             return None
 
         if apply_nni and (bnd.geo_transform[1] == self.geo_transform[1]) and is_same_projs(bnd.proj, self.proj):
-            logging.debug('reading from ext')
             _bnd = self.read_ext(bnd.extent(), True, check_proj)
 
             if _bnd:
