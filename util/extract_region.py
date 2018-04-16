@@ -68,8 +68,13 @@ def main(opts):
         _bnd = ge.open(opts.input).get_band()
 
     _mak = ge.open(opts.mask).get_band().cache()
+    _val = 0
+
+    if _mak.nodata is not None:
+        _val = _mak.nodata
+
     _bnd = _bnd.read_block(_mak)
-    _bnd.data[_mak.data == 0] = _bnd.nodata
+    _bnd.data[_mak.data == _val] = _bnd.nodata
 
     if opts.exclude_noises > 0:
         print 'exclude noises (%s)' % opts.exclude_noises
