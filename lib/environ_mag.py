@@ -13,7 +13,7 @@ def usage(multi_task=False):
     _p.add_argument('--logging', dest='logging')
     _p.add_argument('--config', dest='config', nargs='+')
     _p.add_argument('--debug', dest='debug', action='store_true')
-    _p.add_argument('--clean-temp', dest='clean_temp', action='store_true')
+    _p.add_argument('--no-clean', dest='no_clean', action='store_true')
     _p.add_argument('--temp', dest='temp')
 
     if multi_task:
@@ -50,7 +50,7 @@ def config(p, enable_multi_processing=True):
     logging_util.init(_opts.logging, enable_multi_processing)
 
     from gio import file_unzip as fz
-    if config.getboolean('conf', 'clean_temp', False):
+    if config.getboolean('conf', 'no_clean', False) == False:
         fz.clean(fz.default_dir(_opts.temp))
 
     return _opts
