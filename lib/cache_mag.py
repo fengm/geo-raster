@@ -206,22 +206,31 @@ _get_cache_que = None
 class s3():
     """manage Landsat cache files"""
 
-    def __init__(self, bucket):
-        from gio import file_unzip
+    def __init__(self, bucket, fzip=None):
         from gio import config
         import os
 
         self._t = bucket
-        self._zip = file_unzip.file_unzip()
+        self._zip = fzip
 
         _p = config.get('conf', 'cache')
         if not _p:
+            if self._zip is None:
+                raise Exception('need to provide zip obj when cache is disabled')
+
             logging.info('disabled caching S3 files')
             _p = self._zip.generate_file()
+
             os.makedirs(_p)
 
         self._c = cache_mag(bucket, _p)
         self.bucket = self._bucket()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        pass
 
     def _bucket(self):
         import boto
