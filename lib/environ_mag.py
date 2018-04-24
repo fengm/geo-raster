@@ -58,30 +58,47 @@ def config(p, enable_multi_processing=True):
 def run(func, opts):
     import logging
     import config
+    import os
+    import file_unzip
 
-    if config.getboolean('conf', 'debug', True):
-        return func(*opts)
-    else:
-        try:
+    with file_unzip.file_unzip() as _zip:
+        _tmp = _zip.generate_file()
+        config.set('conf', 'temp', _tmp)
+
+        _cache = config.get('conf', 'cache', None)
+        if not _cache:
+            config.set('conf', 'cache', os.path.join(_tmp, 'cache'))
+
+        if config.getboolean('conf', 'debug', True):
             return func(*opts)
-        except KeyboardInterrupt:
-            print '\n\n* User stopped the program'
-        except Exception, err:
-            import traceback
+        else:
+            try:
+                return func(*opts)
+            except KeyboardInterrupt:
+                print '\n\n* User stopped the program'
+            except Exception, err:
+                import traceback
 
-            logging.error(traceback.format_exc())
-            logging.error(str(err))
+                logging.error(traceback.format_exc())
+                logging.error(str(err))
 
-            print '\n\n* Error:', err
+                print '\n\n* Error:', err
 
-            from gio import logging_util
-            if logging_util.cloud_enabled():
-                _log = logging_util.cloud()
-                _log.error(traceback.format_exc())
-                _log.error(str(err))
+                from gio import logging_util
+                if logging_util.cloud_enabled():
+                    _log = logging_util.cloud()
+                    _log.error(traceback.format_exc())
+                    _log.error(str(err))
 
-        import sys
-        sys.exit(1)
+        if os.path.exists(_tmp):
+            try:
+                import shutil
+                shutil.rmtree(_tmp, True)
+            except Exception, err:
+                pass
+
+    import sys
+    sys.exit(1)
 
 if __name__ == '__main__':
     init_path()
