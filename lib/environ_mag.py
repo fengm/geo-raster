@@ -82,7 +82,7 @@ def run(func, opts):
                 logging.error(traceback.format_exc())
                 logging.error(str(err))
 
-                print '\n\n* Error:', err
+                # print '\n\n* Error:', err
 
                 from gio import logging_util
                 if logging_util.cloud_enabled():
