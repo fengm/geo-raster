@@ -82,8 +82,13 @@ def compress_file(f_src, f_dst=None, remove_src=True):
     if os.path.isdir(_f_dst):
         _f_dst = os.path.join(_f_dst, os.path.basename(f_src) + '.gz')
 
-    _f_tmp = _f_dst + '.tmp'
-    try:
+    with file_unzip() as _zip:
+        if f_dst.startswith('s3://'):
+            _f_tmp = _zip.generate_file('', '.tmp')
+        else:
+            _f_tmp = _f_dst + '.tmp'
+
+        # try:
         logging.debug('compress %s to %s' % (f_src, _f_dst))
         with open(f_src, 'rb') as _zip_src:
             (lambda x: (os.path.exists(x) or os.makedirs(x)))(os.path.dirname(_f_tmp))
@@ -114,11 +119,11 @@ def compress_file(f_src, f_dst=None, remove_src=True):
         if remove_src:
             os.remove(f_src)
 
-    except BaseException, err:
-        import os
-        os.path.exists(_f_tmp) and os.remove(_f_tmp)
+        # except BaseException, err:
+        #     import os
+        #     os.path.exists(_f_tmp) and os.remove(_f_tmp)
 
-        raise err
+        #     raise err
 
 def check_prefix(f, exts):
     if not f:
