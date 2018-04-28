@@ -961,8 +961,7 @@ class geo_raster(geo_raster_info):
         from gio import cache_mag
         _s3 = cache_mag.s3(_bucket)
 
-        logging.info('loading image from %s at %s' % (_bucket, _path))
-
+        logging.debug('loading image from %s at %s' % (_bucket, _path))
         return _s3, _s3.get(_path)
 
     @staticmethod
