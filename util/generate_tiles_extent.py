@@ -6,19 +6,29 @@ Create: 2018-01-09 01:46:17
 Description:
 '''
 
-def _task(tile, opts):
+def _task(tile, u):
     from gio import file_mag
     # if tile.col != 1156:
     #     return
     # if tile.row != 970:
     #     return
 
-    _f = opts.ext % {'col': 'h%03d' % tile.col, 'row': 'v%03d' % tile.row}
+    _f = u % {'col': 'h%03d' % tile.col, 'row': 'v%03d' % tile.row}
 
     if file_mag.get(_f).exists():
         return (tile, _f)
 
     return None
+
+def _format_url(f):
+    import re
+
+    _f = f
+
+    _f = re.sub('h\d+', '%(col)s', _f)
+    _f = re.sub('v\d+', '%(row)s', _f)
+
+    return _f
 
 def _get_tag(f):
     import re
@@ -81,6 +91,12 @@ def main(opts):
     from gio import file_mag
     import os
 
+    _u = _format_url(opts.ext)
+    if not _u.startswith('s3://'):
+        _u = opts.input + '/' + _u
+
+    print 'url:', _u
+
     _d_inp = config.get('conf', 'input')
     _f_mak = file_mag.get(os.path.join(_d_inp, 'tasks.txt'))
 
@@ -91,7 +107,7 @@ def main(opts):
     _ts = global_task.load(_f_mak)
 
     from gio import multi_task
-    _rs = multi_task.run(_task, [(_r, opts) for _r in multi_task.load(_ts, opts)], opts)
+    _rs = multi_task.run(_task, [(_r, _u) for _r in multi_task.load(_ts, opts)], opts)
 
     from gio import file_unzip
     with file_unzip.file_unzip() as _zip:
@@ -105,7 +121,7 @@ def usage():
     _p = environ_mag.usage(True)
 
     _p.add_argument('-i', '--input', dest='input', required=True)
-    _p.add_argument('-c', '--cache', dest='cache', default='/mnt/data1/mfeng/test/test1/cache')
+    _p.add_argument('-c', '--cache', dest='cache')
     _p.add_argument('-e', '--ext', dest='ext', required=True)
     _p.add_argument('-o', '--output', dest='output', required=True)
 
