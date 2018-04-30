@@ -151,7 +151,7 @@ def set(section, name, val):
     if cfg.has_section(section) == False:
         cfg.add_section(section)
 
-    cfg.set(section, name, val)
+    cfg.set(section, name, str(val) if val is not None else None)
 
 def get(section, name, val=None):
     """get config param
