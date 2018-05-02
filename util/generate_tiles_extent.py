@@ -68,6 +68,7 @@ def generate_shp(rs, f_out):
 
     _perc = progress_percentage(len(rs))
 
+    _ts = 0
     for _r in rs:
         _perc.next()
 
@@ -84,11 +85,16 @@ def generate_shp(rs, f_out):
         _lyr.CreateFeature(_ftr)
         _ftr.Destroy()
 
+        _ts += 1
+
     _perc.done()
+
+    return _ts
 
 def main(opts):
     from gio import config
     from gio import file_mag
+    import logging
     import os
 
     _u = _format_url(opts.ext)
@@ -96,6 +102,7 @@ def main(opts):
         _u = opts.input + '/' + _u
 
     print 'url:', _u
+    logging.info('url: %s' % _u)
 
     _d_inp = config.get('conf', 'input')
     _f_mak = file_mag.get(os.path.join(_d_inp, 'tasks.txt'))
@@ -114,7 +121,13 @@ def main(opts):
         _d_tmp = _zip.generate_file()
         os.makedirs(_d_tmp)
 
-        generate_shp(_rs, os.path.join(_d_tmp, os.path.basename(opts.output)))
+        _nu = generate_shp(_rs, os.path.join(_d_tmp, os.path.basename(opts.output)))
+        if _nu <= 0:
+            raise Exception('no valid image was found')
+
+        logging.info('added %s file' % _nu)
+        print 'added %s file' % _nu
+
         file_unzip.compress_folder(_d_tmp, os.path.dirname(opts.output), [])
 
 def usage():
