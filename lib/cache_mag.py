@@ -46,8 +46,9 @@ class cache_mag():
 
         global _w_lock
         if self._t not in _w_lock:
-            import multi_task
-            _w_lock[self._t] = multi_task.create_lock()
+            if config.getboolean('conf', 'enable_cache_lock', True):
+                import multi_task
+                _w_lock[self._t] = multi_task.create_lock()
 
     def cached(self, key):
         _f = self.path(key)
@@ -86,6 +87,39 @@ class cache_mag():
 
         return self.path(key)
 
+    def _put(self, inp, f):
+        import os
+        _f = f
+
+        if os.path.exists(_f):
+            return _f
+
+        if self._max_file > 0 or self._max_size > 0:
+            global _w_nums
+            _w_nums[self._t] += 1
+
+            if _w_nums[self._t] > (self._max_file / 10 if self._max_file > 0 else 1000):
+                self._clean()
+                _w_nums[self._t] = 0
+
+        try:
+            (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
+        except Exception:
+            pass
+
+        import random
+        _f_out = _f + str(random.randint(0, 1000)) + '.bak'
+
+        import shutil
+        shutil.copy(inp, _f_out)
+
+        if os.path.exists(_f) == False:
+            shutil.move(_f_out, _f)
+        else:
+            os.remove(_f_out)
+
+        return _f
+
     def put(self, key, inp=None, replace=False):
         import os
 
@@ -104,35 +138,11 @@ class cache_mag():
                 return _f
 
         global _w_lock
-        with _w_lock[self._t]:
-            if os.path.exists(_f):
-                return _f
-
-            if self._max_file > 0 or self._max_size > 0:
-                global _w_nums
-                _w_nums[self._t] += 1
-
-                if _w_nums[self._t] > (self._max_file / 10 if self._max_file > 0 else 1000):
-                    self._clean()
-                    _w_nums[self._t] = 0
-
-        with _w_lock[self._t]:
-            try:
-                (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
-            except Exception:
-                pass
-
-        import random
-        _f_out = _f + str(random.randint(0, 1000)) + '.bak'
-
-        import shutil
-        shutil.copy(_inp, _f_out)
-
-        with _w_lock[self._t]:
-            if os.path.exists(_f) == False:
-                shutil.move(_f_out, _f)
-            else:
-                os.remove(_f_out)
+        if self._t in _w_lock:
+            with _w_lock[self._t]:
+                self._put(_inp, _f)
+        else:
+            self._put(_inp, _f)
 
         return _f
 
@@ -241,11 +251,21 @@ class s3():
         return _bk
 
     def get(self, k, lock=None):
+        from gio import config
+        _enable_lock = config.getboolean('conf', 'enable_cache_lock', True)
+
+        if _enable_lock:
+            _num = config.getint('conf', 'max_cache_rec_num', 2)
+        else:
+            _num = 0
+
+        if _num <= 0:
+            return self._get(k, lock)
+
         global _get_cache_que
         if _get_cache_que is None:
-            from gio import config
             import multiprocessing
-            _get_cache_que = multiprocessing.Semaphore(value=config.getint('conf', 'max_cache_rec_num', 2))
+            _get_cache_que = multiprocessing.Semaphore(value=_num)
 
         with _get_cache_que:
             return self._get(k, lock)
