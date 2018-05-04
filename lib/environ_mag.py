@@ -60,6 +60,9 @@ def run(func, opts):
     import config
     import os
     import file_unzip
+    import sys
+
+    logging.info('CMD: ' + ' '.join(map(lambda x: '"%s"' % x if ' ' in x else x, sys.argv)))
 
     with file_unzip.file_unzip() as _zip:
         _tmp = _zip.generate_file()
