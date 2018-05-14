@@ -68,6 +68,7 @@ def generate_shp(rs, f_out):
 
     _perc = progress_percentage(len(rs))
 
+    _fs = []
     _ts = 0
     for _r in rs:
         _perc.next()
@@ -80,6 +81,7 @@ def generate_shp(rs, f_out):
         _ftr = ogr.Feature(_lyr.GetLayerDefn())
         _ftr.SetField('file', _f)
         _ftr.SetField('tag', _get_tag(_f))
+        _fs.append(_f)
 
         _ftr.SetGeometry(_t.extent().extent().to_polygon().poly)
         _lyr.CreateFeature(_ftr)
@@ -88,6 +90,9 @@ def generate_shp(rs, f_out):
         _ts += 1
 
     _perc.done()
+
+    with open(f_out[:-4] + '.txt', 'w') as _fo:
+        _fo.write('\n'.join(_fs))
 
     return _ts
 
