@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 '''
 File: visualize_bands.py
 Author: Min Feng
@@ -41,8 +39,10 @@ def convert_band_sr(bnd, row, line, ref, sh=0.2, met={}):
     _base = 10
 
     import math
-    _min = 500
-    _max = 4500
+    from gio import config
+
+    _min = config.getfloat('conf', 'sr_min', 500)
+    _max = config.getfloat('conf', 'sr_max', 4500)
 
     _low = math.log(_min, _base)
     _top = math.log(_max, _base)
@@ -241,6 +241,8 @@ def usage():
     _p.add_argument('-o', '--output', dest='output', required=True)
     _p.add_argument('-sr', '--convert-sr', dest='convert_sr', action='store_true')
     _p.add_argument('-c', '--compress', dest='compress', action="store_true")
+    _p.add_argument('--sr-min', dest='sr_min', type=float, default=500)
+    _p.add_argument('--sr-max', dest='sr_max', type=float, default=4500)
 
     return _p
 
