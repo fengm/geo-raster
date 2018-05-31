@@ -6,31 +6,6 @@ Create: 2018-02-12 18:05:06
 Description: reduce noises in a raster file
 '''
 
-def filter_noise_median(bnd, s):
-    from gio import mod_filter
-    # from gio import stat_band
-    from gio import config
-    import logging
-
-    # _ss = stat_band.stat(bnd)
-    # _vs = [_v for _v in _ss.keys() if _v != bnd.nodata]
-
-    # print 'values:', sorted(_vs)
-
-    # if len(_vs) <= 0:
-    #     return
-
-    _nodata = bnd.nodata
-    bnd.nodata = 300
-
-    for _i in xrange(config.getint('conf', 'iteration')):
-        _num = mod_filter.median(bnd, s)
-        logging.debug('filtered %s %s pixels' % (_i, _num))
-        if _num < 100:
-            break
-
-    bnd.nodata = _nodata
-
 def filter_noise(bnd, s):
     from gio import mod_filter
     from gio import stat_band
@@ -104,7 +79,8 @@ def main(opts):
     if opts.mmu:
         filter_noise(_bnd, opts.exclude_noises)
     else:
-        filter_noise_median(_bnd, opts.exclude_noises)
+        import mod_filter
+        mod_filter.filter_band_median(_bnd, opts.exclude_noises)
 
     _clr = _clr if _clr else _bnd.color_table
 

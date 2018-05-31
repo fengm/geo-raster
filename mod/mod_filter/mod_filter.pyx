@@ -17,6 +17,29 @@ cimport cython
 @cython.boundscheck(False)
 @cython.wraparound(False)
 
+def filter_band_median(bnd, s):
+    from gio import mod_filter
+    from gio import stat_band
+    from gio import config
+    import logging
+
+    _ss = stat_band.stat(bnd)
+    _vs = [_v for _v in _ss.keys()]
+
+    if len(_vs) <= 1:
+        return
+
+    _nodata = bnd.nodata
+    bnd.nodata = 300
+
+    for _i in xrange(config.getint('conf', 'iteration')):
+        _num = mod_filter.median(bnd, s)
+        logging.debug('filtered %s %s pixels' % (_i, _num))
+        if _num < 100:
+            break
+
+    bnd.nodata = _nodata
+
 def median(bnd, float dis, vs=None):
     cdef int _rows = bnd.height, _cols = bnd.width
     cdef int _row, _col, _v, _vo
