@@ -17,7 +17,7 @@ cimport cython
 @cython.boundscheck(False)
 @cython.wraparound(False)
 
-def clean(bnd, float dis, int min_num, _vs=None):
+def median(bnd, float dis, vs=None):
     cdef int _rows = bnd.height, _cols = bnd.width
     cdef int _row, _col, _v, _vo
     cdef int _nodata = bnd.nodata
@@ -32,8 +32,68 @@ def clean(bnd, float dis, int min_num, _vs=None):
             if _vo == _nodata:
                 continue
 
-            if _vs is not None:
-                if _v not in _vs:
+            if vs is not None:
+                if _v not in vs:
+                    continue
+
+            _v = _median(_dat, _col, _row, dis, _nodata, _dat_rep)
+            if _v != _vo:
+                _t += 1
+
+    bnd.data = _dat_rep
+    return _t
+
+cdef _median(np.ndarray[np.uint8_t, ndim=2] dat, int col, int row, float dis, int nodata, \
+        np.ndarray[np.uint8_t, ndim=2] rep):
+    cdef int _row, _col
+    cdef int _v, _vv
+
+    _vv = dat[row, col]
+    if _vv == nodata:
+        return nodata
+
+    cdef int _dis = int(dis)
+
+    cdef int _row_s = max(0, row - _dis), _row_e = min(dat.shape[0], row + _dis + 1)
+    cdef int _col_s = max(0, col - _dis), _col_e = min(dat.shape[1], col + _dis + 1)
+
+    cdef int _num_wat = 0
+    cdef int _num_non = 0
+
+    _vs = []
+    for _row in xrange(_row_s, _row_e):
+        for _col in xrange(_col_s, _col_e):
+            _v = dat[_row, _col]
+            if _v == nodata:
+                continue
+
+            _vs.append(_v)
+
+    if len(_vs) == 0:
+        return nodata
+
+    _v = sorted(_vs)[len(_vs) / 2]
+    rep[row, col] = _v
+
+    return _v
+
+def clean(bnd, float dis, int min_num, vs=None):
+    cdef int _rows = bnd.height, _cols = bnd.width
+    cdef int _row, _col, _v, _vo
+    cdef int _nodata = bnd.nodata
+    cdef np.ndarray[np.uint8_t, ndim=2] _dat = bnd.data
+    cdef np.ndarray[np.uint8_t, ndim=2] _dat_rep = bnd.data.astype(np.uint8)
+    cdef int _t = 0
+
+    for _row in xrange(_rows):
+        for _col in xrange(_cols):
+            _vo = _dat[_row, _col]
+
+            if _vo == _nodata:
+                continue
+
+            if vs is not None:
+                if _v not in vs:
                     continue
 
             _v = _stat(_dat, _col, _row, dis, min_num, _nodata, _dat_rep)

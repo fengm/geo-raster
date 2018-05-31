@@ -6,9 +6,43 @@ Create: 2018-02-12 18:05:06
 Description: reduce noises in a raster file
 '''
 
+def filter_noise_median(bnd, s):
+    from gio import mod_filter
+    # from gio import stat_band
+    from gio import config
+    import logging
+
+    # _ss = stat_band.stat(bnd)
+    # _vs = [_v for _v in _ss.keys() if _v != bnd.nodata]
+
+    # print 'values:', sorted(_vs)
+
+    # if len(_vs) <= 0:
+    #     return
+
+    _nodata = bnd.nodata
+    bnd.nodata = 300
+
+    for _i in xrange(config.getint('conf', 'iteration')):
+        _num = mod_filter.median(bnd, s)
+        logging.debug('filtered %s %s pixels' % (_i, _num))
+        if _num < 100:
+            break
+
+    bnd.nodata = _nodata
+
 def filter_noise(bnd, s):
     from gio import mod_filter
+    from gio import stat_band
     import logging
+
+    _ss = stat_band.stat(bnd)
+    _vs = [_v for _v in _ss.keys() if _v != bnd.nodata]
+
+    print 'values:', sorted(_vs)
+
+    if len(_vs) <= 0:
+        return
 
     _nodata = bnd.nodata
     bnd.nodata = 300
@@ -16,10 +50,9 @@ def filter_noise(bnd, s):
     if True:
         logging.debug('expend pixels')
 
-        _vs = range(50)
         _bv = 255
-
         _dat = bnd.data
+
         for _v in _vs:
             for _i in xrange(3):
                 _num = mod_filter.expand(_dat, \
@@ -68,7 +101,10 @@ def main(opts):
     if _bnd.pixel_type != ge.pixel_type():
         raise Exception('only exclude noises for byte type raster')
 
-    filter_noise(_bnd, opts.exclude_noises)
+    if opts.mmu:
+        filter_noise(_bnd, opts.exclude_noises)
+    else:
+        filter_noise_median(_bnd, opts.exclude_noises)
 
     _clr = _clr if _clr else _bnd.color_table
 
@@ -90,6 +126,8 @@ def usage():
     _p.add_argument('-c', '--color', dest='color')
     _p.add_argument('-o', '--output', dest='output', required=True)
     _p.add_argument('-e', '--exclude-noises', dest='exclude_noises', type=int, default=1)
+    _p.add_argument('-m', '--mmu', dest='mmu', action='store_true', default=False)
+    _p.add_argument('-t', '--iteration', dest='iteration', default=1, type=int)
 
     return _p
 
