@@ -65,6 +65,7 @@ def filter_noise(bnd, s):
 
 def main(opts):
     from gio import geo_raster as ge
+    from gio import config
 
     _clr = None if not opts.color else ge.load_colortable(opts.color)
     _bnd = ge.open(opts.input).get_band().cache()
@@ -80,7 +81,8 @@ def main(opts):
         filter_noise(_bnd, opts.exclude_noises)
     else:
         import mod_filter
-        mod_filter.filter_band_median(_bnd, opts.exclude_noises)
+        mod_filter.filter_band_median(_bnd, config.getint('conf', 'exclude_noises'), \
+                config.getint('conf', 'iteration'))
 
     _clr = _clr if _clr else _bnd.color_table
 
