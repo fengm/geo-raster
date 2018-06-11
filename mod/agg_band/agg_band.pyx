@@ -76,14 +76,14 @@ def median(bnd_in, bnd_ot, pro_nodata):
     _nodata = bnd_in.get_nodata()
     _dat = bnd_in.data
 
-    if bnd_in.data.dtype != np.float32:
-        _dat = _dat.astype(np.float32)
+    if bnd_in.data.dtype != np.int16:
+        _dat = _dat.astype(np.int16)
 
     _dat = median_pixels(_dat,
             _offs[0], _offs[1], _dive,
             _nodata, _size[0], _size[1], pro_nodata)
 
-    if bnd_in.data.dtype != np.float32:
+    if bnd_in.data.dtype != np.int16:
         _dat = _dat.astype(bnd_in.data.dtype)
 
     return ge.geo_band_cache(_dat, _geo_ot, bnd_ot.proj,
