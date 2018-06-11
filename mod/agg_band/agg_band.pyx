@@ -56,6 +56,39 @@ def mean(bnd_in, bnd_ot, float v_min=0, float v_max=100):
     return ge.geo_band_cache(_dat, _geo_ot, bnd_ot.proj,
                 _nodata, bnd_in.pixel_type)
 
+def median(bnd_in, bnd_ot, pro_nodata):
+    if bnd_in is None:
+        return None
+    if bnd_ot is None:
+        return None
+
+    _geo_in = list(bnd_in.geo_transform)
+    _geo_ot = list(bnd_ot.geo_transform)
+
+    cdef float _cell_in = _geo_in[1]
+    cdef float _cell_ot = _geo_ot[1]
+
+    cdef float _dive = _cell_ot / _cell_in
+    _size = [bnd_ot.height, bnd_ot.width]
+    _offs = [(_geo_ot[3] - _geo_in[3]) / _geo_in[5],
+                (_geo_ot[0] - _geo_in[0]) / _geo_in[1]]
+
+    _nodata = bnd_in.get_nodata()
+    _dat = bnd_in.data
+
+    if bnd_in.data.dtype != np.float32:
+        _dat = _dat.astype(np.float32)
+
+    _dat = median_pixels(_dat,
+            _offs[0], _offs[1], _dive,
+            _nodata, _size[0], _size[1], pro_nodata)
+
+    if bnd_in.data.dtype != np.float32:
+        _dat = _dat.astype(bnd_in.data.dtype)
+
+    return ge.geo_band_cache(_dat, _geo_ot, bnd_ot.proj,
+                _nodata, bnd_in.pixel_type)
+
 def mean_std(bnd_in, bnd_ot):
     # only support float32 data type
     # assert(bnd_in.data.dtype == np.float32)
@@ -385,6 +418,110 @@ cdef np.ndarray[np.int16_t, ndim=2] dominated_pixels(np.ndarray[np.int16_t, ndim
                 if _vs[_kk] > _mx:
                     _mx = _vs[_kk]
                     _vv = _kk
+
+            _dat[_row_n, _col_n] = _vv
+
+    return _dat
+
+cdef np.ndarray[np.int16_t, ndim=2] median_pixels(np.ndarray[np.int16_t, ndim=2] dat,
+        float off_y, float off_x, float scale,
+        int nodata, unsigned int rows, unsigned int cols, pro_nodata):
+
+    cdef unsigned int _rows_o, _cols_o
+    cdef unsigned int _rows_n, _cols_n
+
+    _rows_o = dat.shape[0]
+    _cols_o = dat.shape[1]
+
+    _rows_n = rows
+    _cols_n = cols
+
+    cdef unsigned int _row_o, _col_o
+    cdef unsigned int _row_n, _col_n
+
+    cdef int _row_min, _row_max
+    cdef int _col_min, _col_max
+
+    cdef float _row_min_f, _row_max_f
+    cdef float _col_min_f, _col_max_f
+
+    cdef double _ns
+    cdef float _a
+    cdef int _tp, _vv
+
+    cdef int _nodata
+    _nodata = nodata
+
+    _dat = np.empty([_rows_n, _cols_n], np.int16)
+    _dat.fill(_nodata)
+
+    _row_min_f = off_y - scale
+    for _row_n from 0<=_row_n<_rows_n:
+        _row_min_f = _row_min_f + scale
+        _row_max_f = _row_min_f + scale
+
+        _col_min_f = off_x - scale
+        for _col_n from 0<=_col_n<_cols_n:
+            _col_min_f = _col_min_f + scale
+            _col_max_f = _col_min_f + scale
+
+            if _row_max_f <= 0 or _col_max_f <= 0 or \
+                    _row_min_f >= _rows_o or _col_min_f >= _cols_o:
+                continue
+
+            _row_min = int(math.floor(_row_min_f))
+            _row_min = max(0, _row_min)
+
+            _col_min = int(math.floor(_col_min_f))
+            _col_min = max(0, _col_min)
+
+            _row_max = int(math.ceil(_row_max_f))
+            _row_max = min(_rows_o, _row_max)
+
+            _col_max = int(math.ceil(_col_max_f))
+            _col_max = min(_cols_o, _col_max)
+
+            _vs = []
+            _ns = 0
+            _tp = False
+
+            for _row_o from _row_min<=_row_o<_row_max:
+                for _col_o from _col_min<=_col_o<_col_max:
+                    _a = (min(_row_o + 1, _row_max_f) - \
+                            max(_row_o, _row_min_f)) * \
+                            (min(_col_o + 1, _col_max_f) - \
+                            (max(_col_o, _col_min_f)))
+
+                    if _a < 0.5:
+                        continue
+
+                    _v = dat[_row_o, _col_o]
+                    if _v == _nodata:
+                        if pro_nodata:
+                            _tp = True
+                            break
+                        else:
+                            continue
+
+                    _ns += _a
+                    _vs.append(_v)
+
+                if _tp:
+                    break
+
+            if _ns <= 0 or _tp:
+                continue
+
+            _mx = 0
+            _vv == _nodata
+
+            _len = len(_vs)
+            if _len > 0:
+                if _len <= 2:
+                    _vv = _vs[0]
+                else:
+                    _vs.sort()
+                    _vv = _vs[_len / 2]
 
             _dat[_row_n, _col_n] = _vv
 
