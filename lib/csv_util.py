@@ -1,3 +1,10 @@
+'''
+File: csv_util.py
+Author: Min Feng
+Version: 0.1
+Create: 2012-06-14 18:58:28
+Description: read CSV files
+'''
 
 def estimate_type(vals):
     import re
@@ -103,12 +110,15 @@ def _format_value(n):
 
     return _n
 
-def open(f, sep=','):
+def open(f, sep=',', skip_error=False):
+    import logging
+
     _cls = None
+
     with file(f) as _fi:
         _line = -1
         for _l in _fi.read().strip().splitlines():
-
+            _l = _l.strip()
             if not _l:
                 # skip empty lines
                 continue
@@ -121,7 +131,13 @@ def open(f, sep=','):
                 _line += 1
 
                 if len(_vs) != len(_cls.cols):
-                    raise Exception('values (%s) does not match with the columns (%s)' % (len(_vs), len(_cls.cols)))
+                    _t = 'number of values (%s) does not match with the number of columns (%s) (%s)' % \
+                            (len(_vs), len(_cls.cols), _l)
+
+                    logging.error(_t)
+                    if not skip_error:
+                        raise Exception(_t)
+                    continue
 
                 yield csv_record(_cls, _line, _vs)
 
