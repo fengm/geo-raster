@@ -6,7 +6,32 @@ Create: 2018-01-09 01:46:17
 Description:
 '''
 
-def _task(tile, u):
+def check_image(f):
+    from gio import geo_raster as ge
+    import os
+
+    try:
+        _f = f.get()
+        if (not _f) or not os.path.exists(_f):
+            return 0
+        ge.open(_f).get_band().cache()
+
+        return 1
+    except KeyboardInterrupt, _err:
+        print '\n\n* User stopped the program'
+        raise _err
+    except Exception:
+        pass
+
+        # import logging
+        # import traceback
+
+        # logging.error(traceback.format_exc())
+        # logging.error(str(err))
+
+    return 0
+
+def _task(tile, u, image_check=False):
     from gio import file_mag
     # if tile.col != 1156:
     #     return
@@ -14,9 +39,10 @@ def _task(tile, u):
     #     return
 
     _f = u % {'col': 'h%03d' % tile.col, 'row': 'v%03d' % tile.row}
+    _o = file_mag.get(_f)
 
-    if file_mag.get(_f).exists():
-        return (tile, _f)
+    if _o.exists():
+        return (tile, _f, check_image(_o))
 
     return None
 
@@ -70,13 +96,18 @@ def generate_shp(rs, f_out):
 
     _fs = []
     _ts = 0
+    _cs = []
+
     for _r in rs:
         _perc.next()
 
         if _r is None:
             continue
 
-        _t, _f = _r
+        _t, _f, _c = _r
+        if not _c:
+            _cs.append(_f)
+            continue
 
         _ftr = ogr.Feature(_lyr.GetLayerDefn())
         _ftr.SetField('file', _f)
@@ -94,7 +125,7 @@ def generate_shp(rs, f_out):
     with open(f_out[:-4] + '.txt', 'w') as _fo:
         _fo.write('\n'.join(_fs))
 
-    return _ts
+    return _ts, _cs
 
 def main(opts):
     from gio import config
@@ -119,16 +150,23 @@ def main(opts):
     _ts = global_task.load(_f_mak)
 
     from gio import multi_task
-    _rs = multi_task.run(_task, [(_r, _u) for _r in multi_task.load(_ts, opts)], opts)
+    _rs = multi_task.run(_task, [(_r, _u, opts.check_image) for _r in multi_task.load(_ts, opts)], opts)
 
     from gio import file_unzip
     with file_unzip.file_unzip() as _zip:
         _d_tmp = _zip.generate_file()
         os.makedirs(_d_tmp)
 
-        _nu = generate_shp(_rs, os.path.join(_d_tmp, os.path.basename(opts.output)))
+        _nu, _cs = generate_shp(_rs, os.path.join(_d_tmp, os.path.basename(opts.output)))
         if _nu <= 0:
             raise Exception('no valid image was found')
+
+        if len(_cs) > 0:
+            print 'found %s invalid files' % len(_cs)
+            for _l in _cs:
+                print _l
+            return
+            # raise Exception('found invalid images')
 
         logging.info('added %s file' % _nu)
         print 'added %s file' % _nu
@@ -140,6 +178,7 @@ def usage():
 
     _p.add_argument('-i', '--input', dest='input', required=True)
     _p.add_argument('-c', '--cache', dest='cache')
+    _p.add_argument('--check-image', dest='check_image', action='store_true')
     _p.add_argument('-e', '--ext', dest='ext', required=True)
     _p.add_argument('-o', '--output', dest='output', required=True)
 
