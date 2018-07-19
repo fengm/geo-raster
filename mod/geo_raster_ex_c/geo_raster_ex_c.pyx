@@ -31,7 +31,7 @@ cdef to_cell(tuple g, float x, float y):
     '''Convert coordinate to col and row'''
     return int((x - g[0]) / g[1]), int((y - g[3]) / g[5])
 
-def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int nodata, 
+def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int nodata,
         int row_start, np.ndarray[np.uint8_t, ndim=2] dat_out, min_val=None, max_val=None):
     cdef int _row, _col
     cdef float _x, _y
@@ -76,7 +76,7 @@ def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int noda
 
             dat_out[_row, _col] = _v
 
-def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int nodata, 
+def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int nodata,
         int row_start, np.ndarray[np.uint16_t, ndim=2] dat_out, min_val=None, max_val=None):
     cdef int _row, _col
     cdef float _x, _y
@@ -121,7 +121,7 @@ def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int no
 
             dat_out[_row, _col] = _v
 
-def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int nodata, 
+def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int nodata,
         int row_start, np.ndarray[np.int16_t, ndim=2] dat_out, min_val=None, max_val=None):
     cdef int _row, _col
     cdef float _x, _y
@@ -166,7 +166,7 @@ def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int noda
 
             dat_out[_row, _col] = _v
 
-def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int nodata, 
+def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int nodata,
         int row_start, np.ndarray[np.uint32_t, ndim=2] dat_out, min_val=None, max_val=None):
     cdef int _row, _col
     cdef float _x, _y
@@ -211,7 +211,7 @@ def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int no
 
             dat_out[_row, _col] = _v
 
-def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int nodata, 
+def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int nodata,
         int row_start, np.ndarray[np.int32_t, ndim=2] dat_out, min_val=None, max_val=None):
     cdef int _row, _col
     cdef float _x, _y
@@ -256,7 +256,7 @@ def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int noda
 
             dat_out[_row, _col] = _v
 
-def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, float nodata, 
+def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, float nodata,
         int row_start, np.ndarray[np.float32_t, ndim=2] dat_out, min_val=None, max_val=None):
     cdef int _row, _col
     cdef float _x, _y
@@ -667,7 +667,7 @@ class band_file:
                     if not self.unzip:
                         raise Exception('file unzip is required for *.gz files')
                     _inp = self.unzip.unzip(self.file)
-                
+
                 _pat = self.cache.put(_key, _inp)
         else:
             if _inp.endswith('.gz'):
@@ -984,7 +984,7 @@ class geo_band_stack_zip:
         #     _ttt = _pol_s.buffer(0.00000001).intersect(_pol_t1_proj)
         #     print _ttt
         #     print _ttt.poly
-        #     gb.output_polygons([_pol_s, _pol_t1_proj], 
+        #     gb.output_polygons([_pol_s, _pol_t1_proj],
         #             '/data/glcf-nx-002/data/PALSAR/water/region/country3/raw4/test2.shp')
 
         if not _pol_s.extent().is_intersect(_pol_t1_proj.extent()):
@@ -1020,7 +1020,7 @@ class geo_band_stack_zip:
         if _row_s_s > _row_s_e:
             _row_s_s, _row_s_e = _row_s_e, _row_s_s
 
-        if _row_s_s >= _row_s_e:
+        if _row_s_s > _row_s_e:
             return
 
         # _col_s_s, _col_s_e = max(0, _col_s_s-1), min(_bnd.width, _col_s_e+1)
@@ -1078,7 +1078,7 @@ class geo_band_stack_zip:
         if _nodata is None:
             _nodata = _default_nodata[self.pixel_type]
             logging.debug('No nodata value provided, using default value (%s)' % _nodata)
-    
+
         _dat_out.fill(_nodata)
 
         logging.debug('reading block from "%s" to "%s"' % (\
@@ -1215,4 +1215,3 @@ def modis_projection():
     _modis_proj.ImportFromProj4('+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs')
 
     return _modis_proj
-
