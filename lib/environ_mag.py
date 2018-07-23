@@ -5,16 +5,21 @@ Version: 0.1
 Create: 2016-09-01 13:56:39
 Description: provide functions to help commands to setup the environments
 '''
+def bool_type(v):
+    return v.lower() in ("yes", "true", "t", "1")
 
 def usage(multi_task=False):
     import argparse
 
     _p = argparse.ArgumentParser()
+    _p.register('type', 'bool', bool_type)
+
     _p.add_argument('--logging', dest='logging')
     _p.add_argument('--config', dest='config', nargs='+')
     _p.add_argument('--debug', dest='debug', action='store_true')
     _p.add_argument('--no-clean', dest='no_clean', action='store_true')
     _p.add_argument('--temp', dest='temp')
+    _p.add_argument('--show-progress', dest='show_progress', type='bool', default='true')
 
     if multi_task:
         from gio import multi_task
@@ -107,4 +112,3 @@ if __name__ == '__main__':
     init_path()
     _p = usage()
     _opts = config(_p)
-
