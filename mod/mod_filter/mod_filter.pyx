@@ -119,9 +119,16 @@ def clean(bnd, float dis, int min_num, vs=None):
                 if _v not in vs:
                     continue
 
-            _v = _stat(_dat, _col, _row, dis, min_num, _nodata, _dat_rep)
-            if _v != _vo:
-                _t += 1
+            _n1, _v1 = _stat(_dat, _col, _row, dis, min_num, _nodata)
+            if _n1 == 0 or _n1 >= min_num:
+                continue
+
+            _n2, _v2 = _stat(_dat, _col, _row, dis + 1, min_num, _nodata)
+            if _n2 > _n1:
+                continue
+
+            _dat_rep[_row, _col] = _v2
+            _t += 1
 
     bnd.data = _dat_rep
     return _t
@@ -170,14 +177,13 @@ cdef stat_pixel(np.ndarray[np.uint8_t, ndim=2] dat, int col, int row, float dis,
 
     raise Exception('failed to find the dominated value')
 
-cdef _stat(np.ndarray[np.uint8_t, ndim=2] dat, int col, int row, float dis, int min_num, int nodata, \
-        np.ndarray[np.uint8_t, ndim=2] rep):
+cdef _stat(np.ndarray[np.uint8_t, ndim=2] dat, int col, int row, float dis, int min_num, int nodata):
     cdef int _row, _col
     cdef int _v, _vv
 
     _vv = dat[row, col]
     if _vv == nodata:
-        return nodata
+        return 0, nodata
 
     cdef int _dis = int(dis)
 
@@ -191,6 +197,13 @@ cdef _stat(np.ndarray[np.uint8_t, ndim=2] dat, int col, int row, float dis, int 
 
     for _row in xrange(_row_s, _row_e):
         for _col in xrange(_col_s, _col_e):
+            _d = math.hypot(_row, _col)
+            if _d > dis:
+                continue
+
+            if _row == row and _col == col:
+                continue
+
             _v = dat[_row, _col]
             if _v == nodata:
                 continue
@@ -201,11 +214,11 @@ cdef _stat(np.ndarray[np.uint8_t, ndim=2] dat, int col, int row, float dis, int 
             _vs[_v] += 1
 
             if _v == _vv and _vs[_v] >= min_num:
-                return _v
+                return _vs[_v], _v
 
     if len(_vs.keys()) == 0:
-        return nodata
-    
+        return 0, nodata
+
     _max_k = _vs.keys()[0]
     _max_v = _vs[_max_k]
 
@@ -213,9 +226,8 @@ cdef _stat(np.ndarray[np.uint8_t, ndim=2] dat, int col, int row, float dis, int 
         if _v > _max_v:
             _max_k = _k
             _max_v = _v
-    
-    rep[row, col] = _max_k
-    return _max_k
+
+    return _vs.get(_vv, 0), _max_k
 
 def expand(np.ndarray[np.uint8_t, ndim=2] dat, np.ndarray[np.uint8_t, ndim=2, cast=True] ref, val, non, dist, min_num):
     from gio import config

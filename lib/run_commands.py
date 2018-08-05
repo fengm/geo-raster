@@ -25,7 +25,7 @@ def run_exe(cmd, shell=True):
 		return None
 	return _rs
 
-def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exception=True, debug=False):
+def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exception=True, debug=False, check=True):
 	import logging
 
 	_shell = shell
@@ -58,7 +58,7 @@ def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exc
 		logging.warning('Error message:%s' % _rs[1])
 
 	logging.debug('return code: %s' % _p.returncode)
-	if _p.returncode != 0:
+	if check and _p.returncode != 0:
 		logging.error('Failed running cmd: %s %s\n' % (cmd, _p.returncode))
 		if raise_exception:
 			raise Exception('Failed with cmd: ' + str(cmd))
