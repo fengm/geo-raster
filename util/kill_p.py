@@ -21,10 +21,10 @@ def main(opts):
             continue
 
         _vs = re.split('\s+', _l)
-        print _vs[0]
+        print _l
 
         _cmd = 'kill -9 %s' % _vs[1]
-        run_commands.run(_cmd)
+        run_commands.run(_cmd, raise_exception=False, check=False)
 
 def usage():
     _p = environ_mag.usage(False)
