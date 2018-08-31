@@ -662,6 +662,9 @@ class geo_band(geo_band_info):
         if _cols < 0:
             _cols = self.width
 
+        if _cols <= 0 or _rows <= 0 or row < 0:
+            return None
+
         _d = self.band.ReadAsArray(col, row, _cols, _rows, _cols, _rows)
         if _d is None:
             return None
