@@ -8,7 +8,7 @@ Description: prepare and run the processes to process global data
 
 import logging
 
-def load_shp(f, column=None, ext=None, proj=None):
+def load_shp(f, column=None, ext=None, proj=None, ignore_ext=False):
     from osgeo import ogr
     import geo_base as gb
 
@@ -30,8 +30,14 @@ def load_shp(f, column=None, ext=None, proj=None):
 
     _prj = proj or gb.modis_projection()
     for _f in _lyr:
+        print _f[column]
+
         _g = _f.geometry()
         if _g is None:
+            continue
+
+        if ignore_ext:
+            _objs.append((_f[column] if column else _f.GetFID(), None, None))
             continue
 
         _obj = gb.geo_polygon(_g.Clone())
@@ -46,6 +52,9 @@ def load_shp(f, column=None, ext=None, proj=None):
             _area = _ext
         else:
             _area = _area.union(_ext)
+
+    if ignore_ext:
+        return None, _objs
 
     if len(_objs) == 0 or _area == None:
         return None, []
@@ -159,10 +168,15 @@ class tile:
                 'proj': self.proj
                 }
 
-    def filter_files(self, f, column='file'):
+    def filter_files(self, f, column='file', quick_search=True):
         _ext = self.extent()
 
-        _reg, _objs = load_shp(f, column, _ext.extent().to_polygon(), proj=self.proj_obj())
+        _reg, _objs = load_shp(f, column, _ext.extent().to_polygon(), \
+                proj=self.proj_obj(), ignore_ext=quick_search)
+
+        if quick_search:
+            return [_r[0] for _r in _objs]
+
         if _reg == None:
             return []
 

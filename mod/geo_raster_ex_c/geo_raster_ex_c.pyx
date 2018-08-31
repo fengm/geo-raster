@@ -793,7 +793,7 @@ class geo_band_stack_zip:
 
     @staticmethod
     def from_shapefile(f_list, band_idx=1, dataset_name=None, \
-            file_unzip=None, check_layers=False, nodata=None, cache=None):
+            file_unzip=None, check_layers=False, nodata=None, cache=None, extent=None):
         from osgeo import ogr
         import geo_base as gb
 
@@ -812,6 +812,15 @@ class geo_band_stack_zip:
             raise Exception('Failed to load shapefile ' + _finp)
 
         _lyr = _shp.GetLayer()
+
+        if extent:
+            from gio import geo_raster as ge
+
+            _ext = extent
+            if isinstance(_ext, ge.geo_raster_info):
+                _ext = extent.extent().to_polygon().segment_ratio(10)
+
+            _lyr.SetSpatialFilter(_ext.project_to(_lyr.GetSpatialRef()).poly)
 
         import os
         _d_shp = os.path.dirname(_finp)
