@@ -30,8 +30,6 @@ def load_shp(f, column=None, ext=None, proj=None, ignore_ext=False):
 
     _prj = proj or gb.modis_projection()
     for _f in _lyr:
-        print _f[column]
-
         _g = _f.geometry()
         if _g is None:
             continue
