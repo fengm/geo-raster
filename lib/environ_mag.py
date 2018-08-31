@@ -35,21 +35,23 @@ def init_path():
             os.path.exists(os.path.join(sys.path[0], _d))]
     sys.path = [sys.path[0]] + _d_ins + sys.path[1:]
 
+def set_config_items(opts):
+    from gio import config
+
+    if not config.cfg.has_section('conf'):
+        config.cfg.add_section('conf')
+
+    for _k, _v in opts.__dict__.items():
+        if _v is not None:
+            config.cfg.set('conf', _k, str(_v))
+
 def config(p, enable_multi_processing=True):
     _opts = p.parse_args()
 
     from gio import config
     config.load(_opts.config)
 
-    if not config.cfg.has_section('conf'):
-        config.cfg.add_section('conf')
-
-    # if not _opts.logging and 'output' in _opts:
-    #     _opts.logging = os.path.join(_opts.output, 'log.txt')
-
-    for _k, _v in _opts.__dict__.items():
-        if _v is not None:
-            config.cfg.set('conf', _k, str(_v))
+    set_config_items(_opts)
 
     from gio import logging_util
     logging_util.init(_opts.logging, enable_multi_processing)
