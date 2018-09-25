@@ -838,6 +838,7 @@ class geo_band_stack_zip:
             _poly = gb.geo_polygon(_geo.Clone())
             _file = _f.items()[_file_columns[0]]
             _file = _file.strip() if _file else None
+
             if not _file:
                 continue
 
@@ -856,7 +857,7 @@ class geo_band_stack_zip:
                 band_idx, _name, file_unzip, cache)))
 
         if len(_bnds) == 0:
-            logging.debug('No images found')
+            logging.warning('No images found')
             return None
 
         return geo_band_stack_zip(_bnds, _lyr.GetSpatialRef(), check_layers, nodata)
