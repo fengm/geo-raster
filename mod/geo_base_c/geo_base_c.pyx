@@ -435,16 +435,18 @@ class geo_polygon:
     def project_to(self, proj, geo_cut=False):
         if self.proj is None or self.proj.IsSame(proj):
             return self
-        
-        return self._project_poly(proj)
 
-        # _poly = self.poly.Clone()
-        # _err = _poly.TransformTo(proj)
-        # if _err != 0:
-        #     logging.error('failed to project polygon to (%s)' % (proj.ExportToProj4(), ))
-        #     return None
-        #
-        # return geo_polygon(_poly)
+        _geom_type = self.poly.GetGeometryType()
+        if _geom_type == 3:
+            return self._project_poly(proj)
+
+        _poly = self.poly.Clone()
+        _err = _poly.TransformTo(proj)
+        if _err != 0:
+            logging.error('failed to project polygon to (%s)' % (proj.ExportToProj4(), ))
+            return None
+
+        return geo_polygon(_poly)
 
     def _project_ring(self, ring, proj_src, proj):
         from osgeo import ogr
