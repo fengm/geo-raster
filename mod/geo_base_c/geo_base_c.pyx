@@ -505,7 +505,7 @@ class geo_polygon:
 
     def extent(self):
         _ext = self.poly.GetEnvelope()
-        return geo_extent(_ext[0], _ext[2], _ext[1], _ext[3], self.poly.GetSpatialReference())
+        return geo_extent(_ext[0], _ext[2], _ext[1], _ext[3], self.proj)
 
     def area(self):
         return self.poly.GetArea()
