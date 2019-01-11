@@ -80,7 +80,7 @@ def main(opts):
     if opts.mmu:
         filter_noise(_bnd, opts.exclude_noises)
     else:
-        import mod_filter
+        from gio import mod_filter
         mod_filter.filter_band_median(_bnd, config.getint('conf', 'exclude_noises'), \
                 config.getint('conf', 'iteration'))
 
