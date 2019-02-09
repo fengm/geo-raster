@@ -501,11 +501,11 @@ class geo_polygon:
 
     def center(self):
         _pt = self.poly.Centroid().GetPoint_2D()
-        return geo_point(_pt[0], _pt[1], self.poly.GetSpatialReference())
+        return geo_point(_pt[0], _pt[1], self.proj)
 
     def extent(self):
         _ext = self.poly.GetEnvelope()
-        return geo_extent(_ext[0], _ext[2], _ext[1], _ext[3], self.poly.GetSpatialReference())
+        return geo_extent(_ext[0], _ext[2], _ext[1], _ext[3], self.proj)
 
     def area(self):
         return self.poly.GetArea()
