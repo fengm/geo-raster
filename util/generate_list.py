@@ -25,16 +25,23 @@ def main(opts):
 
     _fs = []
     for _dd in opts.input:
-        for _root, _dirs, _files in os.walk(os.path.abspath(_dd)):
-            for _file in _files:
-                if not opts.pattern or re.search(opts.pattern, _file):
-                    _f = os.path.join(format_path(_root), _file)
+        if not _dd or not os.path.exists(_dd):
+            logging.warning('skip %s' % _dd)
+            continue
 
-                    if os.path.getsize(_f) <= 0:
-                        logging.warning('skip zero size file: %s' % _f)
-                        continue
+        if not os.path.isdir(_dd):
+            _fs.append(os.path.abspath(_dd))
+        else:
+            for _root, _dirs, _files in os.walk(os.path.abspath(_dd)):
+                for _file in _files:
+                    if not opts.pattern or re.search(opts.pattern, _file):
+                        _f = os.path.join(format_path(_root), _file)
 
-                    _fs.append(_f)
+                        if os.path.getsize(_f) <= 0:
+                            logging.warning('skip zero size file: %s' % _f)
+                            continue
+
+                        _fs.append(_f)
 
     if len(_fs) == 0:
         print ' * no file was found'
