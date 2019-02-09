@@ -16,6 +16,10 @@ class sync_file_log_handler(logging.FileHandler):
         import threading
         self.t_lock = threading.Lock()
 
+        import os
+        _d_log = os.path.dirname(os.path.abspath(filename))
+        os.path.exists(_d_log) or os.makedirs(_d_log)
+
         logging.FileHandler.__init__(self, filename, mode=mode, encoding=encoding)
 
     def emit(self, record):

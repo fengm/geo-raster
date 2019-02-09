@@ -1,13 +1,13 @@
 
 FROM geographica/gdal2:latest
 
-MAINTAINER Min Feng
+LABEL creator Min Feng
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && apt-get install -y awscli cython python-psycopg2 python-boto python-pandas python-setuptools
 
-ADD . /opt
+WORKDIR /opt
 
-ENV G_INI=/opt/ini
-RUN cd /opt && python setup.py install
-
+ADD . /opt/lib
+RUN cd /opt/lib && python setup.py install
+RUN rm -rf /opt/lib
