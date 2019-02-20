@@ -21,11 +21,11 @@ def _task(tile, t, f_inp, d_out, ps):
         return
 
     _mak = tile.extent()
-    _bnd = gx.geo_band_stack_zip.from_shapefile(f_inp).read_block(_mak)
-
     with file_unzip.file_unzip() as _zip:
-        _d_tmp = _zip.generate_file()
+        _bnd = gx.geo_band_stack_zip.from_shapefile(f_inp, file_unzip=_zip)\
+            .read_block(_mak)
 
+        _d_tmp = _zip.generate_file()
         os.path.exists(_d_tmp) or os.makedirs(_d_tmp)
 
         _f_out = os.path.join(_d_tmp, '%s_%s.tif' % (t, _tag))
