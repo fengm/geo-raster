@@ -9,9 +9,18 @@ import multiprocessing
 import Queue, signal
 import logging
 
+def _default_task_pos():
+    import os
+    
+    _c = 'AWS_BATCH_JOB_ARRAY_INDEX'
+    if _c in os.environ:
+        return int(os.environ[_c])
+        
+    return 0
+
 def add_task_opts(p):
     p.add_argument('-in', '--instance-num', dest='instance_num', type=int, default=1)
-    p.add_argument('-ip', '--instance-pos', dest='instance_pos', type=int, default=0)
+    p.add_argument('-ip', '--instance-pos', dest='instance_pos', type=int, default=_default_task_pos())
     p.add_argument('-ts', '--task-num', dest='task_num', type=int, default=1)
     p.add_argument('-se', '--skip-error', dest='skip_error', default=False, action='store_true')
     p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=1)
@@ -44,8 +53,7 @@ def _list_sub_list(ls, opts):
         _ss.extend(ls[min(len(ls), _ps): min(_ps + opts.task_order, len(ls))])
 
     return _ss
-
-    raise Exception('unsupported order type %s' % opts.task_order)
+    # raise Exception('unsupported order type %s' % opts.task_order)
 
 def load(ls, opts):
     import os

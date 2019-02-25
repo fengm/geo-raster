@@ -10,6 +10,7 @@ WORKDIR /opt
 
 ENV G_INI=/opt/ini
 ENV G_LOG=/opt/log
+ENV G_TMP=/opt/tmp
 
 ADD . /opt/lib
 RUN cd /opt/lib && python setup.py install

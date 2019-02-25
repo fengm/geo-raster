@@ -129,4 +129,27 @@ def cloud_enabled():
 
 def cloud(tag='cloud'):
     return logging.getLogger(tag)
+    
+def info(t):
+    logging.info(t)
+    
+    if cloud_enabled():
+        cloud().info(t)
 
+def debug(t):
+    logging.debug(t)
+    
+    if cloud_enabled():
+        cloud().debug(t)
+        
+def warning(t):
+    logging.warning(t)
+    
+    if cloud_enabled():
+        cloud().warning(t)
+        
+def error(t):
+    logging.error(t)
+    
+    if cloud_enabled():
+        cloud().error(t)

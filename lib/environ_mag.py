@@ -61,6 +61,13 @@ def config(p, enable_multi_processing=True):
         fz.clean(fz.default_dir(_opts.temp))
 
     return _opts
+    
+def _opts_to_str(opts):
+    _vs = []
+    for _k, _v in {key: value for key, value in opts.__dict__.items() if not key.startswith("__")}.items():
+        _vs.append('%s=%s' % (_k, _v))
+    
+    return '; '.join(_vs)
 
 def run(func, opts):
     import logging
@@ -68,8 +75,9 @@ def run(func, opts):
     import os
     import file_unzip
     import sys
+    import logging_util
 
-    logging.info(('CMD (%s): ' % os.getcwd()) + ' '.join(map(lambda x: '"%s"' % x if ' ' in x else x, sys.argv)))
+    logging_util.info(('CMD (%s): ' % os.getcwd()) + ' '.join(map(lambda x: '"%s"' % x if ' ' in x else x, sys.argv)))
 
     with file_unzip.file_unzip() as _zip:
         _tmp = _zip.generate_file()
@@ -78,6 +86,8 @@ def run(func, opts):
         _cache = config.get('conf', 'cache', None)
         if not _cache:
             config.set('conf', 'cache', os.path.join(_tmp, 'cache'))
+            
+        logging_util.info('options: ' + _opts_to_str(*opts))
 
         if config.getboolean('conf', 'debug', True):
             return func(*opts)
@@ -89,16 +99,8 @@ def run(func, opts):
             except Exception, err:
                 import traceback
 
-                logging.error(traceback.format_exc())
-                logging.error(str(err))
-
-                # print '\n\n* Error:', err
-
-                from gio import logging_util
-                if logging_util.cloud_enabled():
-                    _log = logging_util.cloud()
-                    _log.error(traceback.format_exc())
-                    _log.error(str(err))
+                logging_util.error(traceback.format_exc())
+                logging_util.error(str(err))
 
         if os.path.exists(_tmp):
             try:
