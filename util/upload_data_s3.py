@@ -57,7 +57,27 @@ def update_path(p, b, d_out):
     if _p.startswith('/'):
         _p = _p[1:]
 
+    if _p.endswith('.gz'):
+        _p = _p[:-3]
+
     return d_out + ('' if d_out.endswith('/') else '/') + _p
+
+def compress_file(f, fzip):
+    _f = f
+    if f.endswith('.gz'):
+        _f = fzip.unzip(_f)
+
+    from gio import config
+    if not config.getboolean('conf', 'compress'):
+        return _f
+
+    _f_tmp = fzip.generate_file('', '.tif')
+    _cmd = 'gdalwarp -co compress=lzw -co tiled=yes %s %s' % (_f, _f_tmp)
+
+    from gio import run_commands
+    run_commands.run(_cmd)
+
+    return _f_tmp
 
 def upload_file(f, k):
     import boto
@@ -79,8 +99,11 @@ def upload_file(f, k):
         return _ff
 
     _kk = _bk.new_key(_ff)
-    with open(f, 'rb') as _fi:
-        _kk.set_contents_from_file(_fi)
+
+    from gio import file_unzip
+    with file_unzip.file_unzip() as _zip:
+        with open(compress_file(f, _zip), 'rb') as _fi:
+            _kk.set_contents_from_file(_fi)
 
     return k
 
@@ -111,6 +134,9 @@ def main(opts):
             continue
 
         _s += os.path.getsize(_f) / (1024.0 * 1024.0 * 1024.0)
+        if _f_out.endswith('.gz'):
+            _f_out = _f_out[:-3]
+
         _ps.append((_f, _f_out))
 
     for _i in xrange(min(len(_ps), 3)):
@@ -137,6 +163,7 @@ def usage():
     _p.add_argument('-ak', '--access-key', dest='access_key', default=None)
     _p.add_argument('-sk', '--secret-key', dest='secret_key', default=None)
     _p.add_argument('-p', '--base-path', dest='base_path')
+    _p.add_argument('-c', '--compress', dest='compress', type='bool')
     _p.add_argument('-o', '--output', dest='output', required=True)
 
     return _p

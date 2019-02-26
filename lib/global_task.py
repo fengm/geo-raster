@@ -88,10 +88,14 @@ class tiles:
         self.b = 6371007.181 #6378137.0
         self.s = image_size
         self.c = cell_size
-        self.p = self.b * math.pi
         self.edge = edge
 
         self.proj = proj if proj else gb.modis_projection()
+
+        if self.proj.IsGeographic():
+            self.p = 180.0
+        else:
+            self.p = self.b * math.pi
 
     def list(self, ext=None):
         import geo_base as gb

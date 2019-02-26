@@ -53,7 +53,8 @@ def main(opts):
             raise Exception('need to provide extent file for initailization')
 
         _image_size = config.getint('conf', 'image_size', 3000)
-        _cell_size = config.getint('conf', 'cell_size', 10)
+        _cell_size = config.getfloat('conf', 'cell_size', 30)
+
         if _image_size is None or _cell_size is None:
             raise Exception('require specified cell size and image size')
 
@@ -61,16 +62,22 @@ def main(opts):
         if _tag is None:
             raise Exception('need to provide tag')
 
-        print('image size: %s' % _image_size)
-        print('cell size: %s' % _cell_size)
-        print('tag: %s' % _tag)
+        _proj = config.get('conf', 'proj')
+        _edge = config.getint('conf', 'edge')
 
+        print('projection: %s' % _proj)
+        print('tag: %s, image size: %s, cell size: %s, edge: %s' % (_tag, _image_size, _cell_size, _edge))
+
+        from gio import geo_base as gb
         _ts = global_task.make(_f_inp.get(), None, f_shp=_f_shp, \
+                edge=_edge, \
+                proj=gb.proj_from_proj4(_proj), \
                 image_size=_image_size, \
                 cell_size=_cell_size)
 
         global_task.save(_ts, _f_mak, \
-                {'input': opts.input, 'output': opts.output, 't': _tag})
+                {'input': opts.input, 'output': opts.output, 'edge': _edge, \
+                    't': _tag, 'proj': _proj})
     else:
         _gs = global_task.loads(_f_mak)
         _ms = _gs['params']
@@ -90,9 +97,12 @@ def usage():
     _p = environ_mag.usage(True)
 
     _p.add_argument('-i', '--input', dest='input')
+    _p.add_argument('-e', '--edge', dest='edge', type=int, default=1)
     _p.add_argument('-t', '--tag', dest='tag')
+    _p.add_argument('-p', '--proj', dest='proj', \
+        default='+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs')
     _p.add_argument('-s', '--image-size', dest='image_size', default=3000, type=int)
-    _p.add_argument('-c', '--cell-size', dest='cell_size', type=int)
+    _p.add_argument('-c', '--cell-size', dest='cell_size', default=30.0, type=float)
     _p.add_argument('-o', '--output', dest='output')
 
     return _p
@@ -101,4 +111,3 @@ if __name__ == '__main__':
     from gio import environ_mag
     environ_mag.init_path()
     environ_mag.run(main, [environ_mag.config(usage())])
-
