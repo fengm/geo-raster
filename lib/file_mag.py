@@ -20,9 +20,9 @@ class obj_mag:
     def get(self):
         raise NotImplementedError()
 
-    def list(self):
+    def list(self, recursive=False):
         raise NotImplementedError()
-
+        
 class file_mag(obj_mag):
 
     def __init__(self, f):
@@ -49,13 +49,23 @@ class file_mag(obj_mag):
                 _f = f[:-4] + _e
                 if os.path.exists(_f):
                     shutil.copy(_f, self._f[:-4] + _e)
-    def list(self):
+                    
+    def list(self, recursive=False):
         import os
         if not os.path.exists(self._f):
             return []
 
         if os.path.isfile(self._f):
             return [file_mag(self._f)]
+            
+        if recursive:
+            _fs = []
+            
+            for _root, _dirs, _files in os.walk(str(self._f)):
+                for _f in _files:
+                    _fs.append(file_mag(os.path.join(_root, _f)))
+            
+            return _fs
 
         _fs = [file_mag(os.path.join(self._f, _f)) for _f in os.listdir(self._f)]
         return _fs
@@ -67,7 +77,7 @@ class s3_mag(obj_mag):
 
     def __init__(self, f):
         import re
-
+        
         _m = re.match('s3://([^/]+)/(.+)', f)
         if _m is None:
             raise Exception('failed to parse S3 file %s' % f)
@@ -96,9 +106,21 @@ class s3_mag(obj_mag):
                 for _e in ['.prj', '.shx', '.dbf']:
                     self._s3.get(self._path[:-4] + _e)
         return _o
+    
+    def _list(self, d, fs):
+        if str(d).endswith('/'):
+            for _f in d.list(False):
+                self._list(_f, fs)
+        else:
+            fs.append(d)
 
-    def list(self):
-        return [s3_mag('s3://%s/%s' % (self._bucket, _f)) for _f in list(self._s3.bucket.list(self._path))]
+    def list(self, recursive=False):
+        if recursive:
+            _fs = []
+            self._list(self, _fs)
+            return _fs
+            
+        return [s3_mag('s3://%s/%s' % (self._bucket, _f.key)) for _f in list(self._s3.bucket.list(self._path))]
 
     def put(self, f, update=False):
         self._s3.put(self._path, f, update=update)
