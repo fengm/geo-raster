@@ -135,7 +135,11 @@ def main(opts):
     from gio import file_mag
     import logging
     import os
-
+    
+    if file_mag.get(opts.output).exists() and not opts.over_write:
+        logging.warning('skip processed %s' % opts.output)
+        return
+    
     _u = _format_url(opts.ext)
     if not _u.startswith('s3://'):
         _u = opts.input + '/' + _u
@@ -182,6 +186,7 @@ def usage():
     _p.add_argument('-i', '--input', dest='input', required=True)
     _p.add_argument('-c', '--cache', dest='cache')
     _p.add_argument('--check-image', dest='check_image', action='store_true')
+    _p.add_argument('--over-write', '--over-write', dest='over_write', action='store_true', default=False)
     _p.add_argument('-e', '--ext', dest='ext', required=True)
     _p.add_argument('-o', '--output', dest='output', required=True)
 
