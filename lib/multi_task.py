@@ -10,11 +10,11 @@ import Queue, signal
 import logging
 
 def _default_task_pos():
-    import os
+    # import os
     
-    _c = 'AWS_BATCH_JOB_ARRAY_INDEX'
-    if _c in os.environ:
-        return int(os.environ[_c])
+    # _c = 'AWS_BATCH_JOB_ARRAY_INDEX'
+    # if _c in os.environ:
+    #     return int(os.environ[_c])
     
     return 0
 
@@ -27,20 +27,20 @@ def add_task_opts(p):
     p.add_argument('-to', '--task-order', dest='task_order', type=int, default=0)
 
 def _get_task_pos(opts):
-    return min(opts.instance_num - 1, opts.instance_pos)
+    return max(0, min(opts.instance_num - 1, opts.instance_pos))
 
 def load_from_list(f_ls, opts):
-    return load_list(f_ls, _get_task_pos(opts), opts.instance_pos)
+    return load_list(f_ls, opts.instance_num, _get_task_pos(opts))
 
 def _list_sub_list(ls, opts):
     logging.debug('load sub list with type %s' % opts.task_order)
 
     if opts.task_order <= 1:
-        return [ls[i] for i in xrange(opts.instance_pos, len(ls), _get_task_pos(opts))]
+        return [ls[i] for i in xrange(_get_task_pos(opts), len(ls), opts.instance_num)]
 
     # if opts.task_order == 1:
     #     import math
-    #     _sz = int(math.ceil(len(ls) / float(_get_task_pos(opts))))
+    #     _sz = int(math.ceil(len(ls) / float(opts.instance_num)))
 
     #     _ns = _sz * opts.instance_pos
     #     _ne = min(_ns + _sz, len(ls))
@@ -51,7 +51,7 @@ def _list_sub_list(ls, opts):
     _nd = int(math.ceil(float(len(ls)) / opts.task_order))
 
     _ss = []
-    for _id in xrange(opts.instance_pos, _nd, _get_task_pos(opts)):
+    for _id in xrange(_get_task_pos(opts), _nd, opts.instance_num):
         _ps = _id * opts.task_order
         _ss.extend(ls[min(len(ls), _ps): min(_ps + opts.task_order, len(ls))])
 
