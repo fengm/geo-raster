@@ -10,11 +10,11 @@ import Queue, signal
 import logging
 
 def _default_task_pos():
-    # import os
+    import os
     
-    # _c = 'AWS_BATCH_JOB_ARRAY_INDEX'
-    # if _c in os.environ:
-    #     return int(os.environ[_c])
+    _c = 'AWS_BATCH_JOB_ARRAY_INDEX'
+    if _c in os.environ:
+        return int(os.environ[_c])
     
     return 0
 
