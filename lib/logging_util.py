@@ -49,6 +49,13 @@ def find_log(f=None):
 
 log_file = None
 
+def _env_int_val(tag, val):
+    import os
+    
+    if tag in os.environ:
+        return int(os.environ[tag])
+    return val
+
 def init(f=None, enable_multi_processing=False):
     import config
     import os
@@ -70,8 +77,8 @@ def init(f=None, enable_multi_processing=False):
         print ' - debugging'
         print ' - log file', _f
 
-    _level_out = config.getint('conf', 'log_out_level', -1)
-    _level_std = config.getint('conf', 'log_std_level', -1)
+    _level_out = config.getint('conf', 'log_out_level', _env_int_val('LOG_OUT_LEVEL', -1))
+    _level_std = config.getint('conf', 'log_std_level', _env_int_val('LOG_STD_LEVEL', -1))
 
     _log.setLevel(logging.DEBUG)
 
