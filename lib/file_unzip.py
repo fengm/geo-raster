@@ -150,7 +150,7 @@ def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include
 
         # process folder
         if os.path.isdir(_ff):
-            compress_folder(_ff, os.path.join(fd_ot, _ff), compress_exts)
+            compress_folder(_ff, os.path.join(fd_ot, os.path.basename(_ff)), compress_exts)
             continue
 
         # process file
