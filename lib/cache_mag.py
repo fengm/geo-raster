@@ -251,6 +251,9 @@ class s3():
         return _bk
 
     def get(self, k, lock=None):
+        if k is None:
+            return None
+
         from gio import config
         _enable_lock = config.getboolean('conf', 'enable_cache_lock', True)
 
@@ -271,6 +274,9 @@ class s3():
             return self._get(k, lock)
 
     def _get(self, k, lock=None):
+        if k is None:
+            return None
+
         _key = k if isinstance(k, str) or isinstance(k, unicode) else k.key
         _f = self._c.path(_key)
 
