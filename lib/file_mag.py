@@ -75,7 +75,7 @@ class file_mag(obj_mag):
 
 class s3_mag(obj_mag):
 
-    def __init__(self, f):
+    def __init__(self, f, s3=None):
         import re
         
         _m = re.match('s3://([^/]+)/(.+)', f)
@@ -85,8 +85,10 @@ class s3_mag(obj_mag):
         _bucket = _m.group(1)
         _path = _m.group(2)
 
-        from gio import cache_mag
-        _s3 = cache_mag.s3(_bucket)
+        _s3 = s3
+        if _s3 is None or _s3._t != _bucket:
+            from gio import cache_mag
+            _s3 = cache_mag.s3(_bucket)
 
         self._bucket = _bucket
         self._path = _path
@@ -120,7 +122,7 @@ class s3_mag(obj_mag):
             self._list(self, _fs)
             return _fs
             
-        return [s3_mag('s3://%s/%s' % (self._bucket, _f.key)) for _f in list(self._s3.bucket.list(self._path))]
+        return [s3_mag('s3://%s/%s' % (self._bucket, _f.key), s3=self._s3) for _f in list(self._s3.bucket.list(self._path))]
 
     def put(self, f, update=False):
         self._s3.put(self._path, f, update=update)
