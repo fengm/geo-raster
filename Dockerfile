@@ -16,3 +16,5 @@ ENV G_TMP=/opt/tmp
 ADD . /opt/lib
 RUN cd /opt/lib && python setup.py install
 RUN rm -rf /opt/lib
+
+ENTRYPOINT []
