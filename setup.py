@@ -2,6 +2,7 @@
 import setuptools
 from Cython.Distutils import build_ext
 import os
+import numpy
 
 _ms = []
 for _root, _dirs, _files in os.walk('mod'):
@@ -15,7 +16,8 @@ for _root, _dirs, _files in os.walk('mod'):
 
 			_ms.append(setuptools.Extension("gio.%s" % _n, [os.path.join(_root, _file)],
 				#extra_compile_args=["-O3", "-ffast-math","-funroll-loops"],
-				define_macros=[("NPY_NO_DEPRECATED_API", None)]))
+				define_macros=[("NPY_NO_DEPRECATED_API", None)],
+				include_dirs=[numpy.get_include()]))
 
 _ss = []
 for _root, _dirs, _files in os.walk('util'):
