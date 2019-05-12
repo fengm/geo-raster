@@ -53,15 +53,15 @@ def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exc
 		_rs.append(None)
 
 	import logging
-	if debug or _p.returncode != 0:
+	
+	if debug:
+		logging.info('return code: %s' % _p.returncode)
 		logging.warning('Output message:%s\n' % _rs[0])
 		logging.warning('Error message:%s' % _rs[1])
 
-	logging.debug('return code: %s' % _p.returncode)
-	if check and _p.returncode != 0:
-		logging.error('Failed running cmd: %s %s\n' % (cmd, _p.returncode))
-		if raise_exception:
-			raise Exception('Failed with cmd: ' + str(cmd))
+	# if check and _p.returncode != 0:
+	if raise_exception and _p.returncode != 0:
+		raise Exception('Failed with cmd: ' + str(cmd))
 
 	return _p.returncode, _rs[0], _rs[1]
 
