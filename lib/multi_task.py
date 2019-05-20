@@ -93,7 +93,7 @@ def text(t):
     import sys
     sys.stdout.write(t)
     sys.stdout.flush()
-
+    
 def create_lock():
     return multiprocessing.Lock()
 
@@ -104,12 +104,12 @@ def print_percent(nu, tn, perc_step, end=False):
 
     from gio import logging_util
     if end:
-        logging.debug('-> task end %d/%d' % (nu, tn))
+        logging.info('-> task end %d/%d' % (nu, tn))
 
         if logging_util.cloud_enabled():
             logging_util.cloud().info('-> task end %d/%d' % (nu, tn))
     else:
-        logging.debug('<- task start %d/%d' % (nu, tn))
+        logging.info('<- task start %d/%d' % (nu, tn))
 
         if logging_util.cloud_enabled():
             logging_util.cloud().info('-> task start %d/%d' % (nu, tn))
