@@ -22,26 +22,26 @@ def main(opts):
     import os
     import re
     import logging
+    from gio import file_mag
 
     _fs = []
     for _dd in opts.input:
-        if not _dd or not os.path.exists(_dd):
-            logging.warning('skip %s' % _dd)
+        if not _dd:
             continue
-
-        if not os.path.isdir(_dd):
-            _fs.append(os.path.abspath(_dd))
-        else:
-            for _root, _dirs, _files in os.walk(os.path.abspath(_dd)):
-                for _file in _files:
-                    if not opts.pattern or re.search(opts.pattern, _file):
-                        _f = os.path.join(format_path(_root), _file)
-
-                        if os.path.getsize(_f) <= 0:
-                            logging.warning('skip zero size file: %s' % _f)
-                            continue
-
-                        _fs.append(_f)
+        
+        _df = file_mag.get((lambda x: x if x.startswith('s3://') else format_path(os.path.abspath(x)))(_dd))
+        # if _df.exists() == False:
+        #     logging.warning('skip %s' % _dd)
+        #     continue
+        
+        for _f in _df.list(recursive=True):
+            if not opts.pattern or re.search(opts.pattern, str(_f)):
+                if isinstance(_f, file_mag.file_mag):
+                    if os.path.getsize(_f) <= 0:
+                        logging.warning('skip zero size file: %s' % _f)
+                        continue
+                    
+                _fs.append(str(_f))
 
     if len(_fs) == 0:
         print ' * no file was found'
