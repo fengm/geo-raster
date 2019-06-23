@@ -18,6 +18,25 @@ def format_path(f):
 
     return f
 
+def output_list(f, ls):
+	from gio import file_unzip
+	import os
+	
+	with file_unzip.file_unzip() as _zip:
+		_d_out = _zip.generate_file()
+		os.makedirs(_d_out)
+		
+		_f_out = os.path.join(_d_out, os.path.basename(f))
+		
+		with open(_f_out, 'w') as _fo:
+		    _fo.write('\n'.join(ls))
+		    
+		_d_ttt = os.path.dirname(f)
+		if not _d_ttt:
+			_d_ttt = os.path.dirname(os.path.abspath(f))
+			
+		file_unzip.compress_folder(_d_out, _d_ttt, [])
+
 def main(opts):
     import os
     import re
@@ -49,11 +68,7 @@ def main(opts):
 
     if opts.output:
         print 'found', len(_fs), 'files'
-
-        (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(os.path.abspath(opts.output)))
-
-        with open(opts.output, 'w') as _fo:
-            _fo.write('\n'.join(_fs) + '\n')
+        output_list(opts.output, _fs + ['\n'])
 
         if opts.extent:
             print 'generate raster extent'
@@ -90,4 +105,3 @@ if __name__ == '__main__':
     from gio import environ_mag
     environ_mag.init_path()
     environ_mag.run(main, [environ_mag.config(usage())])
-

@@ -263,38 +263,46 @@ def generate_shp_from_list(fs, dataset, proj, f_out, absp, opts):
 
 def indentify_files(fs):
     import os
-
+    from gio import file_mag
+    
     _fs = []
     for _f in fs:
-        if os.path.isdir(_f):
-            for _root, _dirs, _files in os.walk(_f):
-                for _file in _files:
-                    if os.path.splitext(_file)[-1] in ['.tif', '.img']:
-                        _fs.append(os.path.join(_root, _file))
-        else:
-            _ext = os.path.splitext(_f)
-            if _ext[-1] in ['.txt']:
-                with open(_f) as _fi:
-                    _ls = _fi.read().strip().splitlines()
-                    _fs.extend(_ls)
-                continue
-
-            if _ext[-1] in ['.tif', '.img']:
-                _fs.append(_f)
-                continue
-
-            raise Exception('unsupported file type (%s)' % _f)
+        _df = file_mag.get((lambda x: x if x.startswith('s3://') else os.path.abspath(x))(_f))
+        
+        if os.path.splitext(_f)[-1] in ['.txt']:
+            with open(_df.get()) as _fi:
+                _ls = _fi.read().strip().splitlines()
+                _fs.extend(_ls)
+            continue
+            
+        for _f in _df.list(recursive=True):
+            _file = str(_f)
+            
+            if os.path.splitext(_file)[-1] in ['.tif', '.img']:
+                _fs.append(_file)
 
     return _fs
 
 def main(opts):
     import os
+    from gio import file_unzip
 
     _fs = indentify_files(opts.input)
     _fo = opts.output if opts.output else os.path.splitext(opts.input[0])[0] + '.shp'
 
-    return generate_shp_from_list(_fs, opts.dataset, opts.projection,
-            _fo, opts.absolutepath, opts)
+    with file_unzip.file_unzip() as _zip:
+        _d_out = _zip.generate_file()
+        os.makedirs(_d_out)
+        
+        _f_out = os.path.join(_d_out, os.path.basename(_fo))
+        generate_shp_from_list(_fs, opts.dataset, opts.projection,
+                _f_out, opts.absolutepath, opts)
+                
+        _d_ttt = os.path.dirname(_fo)
+        if not _d_ttt:
+            _d_ttt = os.path.dirname(os.path.abspath(_fo))
+            
+        file_unzip.compress_folder(_d_out, _d_ttt, [])
 
 def usage():
     _p = environ_mag.usage(True)

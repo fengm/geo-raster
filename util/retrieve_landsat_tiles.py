@@ -59,8 +59,23 @@ def output_tiles(f_in, f_out, col, duplicate):
 def retrieve_landsat_tiles(f_in, f_out, col, exclude):
 	print 'column:', col
 	print 'output:', f_out
-
-	output_tiles(f_in, f_out, col, not exclude)
+	
+	from gio import file_mag
+	from gio import file_unzip
+	import os
+	
+	with file_unzip.file_unzip() as _zip:
+		_d_out = _zip.generate_file()
+		os.makedirs(_d_out)
+		
+		_f_out = os.path.join(_d_out, os.path.basename(f_out))
+		output_tiles(file_mag.get(f_in).get(), _f_out, col, not exclude)
+		
+		_d_ttt = os.path.dirname(f_out)
+		if not _d_ttt:
+			_d_ttt = os.path.dirname(os.path.abspath(f_out))
+			
+		file_unzip.compress_folder(_d_out, _d_ttt, [])
 
 def main(opts):
 	if opts.output == None:

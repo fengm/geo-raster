@@ -98,7 +98,7 @@ def csv2shapefile(f_csv, f_out, col, f_landsat):
 def main(opts):
 	import os
 	if not opts.output:
-		opts.output = os.path.join(os.path.join(os.path.dirname(opts.input), 'shp'), \
+		opts.output = os.path.join(os.path.dirname(opts.input), \
 				os.path.basename(opts.input)[:-4] + '.shp')
 
 	_f_ref = opts.tile_file
@@ -109,8 +109,25 @@ def main(opts):
 			_f_ref = os.environ['D_DATA_WRS1']
 		else:
 			raise Exception('unsupported tiling system tag (%s)' % opts.tile_tag)
-
-	csv2shapefile(opts.input, opts.output, opts.column, _f_ref)
+			
+	from gio import file_mag
+	from gio import file_unzip
+	import os
+	
+	with file_unzip.file_unzip() as _zip:
+		_d_out = _zip.generate_file()
+		os.makedirs(_d_out)
+		
+		f_out = opts.output
+		
+		_f_out = os.path.join(_d_out, os.path.basename(f_out))
+		csv2shapefile(file_mag.get(opts.input).get(), _f_out, opts.column, _f_ref)
+		
+		_d_ttt = os.path.dirname(f_out)
+		if not _d_ttt:
+			_d_ttt = os.path.dirname(os.path.abspath(f_out))
+			
+		file_unzip.compress_folder(_d_out, _d_ttt, [])
 
 def usage():
 	_p = environ_mag.usage()
