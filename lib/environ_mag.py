@@ -16,6 +16,7 @@ def usage(multi_task=False):
 
     _p.add_argument('--logging', dest='logging')
     _p.add_argument('--config', dest='config', nargs='+')
+    _p.add_argument('--env', dest='env', nargs='+')
     _p.add_argument('--debug', dest='debug', action='store_true')
     _p.add_argument('--no-clean', dest='no_clean', action='store_true')
     _p.add_argument('--temp', dest='temp')
@@ -69,6 +70,31 @@ def _opts_to_str(opts):
     
     return '; '.join(_vs)
 
+def _parse_env(opts):
+    from gio import config
+    import logging
+    import re
+
+    if opts.env:
+        for _e in opts.env:
+            _es = re.split('\s*\=\s*', _e.strip())
+            if len(_es) != 2:
+                raise Exception('failed to parse environment variable (%s)' % _e)
+
+            _ns = re.split('[\/\.]', _es[0])
+            if len(_ns) > 2:
+                raise Exception('failed to parse environment name (%s)' % _es[0])
+
+            if len(_ns) == 1:
+                _n0 = 'conf'
+                _n1 = _es[0]
+            else:
+                _n0 = _ns[0]
+                _n1 = _ns[1]
+            
+            logging.info('env %s.%s=%s' % (_n0, _n1, _es[1]))
+            config.set(_n0, _n1, _es[1])
+
 def run(func, opts):
     import logging
     import config
@@ -78,6 +104,7 @@ def run(func, opts):
     import logging_util
 
     logging_util.info(('CMD (%s): ' % os.getcwd()) + ' '.join(map(lambda x: '"%s"' % x if ' ' in x else x, sys.argv)))
+    _parse_env(*opts)
 
     with file_unzip.file_unzip() as _zip:
         _tmp = _zip.generate_file()
