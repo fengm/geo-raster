@@ -30,7 +30,11 @@ class cache_mag():
         import config
 
         self._t = tag
-        self._d = config.get('conf', 'cache', cache)
+        
+        if cache:
+            self._d = cache
+        else:
+            self._d = config.get('conf', 'cache')
 
         if not self._d:
             raise Exception('no cache folder specified')
@@ -221,18 +225,29 @@ class s3():
         import os
 
         self._t = bucket
-        self._zip = fzip
+        _zip = fzip
 
-        _p = config.get('conf', 'cache')
-        if not _p:
-            if self._zip is None:
-                raise Exception('need to provide zip obj when cache is disabled')
-
+        self._enable_cache = config.getboolean('conf', 'enable_s3_cache', True)
+        if not self._enable_cache:
             logging.info('disabled caching S3 files')
-            _p = self._zip.generate_file()
+            if _zip is None:
+                from gio import file_unzip
+                _zip = file_unzip.file_unzip()
+                
+            _p = _zip.generate_file()
+        else:
+            _p = config.get('conf', 'cache')
+            if not _p:
+                if _zip is None:
+                    raise Exception('need to provide zip obj when cache is disabled')
+    
+                logging.info('disabled caching S3 files')
+                _p = _zip.generate_file()
 
-            os.makedirs(_p)
-
+        self._zip = _zip
+        self._zip_inner = fzip is None
+        
+        self._path = _p
         self._c = cache_mag(bucket, _p)
         self.bucket = self._bucket()
 
@@ -240,7 +255,15 @@ class s3():
         return self
 
     def __exit__(self, type, value, traceback):
-        pass
+        self.clean()
+    
+    def clean(self):
+        if (not self._enable_cache) and (self._path):
+            import shutil
+            shutil.rmtree(self._path, True)
+            
+        if self._zip_inner and self._zip:
+            self._zip.clean()
 
     def _bucket(self):
         import boto

@@ -23,6 +23,12 @@ class obj_mag:
     def list(self, recursive=False):
         raise NotImplementedError()
         
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        pass
+        
 class file_mag(obj_mag):
 
     def __init__(self, f):
@@ -95,6 +101,7 @@ class s3_mag(obj_mag):
 
         self._f = f
         self._s3 = _s3
+        self._s3_inner = s3 is None
 
         obj_mag.__init__(self)
 
@@ -136,6 +143,10 @@ class s3_mag(obj_mag):
 
     def __str__(self):
         return self._f
+        
+    def __exit__(self, type, value, traceback):
+        if self._s3_inner:
+            self._s3.clean()
 
 def get(f):
     if f.startswith('s3://'):

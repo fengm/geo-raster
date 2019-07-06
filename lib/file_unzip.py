@@ -274,10 +274,7 @@ class file_unzip:
         return self
 
     def __exit__(self, type, value, traceback):
-        if self._debug:
-            logging.warning('remain the temporary files in debug mode')
-        else:
-            self.clean()
+        return self.clean()
 
     def generate_file(self, prefix='', subfix=''):
         return generate_file(self.fd_out, prefix, subfix)
@@ -317,7 +314,7 @@ class file_unzip:
 
         return _f_out
 
-    def clean(self):
+    def _clean(self):
         import shutil, os
 
         if self.exclusive:
@@ -333,3 +330,8 @@ class file_unzip:
         self.files = []
         return
 
+    def clean(self):
+        if self._debug:
+            logging.warning('remain the temporary files in debug mode')
+        else:
+            self._clean()

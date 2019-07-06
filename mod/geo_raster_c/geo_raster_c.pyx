@@ -80,7 +80,11 @@ cdef align_min(val, ref, div):
 cdef align_max(val, ref, div):
     import math
     return math.ceil((val - ref) / div) * div + ref
+    
 
+def default_geotiff_opts():
+    return ['predictor=2', 'tiled=yes', 'compress=lzw']
+    
 def is_same_projs(proj1, proj2):
     if None is [proj1, proj2]:
         return True
@@ -375,7 +379,7 @@ class geo_band_cache(geo_band_info):
         if _pixel_type is None:
             from osgeo import gdal
             _pixel_type = gdal.GDT_Byte
-
+            
         _color_table = color_table if color_table else self.color_table
         write_raster(f, self.geo_transform, self.proj.ExportToWkt(), \
                 self.data, nodata=self.nodata, pixel_type=_pixel_type, \
@@ -953,13 +957,21 @@ class geo_raster(geo_raster_info):
     @staticmethod
     def _load_s3_file(f):
         import re
-
+        
         _m = re.match('s3://([^/]+)/(.+)', f)
         if _m is None:
             raise Exception('failed to parse S3 file %s' % f)
 
         _bucket = _m.group(1)
         _path = _m.group(2)
+
+        from gio import config
+        _cache = config.getboolean('conf', 'cache_s3_image', True)
+        
+        if not _cache:
+            _f = '/vsis3/%s/%s' % (_bucket, _path)
+            logging.debug('convert s3 file path to vsis3 path %s' % _f)
+            return None, _f
 
         from gio import cache_mag
         _s3 = cache_mag.s3(_bucket)
@@ -972,7 +984,7 @@ class geo_raster(geo_raster_info):
         import re
 
         _f = f
-
+        
         if _f.startswith('s3://'):
             _s3, _f = geo_raster._load_s3_file(_f)
             if _f is None:
@@ -980,7 +992,7 @@ class geo_raster(geo_raster_info):
 
         import os
 
-        if check_exist and (not os.path.exists(_f)):
+        if not _f.startswith('/vsi') and (check_exist and (not os.path.exists(_f))):
             raise Exception('failed to find the image %s' % f)
 
         if update:
@@ -1124,12 +1136,16 @@ def open(f, update=False):
 def write_raster(f, geo_transform, proj, img, pixel_type=gdal.GDT_Byte, driver='GTiff', nodata=None, color_table=None, opts=[]):
     if f.lower().endswith('.img'):
         driver = 'HFA'
+        
+    _opts = [] if opts is None else opts
+    if driver == 'GTiff' and len(opts) == 0:
+        _opts = default_geotiff_opts()
 
     _driver = gdal.GetDriverByName(driver)
 
     _size = img.shape
     if len(_size) == 2:
-        _img = _driver.Create(f, _size[1], _size[0], 1, pixel_type, opts)
+        _img = _driver.Create(f, _size[1], _size[0], 1, pixel_type, _opts)
 
         _band = _img.GetRasterBand(1)
         if color_table is not None:
@@ -1139,7 +1155,7 @@ def write_raster(f, geo_transform, proj, img, pixel_type=gdal.GDT_Byte, driver='
         _band.WriteArray(img)
         _band.FlushCache()
     else:
-        _img = _driver.Create(f, _size[2], _size[1], _size[0], pixel_type, opts)
+        _img = _driver.Create(f, _size[2], _size[1], _size[0], pixel_type, _opts)
         for _b in xrange(_size[0]):
             _band = _img.GetRasterBand(_b + 1)
 
