@@ -124,6 +124,18 @@ def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_
     import ConfigParser
     cfg = ConfigParser.ConfigParser(_df, dict_type, allow_no_value)
     len(_fs) and cfg.read(_fs)
+    
+    logging.debug('loading sys varaibles')
+    
+    import os
+    import re
+    import config
+    
+    for _k in os.environ:
+        _m = re.match('^G_(.+)$', _k)
+        if _m:
+            logging.debug('add sys var %s' % _m.group(1).upper())
+            _set('sys', _m.group(1).upper(), os.environ[_k])
 
 def get_attr(section, name):
     global cfg
@@ -146,12 +158,27 @@ def items(section):
         yield _n, _v
 
 def set(section, name, val):
+    return _set(section, name, val)
+    
+def _set(section, name, val):
     global cfg
 
     if cfg.has_section(section) == False:
         cfg.add_section(section)
 
+    logging.debug('setting config %s=%s' % (section + '.' + name, val))
     cfg.set(section, name, str(val) if val is not None else None)
+    
+def _get_sys_var(section, name, val):
+    if section != 'conf':
+        return val
+        
+    _n = name.upper()
+    if cfg.has_option('sys', _n):
+        _v = cfg.get('sys', _n)
+        return _v
+            
+    return val
 
 def get(section, name, val=None):
     """get config param
@@ -165,8 +192,13 @@ def get(section, name, val=None):
     global cfg
 
     if not cfg.has_option(section, name):
-        return val
-
+        _v = _get_sys_var(section, name, val)
+        
+        if _v is None:
+            return val
+            
+        return _v
+        
     return cfg.get(section, name)
 
 def getint(section, name, val=None):
@@ -181,7 +213,12 @@ def getint(section, name, val=None):
     global cfg
 
     if not cfg.has_option(section, name):
-        return val
+        _v = _get_sys_var(section, name, val)
+        
+        if _v is None:
+            return val
+            
+        return int(_v)
 
     return cfg.getint(section, name)
 
@@ -197,7 +234,12 @@ def getfloat(section, name, val=None):
     global cfg
 
     if not cfg.has_option(section, name):
-        return val
+        _v = _get_sys_var(section, name, val)
+        
+        if _v is None:
+            return val
+            
+        return float(_v)
 
     return cfg.getfloat(section, name)
 
@@ -213,7 +255,12 @@ def getboolean(section, name, val=None):
     global cfg
 
     if not cfg.has_option(section, name):
-        return val
+        _v = _get_sys_var(section, name, val)
+        
+        if _v is None:
+            return val
+            
+        return str(_v).lower() in ('true', '1', 'yes', 'y')
 
     return cfg.getboolean(section, name)
 
