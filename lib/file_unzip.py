@@ -335,3 +335,41 @@ class file_unzip:
             logging.warning('remain the temporary files in debug mode')
         else:
             self._clean()
+            
+    def copy(self, fd_in, fd_ot, exclude_exts=None, include_exts=None):
+        return compress_folder(fd_in, fd_ot, compress_exts=[], \
+            exclude_exts=exclude_exts, include_exts=include_exts)
+            
+    def save(self, f_out, o):
+        import os
+        
+        _et = os.path.splitext(f_out)[1]
+        if _et not in ('.txt', '.csv', '.tif'):
+            raise Exception('unsupported file type (%s)' % _et)
+        
+        _d_tmp = self.generate_file()
+        os.makedirs(_d_tmp)
+        
+        _f_tmp = os.path.join(_d_tmp, os.path.basename(f_out))
+        
+        if isinstance(o, str):
+            with open(_f_tmp, 'w') as _fo:
+                _fo.write(o)
+        
+        if _et in ('.tif'):
+            import geo_raster as ge
+            if isinstance(o, ge.geo_band_cache):
+                o.save(_f_tmp)
+        
+        if os.path.exists(_f_tmp) == False:
+            raise Exception('failed to save the object')
+            
+        _d_out = os.path.dirname(f_out)
+        if not _d_out:
+            _d_out = '.'
+            
+        self.copy(_d_tmp, _d_out)
+
+zip = file_unzip
+
+    
