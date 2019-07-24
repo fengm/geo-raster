@@ -96,7 +96,7 @@ def main(opts):
         _f_tmp = os.path.join(_d_tmp, os.path.basename(opts.output))
 
         os.makedirs(_d_tmp)
-        _bnd.save(_f_tmp, color_table=_clr, opts=['compress=lzw', 'tiled=yes'])
+        _bnd.save(_f_tmp, color_table=_clr)
 
         file_unzip.compress_folder(_d_tmp, os.path.dirname(os.path.abspath(opts.output)), [])
 

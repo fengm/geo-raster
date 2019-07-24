@@ -28,7 +28,7 @@ def convert_file(f_img, f_clr, d_out):
 			_clr = ge.load_colortable(f_clr)
 
 		_bnd.cache().save(os.path.join(_d_tmp, _f.replace('.img', '.tif').replace('.gz', '')), \
-			color_table=_clr, opts=['compress=lzw', 'tiled=yes'])
+			color_table=_clr)
 
 		file_unzip.compress_folder(_d_tmp, d_out, [])
 

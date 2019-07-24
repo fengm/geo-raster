@@ -280,6 +280,7 @@ def save(rs, f_out, ms=None):
     _f_out = file_obj(f_out)
 
     _rs = [_r.obj() for _r in rs]
+    logging.info('created %s tiles' % len(_rs))
 
     from gio import file_unzip
     with file_unzip.file_unzip() as _zip:
