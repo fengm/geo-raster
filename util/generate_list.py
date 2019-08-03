@@ -56,7 +56,7 @@ def main(opts):
         for _f in _df.list(recursive=True):
             if not opts.pattern or re.search(opts.pattern, str(_f)):
                 if isinstance(_f, file_mag.file_mag):
-                    if os.path.getsize(_f) <= 0:
+                    if os.path.getsize(_f.get()) <= 0:
                         logging.warning('skip zero size file: %s' % _f)
                         continue
                     
