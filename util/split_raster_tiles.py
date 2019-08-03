@@ -29,7 +29,7 @@ def _task(tile, t, f_inp, d_out, ps):
         os.path.exists(_d_tmp) or os.makedirs(_d_tmp)
 
         _f_out = os.path.join(_d_tmp, '%s_%s.tif' % (t, _tag))
-        _bnd.save(_f_out, opts=['compress=lzw', 'tiled=yes'])
+        _bnd.save(_f_out)
 
         file_unzip.compress_folder(_d_tmp, _d_out, [])
 
