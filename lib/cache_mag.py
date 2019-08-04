@@ -267,12 +267,14 @@ class s3():
         if self._zip_inner and self._zip:
             self._zip.clean()
 
-    def list(self, k, limit=None):
-        if limit is not None:
-            return self.bucket.objects.filter(Prefix=k).limit(limit)
+    def list(self, k, limit=-1):
+        if limit < 0:
+            return list(self.bucket.objects.filter(Prefix=k).limit(limit))
+            
+        return list(self.bucket.objects.filter(Prefix=k))
 
     def exists(self, k):
-        _os = [self.list(k, limit=1)]
+        _os = self.list(k, limit=1)
         return len(_os) > 0
 
     def get(self, k, lock=None):
@@ -362,7 +364,7 @@ class s3():
     #     _kk = self.bucket.new_key(k) if isinstance(k, str) or isinstance(k, unicode) else k
     #     return _kk
 
-    def put(self, k, f, update=False, lock=None):
+    def put(self, k, f, update=True, lock=None):
         if update == False:
             if self.exists(k):
                 logging.info('skip existing file %s: %s' % (self._t, k))

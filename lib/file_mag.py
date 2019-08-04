@@ -129,9 +129,9 @@ class s3_mag(obj_mag):
             self._list(self, _fs)
             return _fs
             
-        return [s3_mag('s3://%s/%s' % (self._bucket, _f.key), s3=self._s3) for _f in list(self._s3.bucket.list(self._path))]
+        return [s3_mag('s3://%s/%s' % (self._bucket, _f.key), s3=self._s3) for _f in list(self._s3.list(self._path))]
 
-    def put(self, f, update=False):
+    def put(self, f, update=True):
         self._s3.put(self._path, f, update=update)
 
         if self._path.endswith('.shp') and f.endswith('.shp'):

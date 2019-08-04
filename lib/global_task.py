@@ -287,7 +287,7 @@ def save(rs, f_out, ms=None):
         _f_tmp = _zip.generate_file('', '.txt')
 
         import json
-        with open(_f_tmp, 'wb') as _f:
+        with open(_f_tmp, 'w') as _f:
             _ms = ms if ms else {}
             _ms['version'] = '2.0'
 
@@ -299,7 +299,7 @@ def save(rs, f_out, ms=None):
 def load(f_inp):
     import json
 
-    with open(file_obj(f_inp).get(), 'rb') as _f:
+    with open(file_obj(f_inp).get(), 'r') as _f:
         _rs = json.load(_f)
         if isinstance(_rs, list):
             # compatible to the older version
@@ -311,7 +311,7 @@ def load(f_inp):
 def loads(f_inp):
     import json
 
-    with open(file_obj(f_inp).get(), 'rb') as _f:
+    with open(file_obj(f_inp).get(), 'r') as _f:
         _rs = json.load(_f)
         if isinstance(_rs, list):
             _ts = [tile.from_obj(_r) for _r in _rs]

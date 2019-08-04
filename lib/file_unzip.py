@@ -10,7 +10,7 @@ _block_size = 1024 * 1024
 
 import logging
 
-def send_to_s3(f, f_out, update=False):
+def send_to_s3(f, f_out, update=True):
     import file_mag
     file_mag.get(f_out).put(f, update)
 
