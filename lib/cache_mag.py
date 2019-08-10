@@ -360,7 +360,7 @@ class s3():
         _kk = self.bucket.new_key(k) if isinstance(k, str) or isinstance(k, unicode) else k
         return _kk
 
-    def put(self, k, f, update=False, lock=None):
+    def put(self, k, f, update=True, lock=None):
         _kk = self.get_key(k)
         if _kk is not None:
             if update == False:

@@ -10,7 +10,7 @@ _block_size = 1024 * 1024
 
 import logging
 
-def send_to_s3(f, f_out, update=False):
+def send_to_s3(f, f_out, update=True):
     import file_mag
     file_mag.get(f_out).put(f, update)
 
@@ -69,7 +69,7 @@ def uncompress_folder(d_in, d_ot):
         else:
             shutil.copy(_ff, d_ot)
 
-def compress_file(f_src, f_dst=None, remove_src=True):
+def compress_file(f_src, f_dst=None, remove_src=True, update=True):
     import gzip
     import os
 
@@ -109,7 +109,7 @@ def compress_file(f_src, f_dst=None, remove_src=True):
         # time.sleep(1)
 
         if f_dst.startswith('s3://'):
-            send_to_s3(_f_tmp, _f_dst)
+            send_to_s3(_f_tmp, _f_dst, update)
         else:
             (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f_dst))
 
@@ -138,7 +138,7 @@ def check_prefix(f, exts):
 
     return False
 
-def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include_exts=None):
+def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include_exts=None, update=True):
     '''compress files in the folder to the target folder'''
     import shutil
     import os
@@ -171,7 +171,7 @@ def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include
         else:
             logging.debug('copying %s to %s' %(_f_in, _f_ot))
             if _f_ot.startswith('s3://'):
-                send_to_s3(_f_in, _f_ot)
+                send_to_s3(_f_in, _f_ot, update)
             else:
                 os.path.exists(fd_ot) or os.makedirs(fd_ot)
                 shutil.copy(_f_in, _f_ot)

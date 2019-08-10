@@ -131,7 +131,7 @@ class s3_mag(obj_mag):
             
         return [s3_mag('s3://%s/%s' % (self._bucket, _f.key), s3=self._s3) for _f in list(self._s3.bucket.list(self._path))]
 
-    def put(self, f, update=False):
+    def put(self, f, update=True):
         self._s3.put(self._path, f, update=update)
 
         if self._path.endswith('.shp') and f.endswith('.shp'):
@@ -139,7 +139,7 @@ class s3_mag(obj_mag):
             for _e in ['.prj', '.shx', '.dbf']:
                 _f = f[:-4] + _e
                 if os.path.exists(_f):
-                    self._s3.put(self._path[:-4] + _e, _f)
+                    self._s3.put(self._path[:-4] + _e, _f, update=update)
 
     def __str__(self):
         return self._f
