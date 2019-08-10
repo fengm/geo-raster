@@ -371,8 +371,6 @@ class s3():
                 logging.info('skip existing file %s: %s' % (_kk.bucket, _kk.name))
                 return
 
-        _kk = self.get_key(k)
-
         if lock is None:
             with open(f, 'rb') as _fi:
                 _kk.upload_fileobj(_fi)
