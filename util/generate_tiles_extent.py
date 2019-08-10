@@ -45,7 +45,7 @@ def _task(tile, u, image_check=False):
     _o = file_mag.get(_f)
 
     if _o.exists():
-        return (tile, _f, check_image(_o))
+        return (tile, _f, check_image(_o) if image_check else 2)
 
     return None
 
@@ -75,17 +75,19 @@ def _get_tag(f):
 def generate_shp(rs, f_out):
     from gio import geo_base as gb
     from osgeo import ogr
-    from gio.progress_percentage import progress_percentage
+    from gio import progress_percentage
     import os
 
     if not os.path.exists(os.path.dirname(f_out)):
         os.makedirs(os.path.dirname(f_out))
 
     _drv = ogr.GetDriverByName('ESRI Shapefile')
-    os.path.exists(f_out) and _drv.DeleteDataSource(f_out)
+    
+    _tag = os.path.basename(f_out)[:-4]
+    os.path.exists(_tag) and _drv.DeleteDataSource(_tag)
+    
     _shp = _drv.CreateDataSource(f_out)
-    _lyr = _shp.CreateLayer(filter(lambda x: x[:-4] if x.lower().endswith('.shp') else x, \
-            os.path.basename(f_out)[:-4]), gb.modis_projection(), ogr.wkbPolygon)
+    _lyr = _shp.CreateLayer(_tag, gb.modis_projection(), ogr.wkbPolygon)
 
     _fld = ogr.FieldDefn('FILE', ogr.OFTString)
     _fld.SetWidth(254)
@@ -95,7 +97,7 @@ def generate_shp(rs, f_out):
     _fld.SetWidth(25)
     _lyr.CreateField(_fld)
 
-    _perc = progress_percentage(len(rs))
+    _perc = progress_percentage.progress_percentage(len(rs))
 
     _fs = []
     _ts = 0
