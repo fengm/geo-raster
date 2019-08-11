@@ -319,6 +319,7 @@ class s3():
 
         import shutil
         import file_unzip
+        from botocore.exceptions import ClientError
 
         for _i in xrange(3):
             _t = file_unzip.generate_file(os.path.dirname(_f), '', '.bak')
@@ -331,6 +332,11 @@ class s3():
                 _kkk = self.get_key(k)
                 if _kkk is None:
                     logging.warning('no key was found: %s' % k)
+                    return None
+                    
+                try:
+                    _kkk.content_length
+                except ClientError, e:
                     return None
 
                 with open(_t, 'wb') as _fo:
