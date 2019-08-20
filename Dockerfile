@@ -4,7 +4,7 @@ FROM geographica/gdal2:latest
 LABEL creator Min Feng
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update && apt-get install -y awscli cython python-psycopg2 python-boto python-pandas python-setuptools python-pip
+RUN apt-get update && apt-get install -y awscli cython python-psycopg2 python-boto3 python-pandas python-setuptools python-pip
 RUN pip install watchtower
 
 WORKDIR /opt
