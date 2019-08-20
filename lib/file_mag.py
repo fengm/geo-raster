@@ -106,7 +106,8 @@ class s3_mag(obj_mag):
         obj_mag.__init__(self)
 
     def exists(self):
-        return self._s3.get_key(self._path) is not None
+        # return self._s3.get_key(self._path) is not None
+        return self._s3.exists(self._path)
 
     def get(self):
         _o = self._s3.get(self._path)

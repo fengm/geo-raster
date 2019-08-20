@@ -274,10 +274,14 @@ class s3():
         return list(self.bucket.objects.filter(Prefix=k))
 
     def exists(self, k):
-        if k.endwith('/'):
+        if not k:
+            return False
+            
+        if k.endswith('/'):
             _os = self.list(k, limit=1)
             return len(_os) > 0
             
+        from botocore.exceptions import ClientError
         try:
             self.get_key(k).content_length
         except ClientError, e:
