@@ -274,8 +274,16 @@ class s3():
         return list(self.bucket.objects.filter(Prefix=k))
 
     def exists(self, k):
-        _os = self.list(k, limit=1)
-        return len(_os) > 0
+        if k.endwith('/'):
+            _os = self.list(k, limit=1)
+            return len(_os) > 0
+            
+        try:
+            self.get_key(k).content_length
+        except ClientError, e:
+            return False
+            
+        return True
 
     def get(self, k, lock=None):
         if k is None:
