@@ -108,8 +108,9 @@ def upload_file(f, b, d_out):
 def load_exts(f):
     from osgeo import ogr
     from gio import geo_base as gb
+    from gio import file_mag
 
-    _inp = ogr.Open(f)
+    _inp = ogr.Open(file_mag.get(f).get())
     _yyy = _inp.GetLayer()
     
     for _r in _yyy:
