@@ -99,7 +99,9 @@ def upload_file(f, b, d_out):
     _out = update_path(f, b, d_out)
     _key = file_mag.get(_out)
     
-    print f, _out
+    import logging
+    logging.info('uploading file %s %s' % (f, _out)
+    
     if not _key.exists():
         _key.put(file_mag.get(f).get())
         
