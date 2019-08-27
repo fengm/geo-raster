@@ -376,6 +376,7 @@ class s3():
         if _k is None:
             return None
         
+        from botocore.exceptions import ClientError
         try:
             _k.content_length
         except ClientError:
@@ -394,13 +395,23 @@ class s3():
                 logging.info('skip existing file %s: %s' % (_kk.bucket, _kk.name))
                 return
 
+        _b, _p = self._t, k
+        logging.info('upload file %s: %s' % (_b, _p))
+
         if lock is None:
-            with open(f, 'rb') as _fi:
-                _kk.upload_fileobj(_fi)
+            self.bucket.upload_file(f, _p)
         else:
             with lock:
-                with open(f, 'rb') as _fi:
-                    _kk.upload_fileobj(_fi)
+                self.bucket.upload_file(f, _p)
 
-        logging.info('upload file %s: %s' % (_kk.bucket_name, _kk.key))
+def parse_s3(f):
+    import re
 
+    _m = re.match('s3://([^/]+)/(.+)', f)
+    if _m is None:
+        raise Exception('failed to parse S3 file %s' % f)
+
+    _bucket = _m.group(1)
+    _path = _m.group(2)
+
+    return _bucket, _path
