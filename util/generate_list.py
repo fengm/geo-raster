@@ -36,6 +36,17 @@ def output_list(f, ls):
 			_d_ttt = os.path.dirname(os.path.abspath(f))
 			
 		file_unzip.compress_folder(_d_out, _d_ttt, [])
+		
+def _check_file(f):
+    if f and f.lower().endswith('.tif'):
+        from gio import geo_raster as ge
+        try:
+            _bnd = ge.open(f).get_band().cache()
+            return f, True
+        except Exception:
+            return f, False
+        
+    return f, None
 
 def main(opts):
     import os
@@ -61,7 +72,25 @@ def main(opts):
                         continue
                     
                 _fs.append(str(_f))
-
+                
+    _ds = []
+    if opts.check_raster:
+        from gio import multi_task
+        _rs = multi_task.run(_check_file, [(_f, ) for _f in _fs], opts)
+        _fs = []
+        for _f, _r in _rs:
+            if _r == True:
+                _fs.append(_f)
+            else:
+                _ds.append(_f)
+                
+        print 'found %s failed files' % len(_ds)
+        for _f in _ds[: min(3, len(_ds))]:
+            print '  ', _f
+            
+        if len(_ds) > 3:
+            print '  ...'
+                
     if len(_fs) == 0:
         print ' * no file was found'
         return
@@ -91,6 +120,7 @@ def usage():
     _p = environ_mag.usage(True)
 
     _p.add_argument('-i', '--input', dest='input', nargs='+', required=True)
+    _p.add_argument('-c', '--check-raster', dest='check_raster', type='bool', default=False)
     _p.add_argument('-z', '--skip-zero-file', dest='skip_zero_file', action='store_true')
     _p.add_argument('-o', '--output', dest='output')
     _p.add_argument('-p', '--pattern', dest='pattern')
