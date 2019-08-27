@@ -29,40 +29,40 @@ def kill_p(k):
         run_commands.run(_cmd, raise_exception=False, check=False)
 
 def main(opts):
-	from gio import run_commands
-	import time
-	import datetime
+    from gio import run_commands
+    import time
+    import datetime
 
-	_nu = -1.0
-	while True:
-		_nu += 1
+    _nu = -1.0
+    while True:
+        _nu += 1
 
-		print 'run command #%d' % _nu, datetime.datetime.now()
-		try:
-			run_commands.run(opts.command, shell=True)
-		except KeyboardInterrupt:
-			print '\n\n* User stopped the program'
-		except Exception:
-			print 'failed with the command'
+        print 'run command #%d' % _nu, datetime.datetime.now()
+        try:
+            run_commands.run(opts.command, shell=True)
+        except KeyboardInterrupt:
+            print '\n\n* User stopped the program'
+        except Exception:
+            print 'failed with the command'
 
-		if opts.kill:
-			print 'clean command'
-			kill_p(opts.command)
+        if opts.kill:
+            print 'clean command'
+            kill_p(opts.command)
 
-		print 'waiting for restart %ss' % opts.time
-		time.sleep(opts.time)
+        print 'waiting for restart %ss' % opts.time
+        time.sleep(opts.time)
 
 def usage():
-	_p = environ_mag.usage(False)
+    _p = environ_mag.usage(False)
 
-	_p.add_argument('-c', '--command', dest='command', required=True)
-	_p.add_argument('-t', '--time', dest='time', type=float, default=1.0)
-	_p.add_argument('-k', '--kill', dest='kill', type='bool', default=True)
+    _p.add_argument('-c', '--command', dest='command', required=True)
+    _p.add_argument('-t', '--time', dest='time', type=float, default=1.0)
+    _p.add_argument('-k', '--kill', dest='kill', type='bool', default=True)
 
-	return _p
+    return _p
 
 if __name__ == '__main__':
-	from gio import environ_mag
-	environ_mag.init_path()
-	environ_mag.run(main, [environ_mag.config(usage())])
+    from gio import environ_mag
+    environ_mag.init_path()
+    environ_mag.run(main, [environ_mag.config(usage())])
 
