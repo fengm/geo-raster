@@ -100,7 +100,7 @@ def upload_file(f, b, d_out):
     _key = file_mag.get(_out)
     
     import logging
-    logging.info('uploading file %s %s' % (f, _out)
+    logging.info('uploading file %s %s' % (f, _out))
     
     if not _key.exists():
         _key.put(file_mag.get(f).get())
