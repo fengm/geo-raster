@@ -99,7 +99,9 @@ def upload_file(f, b, d_out):
     _out = update_path(f, b, d_out)
     _key = file_mag.get(_out)
     
-    print f, _out
+    import logging
+    logging.info('uploading file %s %s' % (f, _out))
+    
     if not _key.exists():
         _key.put(file_mag.get(f).get())
         
@@ -108,8 +110,9 @@ def upload_file(f, b, d_out):
 def load_exts(f):
     from osgeo import ogr
     from gio import geo_base as gb
+    from gio import file_mag
 
-    _inp = ogr.Open(f)
+    _inp = ogr.Open(file_mag.get(f).get())
     _yyy = _inp.GetLayer()
     
     for _r in _yyy:
