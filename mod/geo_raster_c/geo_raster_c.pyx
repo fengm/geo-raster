@@ -1001,6 +1001,7 @@ class geo_raster(geo_raster_info):
             _img = gdal.Open(_f)
 
         if _img is None:
+            logging.error('failed to load file %s (%s)' % (f, _f))
             raise Exception('failed to load file ' + f)
 
         return geo_raster(f, _img)
