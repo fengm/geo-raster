@@ -370,8 +370,9 @@ class s3():
     def get_key(self, k):
         if not k:
             return None
-            
-        _k = self._s3.Object(self._t, k) if isinstance(k, str) or isinstance(k, str) else k
+
+        import boto3
+        _k = self._s3.Object(self._t, k) if isinstance(k, str) or isinstance(k, unicode) else k
         
         if _k is None:
             return None
