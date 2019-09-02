@@ -966,7 +966,7 @@ class geo_raster(geo_raster_info):
         _path = _m.group(2)
 
         from gio import config
-        _cache = config.getboolean('conf', 'cache_s3_image', False)
+        _cache = config.getboolean('conf', 'cache_s3_image', True)
         
         if not _cache:
             _f = '/vsis3/%s/%s' % (_bucket, _path)
