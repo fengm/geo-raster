@@ -144,7 +144,7 @@ def main(opts):
     
     _u = _format_url(opts.ext)
     if not _u.startswith('s3://'):
-        _u = opts.input + '/' + _u
+        _u = os.path.join(opts.input, _u)
 
     print 'url:', _u
     logging.info('url: %s' % _u)

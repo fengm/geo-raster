@@ -18,9 +18,10 @@ def usage(multi_task=False):
     _p.add_argument('--config', dest='config', nargs='+')
     _p.add_argument('--env', dest='env', nargs='+')
     _p.add_argument('--debug', dest='debug', action='store_true')
-    _p.add_argument('--no-clean', dest='no_clean', action='store_true')
+    _p.add_argument('--no-clean', dest='no_clean', action='store_true', help='deprecated')
+    _p.add_argument('--clean', dest='clean', type='bool', default=False)
     _p.add_argument('--temp', dest='temp')
-    _p.add_argument('--show-progress', dest='show_progress', type='bool', default='true')
+    _p.add_argument('--show-progress', dest='show_progress', type='bool', default=True)
 
     if multi_task:
         from gio import multi_task
@@ -58,7 +59,11 @@ def config(p, enable_multi_processing=True):
     logging_util.init(_opts.logging, enable_multi_processing)
 
     from gio import file_unzip as fz
-    if config.getboolean('conf', 'no_clean', False) == False:
+    # if config.getboolean('conf', 'no_clean', False) == False:
+    if config.getboolean('conf', 'clean', False) == True:
+        import logging
+        logging.info('clean the temporary folder')
+        
         fz.clean(fz.default_dir(_opts.temp))
 
     return _opts
