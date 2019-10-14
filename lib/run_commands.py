@@ -32,7 +32,7 @@ def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exc
 	if type(cmd) == tuple or type(cmd) == list:
 		_shell = False
 
-	logging.debug('run %scmd: "%s"' % ('shell ' if _shell else '', str(cmd)))
+	logging.info('run %scmd: "%s"' % ('shell ' if _shell else '', str(cmd)))
 
 	import subprocess
 	_stdout = stdout if stdout else subprocess.PIPE
@@ -53,15 +53,21 @@ def run(cmd, shell=True, cwd=None, env=None, stdout=None, stderr=None, raise_exc
 		_rs.append(None)
 
 	import logging
+	import config
 	
-	if debug:
-		logging.info('return code: %s' % _p.returncode)
-		logging.warning('Output message:%s\n' % _rs[0])
-		logging.warning('Error message:%s' % _rs[1])
+	logging.info('return code: %s' % _p.returncode)
 
 	# if check and _p.returncode != 0:
 	if raise_exception and _p.returncode != 0:
-		raise Exception('Failed with cmd: ' + str(cmd))
+		_debug = debug or config.getboolean('conf', 'debug')
+		
+		if _debug and _rs[0]:
+			logging.info('Output message:%s\n' % _rs[0])
+			
+		if _debug and _rs[1]:
+			logging.warning('Error message:%s' % _rs[1])
+			
+		raise Exception('Failed with cmd (%s): %s' % (_p.returncode, str(cmd)))
 
 	return _p.returncode, _rs[0], _rs[1]
 
