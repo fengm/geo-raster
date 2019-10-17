@@ -79,7 +79,7 @@ class color_table:
             if len(_ls) == 0:
                 raise Exception('color table is empty')
                 
-            if 'QGIS' in _ls[0]:
+            if f.endswith('.csv') or 'QGIS' in _ls[0]:
                 return self._load_qgis_colors(_ls)
                 
             for _l in _ls:
