@@ -140,9 +140,12 @@ class color_table:
             raise Exception('only accept value range between 0 and 250')
             
     def _to_byte_colors(self, clip=False):
+        import math
+        
         _cs = {}
-        for _c in xrange(int(self._v_min), int(self._v_max) + 1):
+        for _c in xrange(int(self._v_min), int(math.ceil(self._v_max)) + 1):
             _cs[_c] = self.get_color(_c, clip)
+            print _c, _cs[_c]
             
         return _cs
             
