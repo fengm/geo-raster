@@ -145,7 +145,6 @@ class color_table:
         _cs = {}
         for _c in xrange(int(self._v_min), int(math.ceil(self._v_max)) + 1):
             _cs[_c] = self.get_color(_c, clip)
-            print _c, _cs[_c]
             
         return _cs
             
