@@ -769,10 +769,11 @@ class geo_band(geo_band_info):
             return None
 
         import numpy
-        _dat = numpy.empty((_rows, _cols))
+        import geo_base as gb
+        
+        _dat = numpy.empty((_rows, _cols), dtype=gb.to_dtype(self.pixel_type))
         _dat.fill(_fill)
 
-        import geo_base as gb
         _ext = gb.geo_extent.from_raster(self).intersect(ext)
 
         if roundup:
