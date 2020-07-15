@@ -36,17 +36,6 @@ def output_list(f, ls):
 			_d_ttt = os.path.dirname(os.path.abspath(f))
 			
 		file_unzip.compress_folder(_d_out, _d_ttt, [])
-		
-def _check_file(f):
-    if f and f.lower().endswith('.tif'):
-        from gio import geo_raster as ge
-        try:
-            _bnd = ge.open(f).get_band().cache()
-            return f, True
-        except Exception:
-            return f, False
-        
-    return f, None
 
 def main(opts):
     import os
@@ -72,62 +61,66 @@ def main(opts):
                         continue
                     
                 _fs.append(str(_f))
-                
-    _ds = []
-    if opts.check_raster:
-        from gio import multi_task
-        _rs = multi_task.run(_check_file, [(_f, ) for _f in _fs], opts)
-        _fs = []
-        for _f, _r in _rs:
-            if _r == True:
-                _fs.append(_f)
-            else:
-                _ds.append(_f)
-                
-        print 'found %s failed files' % len(_ds)
-        for _f in _ds[: min(3, len(_ds))]:
-            print '  ', _f
-            
-        if len(_ds) > 3:
-            print '  ...'
-                
+
     if len(_fs) == 0:
-        print ' * no file was found'
+        print(' * no file was found')
+        return
+    
+    if not opts.output:
+        for _l in _fs:
+            print(_l)
+        return
+        
+
+    print('found', len(_fs), 'files')
+    output_list(opts.output, _fs + ['\n'])
+
+    if not opts.extent:
+        return
+    
+    print('generate raster extent')
+    from gio import run_commands
+    
+    _tsk = '-in %s -ip %s -ts %s %s -tw %s -to %s' % ( \
+            opts.instance_num, opts.instance_pos, opts.task_num, \
+                    '-se' if opts.skip_error else '', opts.time_wait, opts.task_order)
+
+    if opts.extent_type == 'wrs2':
+        print('generate WRS2 raster extent')
+        
+        _cmd = 'retrieve_landsat_tiles.py -i %s' % opts.output
+        run_commands.run(_cmd)
+        
+        _cmd = 'landsat_tiles_csv2shp.py -i %s' % opts.output[:-3] + 'csv'
+        run_commands.run(_cmd)
         return
 
-    if opts.output:
-        print 'found', len(_fs), 'files'
-        output_list(opts.output, _fs + ['\n'])
+    _cmd = 'raster_extent2shp.py -i %s ' % opts.output
 
-        if opts.extent:
-            print 'generate raster extent'
+    if opts.extent_type == 'gcs':
+        print('generate GCS raster extent')
+        run_commands.run(_cmd + ' -p 4326')
+        return
 
-            _cmd = 'raster_extent2shp.py -i %s ' % opts.output
-            if opts.sin:
-                _cmd += ' -p sin '
+    if opts.extent_type == 'sin':
+        print('generate sinusoidal raster extent')
+        run_commands.run(_cmd + ' -p sin')
+        return
 
-            _tsk = '-in %s -ip %s -ts %s %s -tw %s -to %s' % ( \
-                    opts.instance_num, opts.instance_pos, opts.task_num, \
-                            '-se' if opts.skip_error else '', opts.time_wait, opts.task_order)
-
-            from gio import run_commands
-            run_commands.run(_cmd + _tsk)
-    else:
-        for _l in _fs:
-            print _l
+    run_commands.run(_cmd + _tsk)
 
 def usage():
     _p = environ_mag.usage(True)
 
     _p.add_argument('-i', '--input', dest='input', nargs='+', required=True)
-    _p.add_argument('-c', '--check-raster', dest='check_raster', type='bool', default=False)
     _p.add_argument('-z', '--skip-zero-file', dest='skip_zero_file', action='store_true')
     _p.add_argument('-o', '--output', dest='output')
     _p.add_argument('-p', '--pattern', dest='pattern')
-    _p.add_argument('-s', '--sin', dest='sin', action='store_true', default=True)
 
     _p.add_argument('-e', '--extent', dest='extent', action='store_true', \
             help='run raster_extent2shp after the list is generated')
+
+    _p.add_argument('-t', '--extent-type', dest='extent_type')
 
     return _p
 

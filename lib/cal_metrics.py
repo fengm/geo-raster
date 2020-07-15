@@ -98,13 +98,13 @@ def average(x):
 	return sum(x) / len(x)
 
 def float_columns(cs, scale=1.0, min_v=None, max_v=None):
-	_ts = [[] for _v in xrange(len(cs))]
+	_ts = [[] for _v in range(len(cs))]
 
 	_len = min([len(_vs) for _vs in cs])
 
-	for i in xrange(_len):
+	for i in range(_len):
 		try:
-			_vs = [float(cs[_b][i]) * scale for _b in xrange(len(cs))]
+			_vs = [float(cs[_b][i]) * scale for _b in range(len(cs))]
 
 			if min_v != None and any([_v < min_v for _v in _vs]):
 					continue
@@ -112,7 +112,7 @@ def float_columns(cs, scale=1.0, min_v=None, max_v=None):
 			if max_v != None and any([_v > max_v for _v in _vs]):
 				continue
 
-			for i in xrange(len(_vs)):
+			for i in range(len(_vs)):
 				_ts[i].append(_vs[i])
 
 		except ValueError:
@@ -143,7 +143,7 @@ def load_columns(f, sep=',', has_header=True, columns=None, callback=None):
 				if has_header:
 					_ts = _vs
 				else:
-					_ts = range(len(_cs))
+					_ts = list(range(len(_cs)))
 
 				if columns:
 					_ss = [_ts.index(_c) for _c in columns if _c in columns]
@@ -159,7 +159,7 @@ def load_columns(f, sep=',', has_header=True, columns=None, callback=None):
 				if callback(_no, _ts, _vs) == False:
 					continue
 
-			for i in xrange(len(_vs)):
+			for i in range(len(_vs)):
 				if (_ss == None) or (i in _ss):
 					_cs[i].append(_vs[i])
 
@@ -176,5 +176,5 @@ def load_columns(f, sep=',', has_header=True, columns=None, callback=None):
 
 			del _ts[_id], _cs[_id]
 
-	return dict(zip(_ts, _cs))
+	return dict(list(zip(_ts, _cs)))
 

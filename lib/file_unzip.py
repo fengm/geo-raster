@@ -11,7 +11,7 @@ _block_size = 1024 * 1024
 import logging
 
 def send_to_s3(f, f_out, update=True):
-    import file_mag
+    from . import file_mag
     file_mag.get(f_out).put(f, update)
 
 def uncompress_file(f, d_ot):
@@ -45,7 +45,7 @@ def uncompress_file(f, d_ot):
 
             import shutil
             shutil.move(_ft, _fo)
-    except BaseException, err:
+    except BaseException as err:
         os.path.exists(_ft) and os.remove(_ft)
         raise err
 
@@ -69,7 +69,7 @@ def uncompress_folder(d_in, d_ot):
         else:
             shutil.copy(_ff, d_ot)
 
-def compress_file(f_src, f_dst=None, remove_src=True, update=True):
+def compress_file(f_src, f_dst=None, remove_src=True):
     import gzip
     import os
 
@@ -109,7 +109,7 @@ def compress_file(f_src, f_dst=None, remove_src=True, update=True):
         # time.sleep(1)
 
         if f_dst.startswith('s3://'):
-            send_to_s3(_f_tmp, _f_dst, update)
+            send_to_s3(_f_tmp, _f_dst)
         else:
             (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f_dst))
 
@@ -138,10 +138,13 @@ def check_prefix(f, exts):
 
     return False
 
-def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include_exts=None, update=True):
+def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include_exts=None):
     '''compress files in the folder to the target folder'''
     import shutil
     import os
+
+    if not fd_ot:
+        fd_ot = '.'
 
     logging.debug('compress results from %s to %s' % (fd_in, fd_ot))
 
@@ -171,7 +174,7 @@ def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include
         else:
             logging.debug('copying %s to %s' %(_f_in, _f_ot))
             if _f_ot.startswith('s3://'):
-                send_to_s3(_f_in, _f_ot, update)
+                send_to_s3(_f_in, _f_ot)
             else:
                 os.path.exists(fd_ot) or os.makedirs(fd_ot)
                 shutil.copy(_f_in, _f_ot)
@@ -180,7 +183,7 @@ def generate_id(fd_out, prefix='', subfix=''):
     import random, os
 
     _id = [''] * 10
-    for i in xrange(len(_id)):
+    for i in range(len(_id)):
         _id[i] = chr(int(random.random() * 26) + 97)
 
     _id = ''.join(_id)
@@ -218,7 +221,7 @@ def default_dir(fd_out):
     if fd_out:
         return fd_out
 
-    import config
+    from . import config
     if config.cfg.has_option('conf', 'temp'):
         return os.path.join(config.cfg.get('conf', 'temp'), _file_name())
 
@@ -262,12 +265,12 @@ class file_unzip:
         self.files = []
         self.exclusive = exclusive
 
-        import config
+        from . import config
         self._debug = debug | config.getboolean('conf', 'debug', False)
 
         logging.debug('temp: %s' % self.fd_out)
         if self._debug:
-            print 'temp:', self.fd_out
+            print('temp:', self.fd_out)
 
     # support with statement
     def __enter__(self):
@@ -286,7 +289,7 @@ class file_unzip:
         if not os.path.exists(_f_out) or reuse:
             return _f_out
 
-        for i in xrange(10000000):
+        for i in range(10000000):
             _d_out = os.path.join(self.fd_out, 'a%07d' % i)
             if os.path.exists(_d_out):
                 continue
@@ -340,12 +343,8 @@ class file_unzip:
         return compress_folder(fd_in, fd_ot, compress_exts=[], \
             exclude_exts=exclude_exts, include_exts=include_exts)
             
-    def save(self, f_out, o):
+    def save(self, o, f_out):
         import os
-        
-        _et = os.path.splitext(f_out)[1]
-        if _et not in ('.txt', '.csv', '.tif'):
-            raise Exception('unsupported file type (%s)' % _et)
         
         _d_tmp = self.generate_file()
         os.makedirs(_d_tmp)
@@ -355,9 +354,8 @@ class file_unzip:
         if isinstance(o, str):
             with open(_f_tmp, 'w') as _fo:
                 _fo.write(o)
-        
-        if _et in ('.tif'):
-            import geo_raster as ge
+        else:
+            from . import geo_raster as ge
             if isinstance(o, ge.geo_band_cache):
                 o.save(_f_tmp)
         

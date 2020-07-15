@@ -10,7 +10,7 @@ import logging
 
 def load_shp(f, column=None, ext=None, proj=None, ignore_ext=False):
     from osgeo import ogr
-    import geo_base as gb
+    from gio import geo_base as gb
 
     logging.info('loading the input shapefile')
 
@@ -42,7 +42,7 @@ def load_shp(f, column=None, ext=None, proj=None, ignore_ext=False):
         _ext = _obj.extent()
 
         _ooo = _obj.project_to(_prj)
-        logging.debug('loading %s from %s (%s)' % (column, _f, ', '.join(_f.keys())))
+        logging.debug('loading %s from %s (%s)' % (column, _f, ', '.join(list(_f.keys()))))
 
         _objs.append((_f[column] if column else _f.GetFID(), _ooo.extent(), _ooo))
 
@@ -83,7 +83,7 @@ class tiles:
 
     def __init__(self, image_size, cell_size, edge, proj=None):
         import math
-        import geo_base as gb
+        from gio import geo_base as gb
 
         self.b = 6371007.181 #6378137.0
         self.s = image_size
@@ -98,20 +98,20 @@ class tiles:
             self.p = self.b * math.pi
 
     def list(self, ext=None):
-        import geo_base as gb
+        from gio import geo_base as gb
 
         _rows = int(2 * self.p / (self.s * self.c))
         _cols = int(2 * self.p / (self.s * self.c))
 
         _y = self.p / 2
 
-        import progress_percentage
+        from gio import progress_percentage
         _ppp = progress_percentage.progress_percentage(_rows, title='checking tiles')
 
-        for _row in xrange(_rows):
+        for _row in range(_rows):
             _ppp.next()
             _x = -self.p
-            for _col in xrange(_cols):
+            for _col in range(_cols):
                 _ext = gb.geo_extent(_x, _y, _x + ((self.s + self.edge) * self.c), _y \
                         - ((self.s + self.edge) * self.c), self.proj)
                 if ext == None or _ext.is_intersect(ext):
@@ -125,7 +125,7 @@ class tiles:
     def extent(self, col, row):
         _geo = [-self.p + (col * self.s * self.c), self.c, 0, self.p / 2 - (row * self.s * self.c), 0, -self.c]
 
-        import geo_raster as ge
+        from gio import geo_raster as ge
         return ge.geo_raster_info(_geo, self.s+self.edge, self.s+self.edge, self.proj)
 
     def files(self, bnd, objs):
@@ -163,7 +163,8 @@ class tile:
                 'cell_size': self.cell_size,
                 'col': self.col,
                 'row': self.row,
-                'files': self.files,
+                # 'files': self.files,
+                'files': len(self.files),
                 'params': self.params,
                 'tag': self.tag,
                 'edge': self.edge,
@@ -281,6 +282,7 @@ def save(rs, f_out, ms=None):
 
     _rs = [_r.obj() for _r in rs]
     logging.info('created %s tiles' % len(_rs))
+    print('created %s tiles' % len(_rs))
 
     from gio import file_unzip
     with file_unzip.file_unzip() as _zip:
@@ -290,9 +292,13 @@ def save(rs, f_out, ms=None):
         with open(_f_tmp, 'w') as _f:
             _ms = ms if ms else {}
             _ms['version'] = '2.0'
+            _ms['tile_num'] = len(_rs)
 
-            _gs = {'params': _ms, 'tiles': _rs}
-            json.dump(_gs, _f)
+            _gs = {}
+            _gs['params'] = _ms
+            _gs['tiles'] = _rs
+
+            json.dump(_gs, _f, indent=1, ensure_ascii=False)
 
         _f_out.put(_f_tmp)
 

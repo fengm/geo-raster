@@ -22,7 +22,7 @@ class obj(dict):
 
 	def __str__(self):
 		_ls = []
-		for _k, _v in self._obj.items():
+		for _k, _v in list(self._obj.items()):
 			_ls.append('%15s: %s' % (_k, _v))
 		return '\n'.join(_ls)
 
@@ -33,10 +33,10 @@ class table:
 		self._name = name
 
 	def insert(self, vals):
-		_ks = vals.keys()
+		_ks = list(vals.keys())
 
 		_sql = 'INSERT INTO %s (%s) VALUES (%s)' % (self._name, ','.join(_ks), \
-				','.join(['%s' for i in xrange(len(_ks))]))
+				','.join(['%s' for i in range(len(_ks))]))
 		return self._cur.execute(_sql, [vals[_k] for _k in _ks])
 
 	def select(self, where='TRUE', vals=None):
@@ -51,7 +51,7 @@ class table:
 		_cols = [_d[0] for _d in self._cur._cur.description]
 		for _r in self._cur._cur.fetchall():
 			_obj = obj()
-			for _i in xrange(len(_cols)):
+			for _i in range(len(_cols)):
 				_obj[_cols[_i]] = _r[_i]
 
 			yield _obj
@@ -120,7 +120,7 @@ class _connect():
 		self._con.commit()
 
 def connect(host=None, database=None, user=None, password=None):
-	import config
+	from . import config
 	import logging
 
 	logging.info('create DB connection')

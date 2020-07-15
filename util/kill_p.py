@@ -24,7 +24,7 @@ def main(opts):
             continue
 
         _vs = re.split('\s+', _l)
-        print _l
+        print(_l)
 
         _cmd = 'kill -9 %s' % _vs[1]
         run_commands.run(_cmd, raise_exception=False, check=False)

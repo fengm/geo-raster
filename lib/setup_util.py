@@ -6,13 +6,28 @@ Create: 2016-12-10 14:47:36
 Description: help running setup.py
 '''
 
-def init(tag):
+def _parse_opts():
+    import sys
+    
+    _as = sys.argv
+    
+    _ps = {}
+    _pp = ['--overwrite-config']
+    for _p in _pp:
+        _ps[_p] = _p in _as
+    
+    sys.argv = [_p for _p in _as if _p not in _pp]
+    return _ps
+
+def init(tag, version=1.0, requires=[], author='Min Feng', email='mfeng.geo@gmail.com'):
     import setuptools
-    from Cython.Distutils import build_ext
+    # from Cython.Distutils import build_ext
+    from setuptools.command.build_ext import build_ext
     import os
     import numpy
 
     _package = tag
+    _opts = _parse_opts()
 
     # import sys
     # _path = lambda x: os.path.join(sys.path[0], x)
@@ -50,15 +65,14 @@ def init(tag):
         _ps.append(_package)
         _ds[_package] = 'lib'
 
-    setuptools.setup(name=_package, version='1.0', description='', \
-            author='Min Feng', author_email='mfeng.geo@gmail.com', \
-            # packages=[_package, 'gio/data/landsat'],
-            # package_dir={_package: 'lib', 'gio/data/landsat': 'lib/data/landsat'},
+    setuptools.setup(name=_package, version=version, description='', \
+            author=author, author_email=email, \
             packages=_ps,
             package_dir=_ds,
             # package_data={_package: ['etc/*']},
             # include_package_data=True,
             cmdclass = {"build_ext": build_ext},
+    		install_requires=requires,
             ext_modules=_ms,
             scripts=_ss,
             )
@@ -68,7 +82,7 @@ def init(tag):
         import shutil
 
         if 'G_INI' in os.environ and (os.environ['G_INI']):
-            print ' == copying config file =='
+            print(' == copying config file ==')
             _d_ini = os.environ['G_INI']
             if not os.path.exists(_d_ini):
                 os.makedirs(_d_ini)
@@ -78,13 +92,13 @@ def init(tag):
                     _f_inp = os.path.join(_root, _file)
                     _f_out = os.path.join(_root.replace(_path('etc'), _d_ini), _file)
 
-                    if os.path.exists(_f_out):
-                        print ' - skip existed config file', _file
+                    if not _opts['--overwrite-config'] and os.path.exists(_f_out):
+                        print(' - skip existed config file', _file)
                         continue
 
                     _d_out = os.path.dirname(_f_out)
                     os.path.exists(_d_out) or os.makedirs(_d_out)
 
-                    print ' + copy config file', _f_out
+                    print(' + copy config file', _f_out)
                     shutil.copy2(_f_inp, _f_out)
 

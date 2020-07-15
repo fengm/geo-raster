@@ -17,12 +17,28 @@ cimport cython
 @cython.boundscheck(False)
 @cython.wraparound(False)
 
+def filter_band_mmu(bnd, num=3, area=None):
+    from skimage import morphology
+    
+    _num = num
+    if area is not None:
+        _area = area
+        if bnd.proj.IsGeographic():
+            _area = _area / (120000 ** 2)
+        _num = max(_num, int(_area / (bnd.cell_size ** 2)))
+    
+    _dat = bnd.data
+    _dat = morphology.area_closing(_dat, _num)
+    _dat = morphology.area_opening(_dat, _num)
+    
+    bnd.data = _dat
+        
 def filter_band_median(bnd, s=1, it=1):
     from gio import mod_filter
     from gio import stat_band
     from gio import config
     import logging
-
+    
     _ss = stat_band.stat(bnd)
     _vs = [_v for _v in _ss.keys()]
 

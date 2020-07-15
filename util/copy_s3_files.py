@@ -33,7 +33,7 @@ def upload_file(f, b, d_out):
     _key = file_mag.get(_out)
     
     if config.getboolean('conf', 'debug'):
-        print f, _out
+        print(f, _out)
 
     if not file_mag.get(f).exists():
         logging.warning('missing file %s' % f)
@@ -71,16 +71,16 @@ def main(opts):
 
         _ps.append((_f, _b, _d_out))
         
-    for _i in xrange(min(len(_ps), 3)):
-        print '...', _ps[_i]
+    for _i in range(min(len(_ps), 3)):
+        print('...', _ps[_i])
 
     if opts.check_size:
-        print 'size', '%0.3fGb' % _s
+        print('size', '%0.3fGb' % _s)
 
     _rs = multi_task.run(upload_file, _ps, opts)
     del _rs
 
-    print 'done'
+    print('done')
 
 def usage():
     _p = environ_mag.usage(True)

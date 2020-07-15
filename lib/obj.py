@@ -26,11 +26,10 @@ Description: class defined to facility object use
 class obj(object):
 
 	def __init__(self, meta=None):
-		import collections
-		self._meta = collections.OrderedDict() if not meta else meta
+		self._meta = {} if not meta else meta
 
 	def __getitem__(self, idx):
-		import config
+		from . import config
 		if config.cfg.has_option('conf', 'debug') and config.cfg.getboolean('conf', 'debug'):
 			import sys
 			sys.stdout.write('[%s].' % idx)
@@ -41,9 +40,9 @@ class obj(object):
 		return self._meta[idx]
 
 	def __setitem__(self, idx, val):
-		import config
+		from . import config
 		if config.cfg.has_option('conf', 'debug') and config.cfg.getboolean('conf', 'debug'):
-			print '[%s] = %s' % (idx, val)
+			print('[%s] = %s' % (idx, val))
 
 		self._meta[idx] = val
 
@@ -64,7 +63,7 @@ class obj(object):
 		assert isinstance(self._meta, dict)
 
 		_ls = []
-		for _k, _v in self._meta.items():
+		for _k, _v in list(self._meta.items()):
 			if isinstance(_v, obj):
 				_ls.append('%s[%s]' % ('  ' * lev, _k))
 				_ls.extend(_v._str(lev+1))
@@ -111,9 +110,7 @@ def load(f):
 		return _obj
 
 def _to_obj_ex(v):
-	import collections
-	_ds = collections.OrderedDict()
-
+	_ds = {}
 	for _k, _v in v:
 		_ds[_k.strip()] = _v.strip if _v is str else _v
 

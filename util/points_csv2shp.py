@@ -49,7 +49,7 @@ def format_cols(cols):
 		if len(_c) > 8:
 			_c = _c[:8]
 			if _c in _cols:
-				for i in xrange(10):
+				for i in range(10):
 					_c = _c[:6] + '_' + str(i)
 					if _c not in _cols:
 						break
@@ -72,11 +72,11 @@ def csv2shapefile(f_csv, f_out, proj=None, fld_x=None, fld_y=None):
 	else:
 		_fld_y = 'lat' if 'lat' in _cols else 'y'
 
-	print 'columns'
-	for i in xrange(len(_cols)):
-		print '+', _cols[i], ':', _typs[i]
+	print('columns')
+	for i in range(len(_cols)):
+		print('+', _cols[i], ':', _typs[i])
 
-	print 'geo columns:', _fld_x, ',', _fld_y
+	print('geo columns:', _fld_x, ',', _fld_y)
 
 	_proj = proj
 	if _proj != None:
@@ -92,12 +92,12 @@ def csv2shapefile(f_csv, f_out, proj=None, fld_x=None, fld_y=None):
 		if _fld_x == 'lon' and _fld_y == 'lat':
 			_proj = proj_from_epsg(4326)
 
-	print 'proj:', _proj.ExportToProj4() if _proj else 'none'
+	print('proj:', _proj.ExportToProj4() if _proj else 'none')
 
 	from osgeo import ogr
 	import os
 
-	print 'write to\n>', f_out
+	print('write to\n>', f_out)
 	_fd_out = os.path.dirname(f_out)
 	if _fd_out:
 		os.path.exists(_fd_out) or os.makedirs(_fd_out)
@@ -108,12 +108,12 @@ def csv2shapefile(f_csv, f_out, proj=None, fld_x=None, fld_y=None):
 	_shp = _drv.CreateDataSource(f_out)
 	_lyr = _shp.CreateLayer(os.path.basename(f_out)[:-4], _proj, ogr.wkbPoint)
 
-	for i in xrange(len(_cols)):
+	for i in range(len(_cols)):
 		_lyr.CreateField(create_ogr_field(_cols[i].upper(), _typs[i]))
 
 	for _vs in _vals:
 		_feat = ogr.Feature(_lyr.GetLayerDefn())
-		for i in xrange(len(_cols)):
+		for i in range(len(_cols)):
 			_feat.SetField(_cols[i].upper(), gio.csv_util.parse_val(_typs[i], _vs[i]))
 
 		_x = float(_vs[_cols.index(_fld_x)])

@@ -213,7 +213,6 @@ def generate_shp(fs, proj, f_out, fzip, opts):
     _drv = ogr.GetDriverByName('ESRI Shapefile')
     os.path.exists(f_out) and _drv.DeleteDataSource(f_out)
     _shp = _drv.CreateDataSource(f_out)
-    
     _tag = os.path.basename(f_out)[:-4]
     _lyr = _shp.CreateLayer(_tag, _proj, ogr.wkbPolygon)
 
@@ -225,9 +224,9 @@ def generate_shp(fs, proj, f_out, fzip, opts):
     _fld.SetWidth(25)
     _lyr.CreateField(_fld)
 
-    _perc = progress_percentage(len(_pols.keys()))
-    for _f, _ps in _pols.items():
-        _perc.next()
+    _perc = progress_percentage(len(list(_pols.keys())))
+    for _f, _ps in list(_pols.items()):
+        next(_perc)
 
         for _p in _ps:
             if _p is None:
@@ -248,15 +247,15 @@ def generate_shp(fs, proj, f_out, fzip, opts):
 def generate_shp_from_list(fs, dataset, proj, f_out, absp, opts):
     _fs = fs
     if len(_fs) == 0:
-        print 'found no files'
+        print('found no files')
         return
 
-    print 'found', len(_fs), 'files in list'
-    print '--------------'
+    print('found', len(_fs), 'files in list')
+    print('--------------')
 
     for _f in _fs[: min(len(_fs), 2)]:
-        print ' >', _f
-    print '  ...'
+        print(' >', _f)
+    print('  ...')
 
     import gio.file_unzip
     with gio.file_unzip.file_unzip() as _zip:

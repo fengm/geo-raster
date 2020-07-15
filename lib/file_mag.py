@@ -36,6 +36,9 @@ class file_mag(obj_mag):
         obj_mag.__init__(self)
 
     def exists(self):
+        if not self._f:
+            return False
+            
         import os
         return os.path.exists(self._f)
 
@@ -106,15 +109,21 @@ class s3_mag(obj_mag):
         obj_mag.__init__(self)
 
     def exists(self):
-        # return self._s3.get_key(self._path) is not None
+        if not self._path:
+            return False
+            
         return self._s3.exists(self._path)
 
     def get(self):
+        if not self._path:
+            return None
+            
         _o = self._s3.get(self._path)
         if _o:
             if self._path.endswith('.shp'):
                 for _e in ['.prj', '.shx', '.dbf']:
                     self._s3.get(self._path[:-4] + _e)
+        
         return _o
     
     def _list(self, d, fs):
@@ -130,7 +139,8 @@ class s3_mag(obj_mag):
             self._list(self, _fs)
             return _fs
             
-        return [s3_mag('s3://%s/%s' % (self._bucket, _f.key), s3=self._s3) for _f in list(self._s3.list(self._path))]
+        # return [s3_mag('s3://%s/%s' % (self._bucket, _f.key), s3=self._s3) for _f in list(self._s3.bucket.list(self._path))]
+        return [s3_mag('s3://%s/%s' % (self._bucket, _f.key), s3=self._s3) for _f in self._s3.list(self._path)]
 
     def put(self, f, update=True):
         self._s3.put(self._path, f, update=update)
@@ -140,7 +150,7 @@ class s3_mag(obj_mag):
             for _e in ['.prj', '.shx', '.dbf']:
                 _f = f[:-4] + _e
                 if os.path.exists(_f):
-                    self._s3.put(self._path[:-4] + _e, _f, update=update)
+                    self._s3.put(self._path[:-4] + _e, _f)
 
     def __str__(self):
         return self._f
@@ -150,8 +160,12 @@ class s3_mag(obj_mag):
             self._s3.clean()
 
 def get(f):
-    if f.startswith('s3://'):
-        return s3_mag(f)
+    if not f:
+        return None
+        
+    _f = f.strip()
+    if _f.startswith('s3://'):
+        return s3_mag(_f)
 
-    return file_mag(f)
+    return file_mag(_f)
 

@@ -27,7 +27,7 @@ class cache_mag():
     """manage Landsat cache files"""
 
     def __init__(self, tag, cache=None, max_file=-1, max_size=-1):
-        import config
+        from . import config
 
         self._t = tag
         
@@ -51,7 +51,7 @@ class cache_mag():
         global _w_lock
         if self._t not in _w_lock:
             if config.getboolean('conf', 'enable_cache_lock', True):
-                import multi_task
+                from . import multi_task
                 _w_lock[self._t] = multi_task.create_lock()
 
     def cached(self, key):
@@ -63,7 +63,7 @@ class cache_mag():
         import re
         _k = list(re.sub('[^\w\d_]', '_', t))
 
-        for i in xrange(len(_k)):
+        for i in range(len(_k)):
             if t[i] in ['\\', '/', '.', '-']:
                 _k[i] = t[i]
 
@@ -155,13 +155,13 @@ class cache_mag():
             import os
             os.remove(f._f)
             logging.info('clean cached file %s' % f._f)
-        except Exception, err:
+        except Exception as err:
             import traceback
 
             logging.error(traceback.format_exc())
             logging.error(str(err))
 
-            print '\n\n* Error:', err
+            print('\n\n* Error:', err)
 
     def _clean(self):
         import os
@@ -271,7 +271,8 @@ class s3():
         if limit >= 0:
             return list(self.bucket.objects.filter(Prefix=k).limit(limit))
             
-        return list(self.bucket.objects.filter(Prefix=k))
+        _ls = list(self.bucket.objects.filter(Prefix=k))
+        return _ls
 
     def exists(self, k):
         if not k:
@@ -314,7 +315,7 @@ class s3():
         if k is None:
             return None
 
-        _key = k if isinstance(k, str) or isinstance(k, unicode) else k.key
+        _key = k if isinstance(k, str) or isinstance(k, str) else k.key
         _f = self._c.path(_key)
 
         if self._c.cached(_key):
@@ -328,15 +329,14 @@ class s3():
             pass
 
         import shutil
-        import file_unzip
-        from botocore.exceptions import ClientError
+        from . import file_unzip
 
-        for _i in xrange(3):
+        for _i in range(3):
             _t = file_unzip.generate_file(os.path.dirname(_f), '', '.bak')
 
             try:
                 # write an empty file to prevent other process to use the same file name
-                with open(_t, 'wb') as _fo:
+                with open(_t, 'w') as _fo:
                     _fo.write('')
 
                 _kkk = self.get_key(k)
@@ -370,14 +370,13 @@ class s3():
     def get_key(self, k):
         if not k:
             return None
-
-        import boto3
+            
         _k = self._s3.Object(self._t, k) if isinstance(k, str) or isinstance(k, unicode) else k
         
         if _k is None:
             return None
         
-        from botocore.exceptions import ClientError
+        from botocore.exceptions import ClientError        
         try:
             _k.content_length
         except ClientError:

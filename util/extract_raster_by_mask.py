@@ -19,12 +19,12 @@ def filter_noise(bnd, s):
     if False:
         logging.debug('expend pixels')
 
-        _vs = range(50)
+        _vs = list(range(50))
         _bv = 255
 
         _dat = bnd.data
         for _v in _vs:
-            for _i in xrange(3):
+            for _i in range(3):
                 _num = mod_filter.expand(_dat, \
                         _dat != bnd.nodata,\
                         _v, _bv, 2, 20)
@@ -33,7 +33,7 @@ def filter_noise(bnd, s):
                     break
 
         for _v in _vs:
-            for _i in xrange(3):
+            for _i in range(3):
                 _num = mod_filter.expand(_dat, \
                         _dat != bnd.nodata,\
                         _v, _bv, 1, 5)
@@ -42,7 +42,7 @@ def filter_noise(bnd, s):
                     break
 
     logging.debug('filter noise (dis: %s, num: %s)' % (4, 10))
-    for _i in xrange(10):
+    for _i in range(10):
         _min = 5 * s
         _num = mod_filter.clean(bnd, 4, _min)
 
@@ -50,7 +50,7 @@ def filter_noise(bnd, s):
         if _num < 30:
             break
 
-    for _i in xrange(5):
+    for _i in range(5):
         _num = mod_filter.clean(bnd, 1, s)
         logging.debug('filtered %s %s pixels' % (_i, _num))
         if _num < 20:
@@ -80,7 +80,7 @@ def main(opts):
     _bnd.data[_mak.data == _val] = _bnd.nodata
 
     if opts.exclude_noises > 0:
-        print 'exclude noises (%s)' % opts.exclude_noises
+        print('exclude noises (%s)' % opts.exclude_noises)
 
         if _bnd.pixel_type != ge.pixel_type():
             raise Exception('only exclude noises for byte type raster')
@@ -91,14 +91,9 @@ def main(opts):
 
     from gio import file_unzip
     import os
-    with file_unzip.file_unzip() as _zip:
-        _d_tmp = _zip.generate_file()
-        _f_tmp = os.path.join(_d_tmp, os.path.basename(opts.output))
-
-        os.makedirs(_d_tmp)
-        _bnd.save(_f_tmp, color_table=_clr, opts=['compress=lzw', 'tiled=yes'])
-
-        file_unzip.compress_folder(_d_tmp, os.path.dirname(os.path.abspath(opts.output)), [])
+    with file_unzip.zip() as _zip:
+        _bnd.color_table = _clr
+        _zip.save(_bnd, opts.output)
 
 def usage():
     _p = environ_mag.usage(False)

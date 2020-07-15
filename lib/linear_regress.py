@@ -83,7 +83,7 @@ def cal_sxy(xs, ys):
 	_my = sum(ys) / len(ys)
 
 	_v = 0.0
-	for i in xrange(len(xs)):
+	for i in range(len(xs)):
 		_v += (ys[i] - _my) * (xs[i] - _mx)
 
 	return _v / (len(xs) - 1)
@@ -92,7 +92,7 @@ def cal_s(vs):
 	_mx = sum(vs) / len(vs)
 
 	_v = 0.0
-	for i in xrange(len(vs)):
+	for i in range(len(vs)):
 		_v += (vs[i] - _mx) ** 2
 
 	return _v / (len(vs) - 1)
@@ -101,13 +101,13 @@ if __name__ == '__main__':
 	_xs, _ys = load_data()
 
 	_b0, _b1, _r2 = linear_regress_ols(_xs, _ys)
-	print 'y = %fx + %f, r2:%f' % (_b1, _b0, _r2)
+	print('y = %fx + %f, r2:%f' % (_b1, _b0, _r2))
 
 	_b0, _b1, _r2 = linear_regress_ols(_ys, _xs)
-	print 'y = %fx + %f, r2:%f' % (_b1, _b0, _r2)
+	print('y = %fx + %f, r2:%f' % (_b1, _b0, _r2))
 
 	_b0, _b1, _r2 = linear_regress_rma(_xs, _ys)
-	print 'y = %fx + %f, r2:%f' % (_b1, _b0, _r2)
+	print('y = %fx + %f, r2:%f' % (_b1, _b0, _r2))
 
 	_b0, _b1, _r2 = linear_regress_rma(_ys, _xs)
-	print 'y = %fx + %f, r2:%f' % (_b1, _b0, _r2)
+	print('y = %fx + %f, r2:%f' % (_b1, _b0, _r2))

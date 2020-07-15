@@ -57,7 +57,7 @@ def _env_int_val(tag, val):
     return val
 
 def init(f=None, enable_multi_processing=False):
-    import config
+    from . import config
     import os
 
     _log = logging.getLogger()
@@ -74,12 +74,12 @@ def init(f=None, enable_multi_processing=False):
 
     _debug = config.getboolean('conf', 'debug') if config.cfg else False
     if _debug:
-        print ' - debugging'
-        print ' - log file', _f
+        print(' - debugging')
+        print(' - log file', _f)
 
     _level_out = config.getint('conf', 'log_out_level', _env_int_val('LOG_OUT_LEVEL', -1))
     _level_std = config.getint('conf', 'log_std_level', _env_int_val('LOG_STD_LEVEL', -1))
-
+    
     _log.setLevel(logging.DEBUG)
 
     if len(_log.handlers) == 0:

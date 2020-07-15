@@ -9,34 +9,35 @@ Description: read CSV files
 def estimate_type(vals):
     import re
 
-    _vs = map(lambda x: x == '' or re.match('^-?[0-9]+$', x) != None, vals)
+    _vs = [x == '' or re.match('^-?[0-9]+$', x) != None for x in vals]
     if False not in _vs:
         return 'int', 4
 
-    _vs = map(lambda x: x == '' or x == 'NaN' or \
+    _vs = [x == '' or x == 'NaN' or \
             re.match('^-?\d*\.?\d+E-?\d+$', x) != None or \
-            re.match('^-?\d*\.?\d+$', x) != None, vals)
+            re.match('^-?\d*\.?\d+$', x) != None for x in vals]
     if False not in _vs:
         return 'float', 4
 
-    _vs = map(lambda x: x == '' or re.match('^-?\d*\.?\d+E-?\d+$', x) != None, vals)
+    _vs = [x == '' or re.match('^-?\d*\.?\d+E-?\d+$', x) != None for x in vals]
     if False not in _vs:
         return 'float', 4
 
-    return 'string', max(map(len, vals))
+    return 'string', max(list(map(len, vals)))
 
 def read(f, sep=','):
-    _ls = [_l for _l in file(f).read().splitlines() if _l]
+    import builtins
+    _ls = [_l for _l in builtins.open(f, 'r').read().splitlines() if _l]
 
     _cols = _ls[0].split(sep)
     _vals = [_v for _v in [_l.split(sep) for _l in _ls[1:]] if len(_v) == len(_cols)]
 
     for _l in _ls[1:]:
         if len(_l.split(',')) != len(_cols):
-            print '****', len(_l.split(',')), len(_cols), '|', _l
+            print('****', len(_l.split(',')), len(_cols), '|', _l)
 
     _typs = []
-    for i in xrange(len(_cols)):
+    for i in range(len(_cols)):
         _typs.append(estimate_type([_v[i] for _v in _vals]))
 
     return _cols, _typs, _vals
@@ -112,10 +113,11 @@ def _format_value(n):
 
 def open(f, sep=',', skip_error=False):
     import logging
+    import builtins 
 
     _cls = None
 
-    with file(f) as _fi:
+    with builtins.open(f) as _fi:
         _line = -1
         for _l in _fi.read().strip().splitlines():
             _l = _l.strip()
@@ -123,7 +125,7 @@ def open(f, sep=',', skip_error=False):
                 # skip empty lines
                 continue
 
-            _vs = map(_format_value, _l.split(sep))
+            _vs = list(map(_format_value, _l.split(sep)))
 
             if _cls == None:
                 _cls = csv_class(f, _vs, sep)

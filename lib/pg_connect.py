@@ -22,7 +22,7 @@ class obj(dict):
 
 	def __str__(self):
 		_ls = []
-		for _k, _v in self.items():
+		for _k, _v in list(self.items()):
 			_ls.append('%15s: %s' % (_k, _v))
 		return '\n'.join(_ls)
 
@@ -39,14 +39,14 @@ class table:
 		self._name = name
 
 	def insert(self, vals):
-		_ks = vals.keys()
+		_ks = list(vals.keys())
 
 		_sql = 'INSERT INTO %s (%s) VALUES (%s)' % (self._name, ','.join(_ks), \
-				','.join(['%s' for i in xrange(len(_ks))]))
+				','.join(['%s' for i in range(len(_ks))]))
 		return self._cur.execute(_sql, [vals[_k] for _k in _ks])
 
 	def update(self, vals):
-		_ks = vals.keys()
+		_ks = list(vals.keys())
 		assert 'id' in _ks
 
 		_cs = []
@@ -74,7 +74,7 @@ class table:
 		_cols = [_d[0] for _d in self._cur._cur.description]
 		for _r in self._cur._cur.fetchall():
 			_obj = obj()
-			for _i in xrange(len(_cols)):
+			for _i in range(len(_cols)):
 				_obj[_cols[_i]] = _r[_i]
 
 			yield _obj
@@ -161,8 +161,8 @@ def main(opts):
 	_obj = obj()
 
 	import pickle
-	print pickle.dumps(_obj)
-	print _obj.__dict__
+	print(pickle.dumps(_obj))
+	print(_obj.__dict__)
 
 def usage():
 	_p = environ_mag.usage(False)

@@ -264,6 +264,40 @@ def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, floa
 
             dat_out[_row, _col] = _v
 
+def read_block_float64(np.ndarray[np.float64_t, ndim=2] dat, ext, prj, geo, float nodata, int row_start, np.ndarray[np.float64_t, ndim=2] dat_out):
+    cdef int _row, _col
+    cdef float _x, _y
+    cdef int _c, _r
+
+    cdef int _rows_in = dat.shape[0]
+    cdef int _cols_in = dat.shape[1]
+
+    cdef int _rows_ot = dat_out.shape[0]
+    cdef int _cols_ot = dat_out.shape[1]
+
+    cdef float _v
+
+    cdef int _col_min = max(0, ext.minx)
+    cdef int _col_max = min(_cols_ot, ext.maxx + 1)
+    cdef int _row_min = max(0, ext.miny)
+    cdef int _row_max = min(_rows_ot, ext.maxy + 1)
+
+    for _row in xrange(_row_min, _row_max):
+        for _col in xrange(_col_min, _col_max):
+            _x, _y = prj.project(_col, _row)
+
+            _c, _r = to_cell(geo, _x, _y)
+            _r -= row_start
+
+            if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
+                continue
+
+            _v = dat[_r, _c]
+            if _v == nodata:
+                continue
+
+            dat_out[_row, _col] = _v
+
 class geo_extent:
 
     @classmethod
@@ -634,12 +668,12 @@ class geo_polygon:
                 _pt = geo_point(_p[0], _p[1], self.proj)
                 if proj is not None:
                     _pt = _pt.project_to(proj)
-                
+
                 if _pt is None:
                     continue
 
                 _ps.append(_pt)
-        
+
         return _ps
 
 class geo_point:
@@ -830,7 +864,7 @@ class projection_transform:
         cdef float _mat_11x = _mat[_row1][_col1][2]
 
         if _mat_00x >= _inf or _mat_01x >= _inf or _mat_10x >= _inf or _mat_11x >= _inf:
-            # print _inf, _mat_00x, _mat_01x, _mat_10x, _mat_11x 
+            # print _inf, _mat_00x, _mat_01x, _mat_10x, _mat_11x
             # print _mat_00x >= _inf, _mat_01x >= _inf, _mat_10x >= _inf, _mat_11x >= _inf
 
             raise Exception('exceeded the projection extent')
@@ -870,23 +904,39 @@ def proj_from_epsg(code=4326):
     _proj = osr.SpatialReference()
     _proj.ImportFromEPSG(code)
 
+    if code == 4326:
+        import osgeo
+        if int(osgeo.__version__[0]) >= 3:
+            _proj.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
+
     return _proj
 
 def output_geometries(geos, proj, geo_type, f_shp):
     from osgeo import ogr, gdal
     import os
 
-    logging.debug('output shapefile to ' + f_shp)
     _drv_type = 'ESRI Shapefile'
     if f_shp.lower().endswith('.kml'):
         _drv_type = 'KML'
+    if f_shp.lower().endswith('.geojson'):
+        _drv_type = 'GeoJSON'
+
+    logging.info('output shapefile to %s (%s)' % (f_shp, _drv_type))
 
     _drv = ogr.GetDriverByName(_drv_type)
     if os.path.exists(f_shp):
         _drv.DeleteDataSource(f_shp)
 
     _shp = _drv.CreateDataSource(f_shp)
-    _lyr = _shp.CreateLayer(f_shp[:-4], proj, geo_type)
+    if _shp is None:
+        logging.error('failed to create file %s' % f_shp)
+        return
+
+    _tag = os.path.splitext(os.path.basename(f_shp))[0]
+    _lyr = _shp.CreateLayer(_tag, proj, geo_type)
+    if _shp is None:
+        logging.error('failed to create create %s' % _tag)
+        return
 
     for _geo in geos:
         _fea = ogr.Feature(_lyr.GetLayerDefn())
@@ -908,3 +958,23 @@ def output_polygons(polys, f_shp):
     logging.debug('output polygon to ' + f_shp)
     output_geometries([_poly.poly for _poly in polys], polys[0].proj, ogr.wkbPolygon, f_shp)
 
+def load_shp(f, ext=None, layer_name=None):
+    from osgeo import ogr
+
+    _shp = ogr.Open(f)
+    _lyr = _shp.GetLayer(layer_name) if layer_name else _shp.GetLayer()
+
+    if ext:
+        _lyr.SetSpatialFilter(ext.project_to(_lyr.GetSpatialRef()).poly)
+
+    from gio import geo_base as gb
+    for _r in _lyr:
+        _g = _r.geometry()
+        if _g is None:
+            continue
+
+        _p = gb.geo_polygon(_g.Clone())
+        _s = _r.items()
+        yield _p, _s
+
+    del _lyr, _shp

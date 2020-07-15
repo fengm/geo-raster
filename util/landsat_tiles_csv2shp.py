@@ -56,11 +56,10 @@ def csv2shapefile(f_csv, f_out, col, f_landsat):
 	_tiles, _landsat_schema, _landsat_proj, _landsat_geom = load_landsat_tile(f_landsat)
 	_cols, _typs, _vals = gio.csv_util.read(f_csv)
 
-	print 'columns'
-	for i in xrange(len(_cols)):
-		print '+', _cols[i], ':', _typs[i]
+	print('columns')
+	for i in range(len(_cols)):
+		print('+', _cols[i], ':', _typs[i])
 
-	print 'write to\n>', f_out
 	_fd_out = os.path.dirname(f_out)
 	if _fd_out:
 		os.path.exists(_fd_out) or os.makedirs(_fd_out)
@@ -71,15 +70,15 @@ def csv2shapefile(f_csv, f_out, col, f_landsat):
 	_shp = _drv.CreateDataSource(f_out)
 	_lyr = _shp.CreateLayer(os.path.basename(f_out)[:-4], _landsat_proj, _landsat_geom)
 
-	for i in xrange(len(_landsat_schema)):
+	for i in range(len(_landsat_schema)):
 		_lyr.CreateField(_landsat_schema[i])
 
-	for i in xrange(len(_cols)):
+	for i in range(len(_cols)):
 		_lyr.CreateField(create_ogr_field(_cols[i].upper(), _typs[i]))
 
 	for _vs in _vals:
 		_feat = ogr.Feature(_lyr.GetLayerDefn())
-		for i in xrange(len(_cols)):
+		for i in range(len(_cols)):
 			_feat.SetField(_cols[i].upper(), gio.csv_util.parse_val(_typs[i], _vs[i]))
 
 		_tile = _vs[_cols.index(col)]
@@ -87,7 +86,7 @@ def csv2shapefile(f_csv, f_out, col, f_landsat):
 			logging.warning('tile %s not found' % _tile)
 			continue
 		_temp = _tiles[_tile]
-		for i in xrange(len(_landsat_schema)):
+		for i in range(len(_landsat_schema)):
 			_field = _landsat_schema[i]
 			_feat.SetField(_field.name, _temp.items()[_landsat_schema[i].name])
 		_feat.SetGeometry(_temp.geometry())
@@ -127,6 +126,7 @@ def main(opts):
 		if not _d_ttt:
 			_d_ttt = os.path.dirname(os.path.abspath(f_out))
 			
+		print('write to\n>', f_out)
 		file_unzip.compress_folder(_d_out, _d_ttt, [])
 
 def usage():

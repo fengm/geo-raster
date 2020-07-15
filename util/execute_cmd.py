@@ -11,6 +11,7 @@ Description:
 
 def main(opts):
 	from gio import run_commands
+	from gio import config
 	import datetime
 	import time
 	import sys
@@ -23,19 +24,24 @@ def main(opts):
 		if _n > 0 and (_c - _d).total_seconds() < opts.second:
 			time.sleep(opts.second / 100)
 
-			print '.',
+			print('.', end=' ')
 			sys.stdout.flush()
 			continue
 
 		if _n > 0:
-			print ''
+			print('')
 
 		_d = _c
 		_n += 1
-		print 'run command', _n, _d
+		print('run command', _n, _d)
 
 		_rs = run_commands.run(opts.command)
-		print _rs[1]
+		print(_rs[1])
+
+		_m = config.getint('conf', 'max_run', -1)
+		if _m > 0:
+			if _n >= _m:
+				break
 
 		if opts.second <= 0:
 			break
@@ -44,6 +50,7 @@ def usage():
 	_p = environ_mag.usage(False)
 
 	_p.add_argument('-c', '--command', dest='command', required=True)
+	_p.add_argument('-n', '--max-run', dest='max_run', type=int)
 	_p.add_argument('-s', '--second', dest='second', required=True, type=int)
 
 	return _p

@@ -178,7 +178,7 @@ class geo_raster_info:
         return self.from_grid(_dat, update_type, _nodata)
 
     def from_grid(self, grid, update_type=True, nodata=None):
-        if not (self.height == grid.shape[0] and self.width == grid.shape[1]):
+        if not (self.height == grid.shape[-2] and self.width == grid.shape[-1]):
             raise Exception('grid size does not match')
 
         _nodata = nodata
@@ -240,18 +240,18 @@ class geo_band_info(geo_raster_info):
         _cell = _geo[1]
 
         _s_x = _geo[0]
-        if _s_x > ext.minx:
-            _s_x -= (int((_s_x - ext.minx) / _cell) + 10)  * _cell
+        # if _s_x > ext.minx:
+        #    _s_x -= (int((_s_x - ext.minx) / _cell) + 10)  * _cell
 
         _s_y = _geo[3]
-        if _s_y < ext.maxy:
-            _s_y += (int((ext.maxy - _s_y) / _cell) + 10)  * _cell
+        # if _s_y < ext.maxy:
+        #    _s_y += (int((ext.maxy - _s_y) / _cell) + 10)  * _cell
 
         _min_x = align_min(ext.minx, _s_x, _cell)
         _max_x = align_max(ext.maxx, _s_x, _cell)
 
-        _min_y = align_max(ext.miny, _s_y, _cell)
-        _max_y = align_min(ext.maxy, _s_y, _cell)
+        _min_y = align_min(ext.miny, _s_y, _cell)
+        _max_y = align_max(ext.maxy, _s_y, _cell)
 
         if clip:
             _ref_min_x = _geo[0]
@@ -434,8 +434,8 @@ class geo_band_cache(geo_band_info):
             _off_y2 = int((ext.maxy - _ext.maxy) / _cell)
 
         import math
-        _w = int(math.ceil((_ext.width() / _cell)))
-        _h = int(math.ceil((_ext.height() / _cell)))
+        _w = min(_cols, int(math.ceil((_ext.width() / _cell))))
+        _h = min(_rows, int(math.ceil((_ext.height() / _cell))))
 
         _dat[_off_y2: _off_y2 + _h, _off_x2: _off_x2 + _w] = \
                 self.data[_off_y1: _off_y1 + _h, _off_x1: _off_x1 + _w]
@@ -495,6 +495,8 @@ class geo_band_cache(geo_band_info):
 
         _row_s_s = 0
         _dat = _bnd.data
+        if _dat is None:
+            return None
 
         _col_t_s, _row_t_s = to_cell(tuple(bnd.geo_transform),
                 _ext_t.minx, _ext_t.maxy)
@@ -527,13 +529,100 @@ class geo_band_cache(geo_band_info):
         elif self.pixel_type == 6:
             geo_base.read_block_float32(_dat, _ext_t_cs, _prj,
                     _bnd.geo_transform, _nodata, _row_s_s, _dat_out)
+        elif self.pixel_type == 7:
+            geo_base.read_block_float64(_dat, _ext_t_cs, _prj,
+                    _bnd.geo_transform, _nodata, _row_s_s, _dat_out)
         else:
             raise Exception('The pixel type is not supported ' + \
                     str(self.pixel_type))
 
         return geo_band_cache(_dat_out, bnd.geo_transform, bnd.proj,
                 _nodata, self.pixel_type, self.color_table)
-
+    
+    def mask(self, f):
+        from . import file_unzip
+        with file_unzip.zip() as _zip:
+            _f_out = _zip.generate_file('', '.tif')
+            
+            import numpy as np
+            
+            bnd = self
+            
+            _dat = np.zeros((bnd.height, bnd.width), dtype=np.uint8)
+            _bnd = bnd.from_grid(_dat)
+            _bnd.pixel_type = pixel_type()
+            _bnd.save(_f_out)
+            
+            from osgeo import ogr
+            from . import run_commands
+            from . import file_mag
+        
+            _f_inp = file_mag.get(f).get()
+            _f_shp = _f_inp
+        
+            _shp = ogr.Open(_f_inp)
+            _lyr = _shp.GetLayer()
+        
+            if not _lyr.GetSpatialRef().IsSame(_bnd.proj):
+                _f_shp = _zip.generate_file('', '.shp')
+        
+                _cmd = 'ogr2ogr -t_srs "%s" %s %s' % (_bnd.proj.ExportToProj4(), _f_shp, _f_inp)
+                run_commands.run(_cmd)
+        
+            _cmd = 'gdal_rasterize -at -burn 1 %s %s' % (_f_shp, _f_out)
+            run_commands.run(_cmd)
+            
+            _bbb = geo_raster.open(_f_out).get_band().cache()
+            bnd.data[_bbb.data != 1] = bnd.nodata
+            
+    def colorize_byte(self, f=None, interpolate=False):
+        cdef np.ndarray[np.uint8_t, ndim=2] _dat = np.empty((self.height, self.width), dtype=np.uint8)
+        _dat.fill(255)
+        
+        from gio import color_table
+        _ms = color_table.color_mapping(color_table.color_table(self.color_table if f is None else f), interpolate=interpolate)
+        _ks = sorted(_ms._values.keys())
+        
+        _idx = self.data != (self.nodata if self.nodata is not None else -9999)
+        for _k in _ks:
+            _i = _idx & (self.data >= _k)
+            _dat[_i] = _ms.get_code(_k)
+            _idx = _i
+            
+        _out = self.from_grid(_dat, nodata=255)
+        _out.color_table = _ms._colors.ogr_color_table()
+        
+        return _out
+        
+    def colorize_rgba(self, f=None, interpolate=False):
+        _dat = np.empty((4, self.height, self.width), dtype=np.uint8)
+        _dat.fill(0)
+        
+        from gio import color_table
+        _ms = color_table.color_mapping(color_table.color_table(self.color_table if f is None else f), interpolate=interpolate)
+        _ks = sorted(_ms._values.keys())
+        
+        _idx = self.data != (self.nodata if self.nodata is not None else -9999)
+        for _k in _ks:
+            _c = _ms.get_color(_k)
+            
+            _i = _idx & (self.data >= _k)
+            for _b in range(4):
+                _dat[_b, :, :][_i] = _c[_b]
+                
+            _idx = _i
+            
+        _out = self.from_grid(_dat)
+        return _out
+        
+    def to_image(self):
+        if len(self.data.shape) != 3:
+            raise Exception('only support 3 dementions array')
+            
+        from PIL import Image
+        _dat = np.transpose(self.data, [1, 2, 0])
+        return Image.fromarray(_dat, 'RGBA')
+        
 class geo_band(geo_band_info):
     '''A raster band'''
 
@@ -909,6 +998,9 @@ class geo_band(geo_band_info):
         elif self.pixel_type == 6:
             geo_base.read_block_float32(_dat, _ext_t_cs, _prj,
                     _bnd.geo_transform, _nodata, _row_s_s, _dat_out)
+        elif self.pixel_type == 7:
+            geo_base.read_block_float64(_dat, _ext_t_cs, _prj,
+                    _bnd.geo_transform, _nodata, _row_s_s, _dat_out)
         else:
             raise Exception('The pixel type is not supported ' + \
                     str(self.pixel_type))
@@ -982,6 +1074,10 @@ class geo_raster(geo_raster_info):
 
     @staticmethod
     def open(f, update=False, check_exist=True):
+        if not f:
+            logging.warning('requested for empty path')
+            return None
+            
         import re
 
         _f = f
@@ -989,7 +1085,8 @@ class geo_raster(geo_raster_info):
         if _f.startswith('s3://'):
             _s3, _f = geo_raster._load_s3_file(_f)
             if _f is None:
-                raise Exception('failed to load the file %s' % _f)
+                logging.warning('invalid file name provided (%s)' % _f)
+                return None
 
         import os
 
@@ -1002,7 +1099,6 @@ class geo_raster(geo_raster_info):
             _img = gdal.Open(_f)
 
         if _img is None:
-            logging.error('failed to load file %s (%s)' % (f, _f))
             raise Exception('failed to load file ' + f)
 
         return geo_raster(f, _img)
@@ -1064,7 +1160,7 @@ class geo_raster(geo_raster_info):
 
     def get_band(self, band_num=1, cache=False):
         if not (1 <= band_num <= self.band_num):
-            raise Exception('band index is not availible (bands %d)' % self.band_num)
+            raise Exception('band index is not availible (bands %d/%d)' % (band_num, self.band_num))
 
         _bnd = geo_band(self, self.raster.GetRasterBand(band_num))
         if cache:
@@ -1074,6 +1170,7 @@ class geo_raster(geo_raster_info):
     def save(self, fou, opts=[]):
         if fou.lower().endswith('.img'):
             driver = 'HFA'
+            
 
         _bnd = self.get_band(1)
         _driver = gdal.GetDriverByName(driver)
@@ -1188,12 +1285,21 @@ def map_colortable(cs):
 
 def load_colortable(f):
     import sys
+    import builtins
 
+    _header = True
     _colors = {}
-    for _l in sys.modules['__builtin__'].open(f).read().splitlines():
+
+    for _l in builtins.open(f).read().splitlines():
         _l = _l.strip()
         if not _l:
             continue
+
+        if _header:
+            if _l.startswith('# QGIS'):
+                from . import color_table
+                return color_table.load(f)
+            _header = False
 
         _vs = re.split('\s+', _l, maxsplit=1)
         if len(_vs) != 2:

@@ -18,7 +18,7 @@ def output_shp(f_inp, b, d_out, f_out, ext):
     _yyy = _inp.GetLayer()
 
     if ext:
-        print 'extent file', ext
+        print('extent file', ext)
         
         from gio import geo_raster as ge
         if isinstance(ext, ge.geo_raster_info):
@@ -32,8 +32,8 @@ def output_shp(f_inp, b, d_out, f_out, ext):
     os.path.exists(f_out) and _drv.DeleteDataSource(f_out)
 
     _shp = _drv.CreateDataSource(f_out)
-    _lyr = _shp.CreateLayer(filter(lambda x: x[:-4] if x.lower().endswith('.shp') else x, \
-            os.path.basename(f_out)[:-4]), _yyy.GetSpatialRef(), ogr.wkbPolygon)
+    _nam = os.path.basename(f_out)
+    _lyr = _shp.CreateLayer(os.path.basename(_nam)[:-4] if _nam.lower().endswith('.shp') else _nam, _yyy.GetSpatialRef(), ogr.wkbPolygon)
 
     _fld = ogr.FieldDefn('FILE', ogr.OFTString)
     _fld.SetWidth(254)
@@ -110,9 +110,8 @@ def upload_file(f, b, d_out):
 def load_exts(f):
     from osgeo import ogr
     from gio import geo_base as gb
-    from gio import file_mag
 
-    _inp = ogr.Open(file_mag.get(f).get())
+    _inp = ogr.Open(f)
     _yyy = _inp.GetLayer()
     
     for _r in _yyy:
@@ -126,13 +125,13 @@ def load_list(f, b, d_out, ext):
     from gio import file_mag
 
     _f = file_mag.get(f).get()
-    print 'loading', _f
+    print('loading', _f)
     
     _inp = ogr.Open(_f)
     _yyy = _inp.GetLayer()
     
     if ext:
-        print 'extent file', ext
+        print('extent file', ext)
         
         from gio import geo_raster as ge
         if isinstance(ext, ge.geo_raster_info):
@@ -149,8 +148,8 @@ def load_list(f, b, d_out, ext):
         # print _f, '|', _o
 
         # _ls.append((_f, _o))
-        if not file_mag.get(_f).exists():
-            _f = None
+        # if not file_mag.get(_f).exists():
+        #     _f = None
             
         _ls.append((_f, b, d_out))
 
@@ -163,7 +162,7 @@ def main(opts):
     _ps = []
     _s = 0.0
     for _f, _b, _d_out in multi_task.load(load_list(opts.input, opts.base_path, \
-            (opts.output + '/data'), opts.extent), opts):
+            (opts.output + ('data' if opts.output.endswith('/') else '/data')), opts.extent), opts):
 
         if not _f:
             continue
@@ -177,10 +176,10 @@ def main(opts):
 
         _ps.append((_f, _b, _d_out))
         
-    for _i in xrange(min(len(_ps), 3)):
-        print '...', _ps[_i]
+    for _i in range(min(len(_ps), 3)):
+        print('...', _ps[_i])
 
-    print 'size', '%0.3fGb' % _s
+    print('size', '%0.3fGb' % _s)
     _rs = multi_task.run(upload_file, _ps, opts)
     del _rs
 
@@ -192,7 +191,7 @@ def main(opts):
         output_shp(opts.input, opts.base_path, opts.output + '/data', os.path.join(_d_tmp, 'list.shp'), opts.extent)
         file_unzip.compress_folder(_d_tmp, opts.output, [])
 
-    print 'done'
+    print('done')
 
 def usage():
     _p = environ_mag.usage(True)

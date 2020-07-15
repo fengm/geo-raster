@@ -244,7 +244,7 @@ def find_tiles(geom):
     '''return tiles at the given geometry'''
 
     from osgeo import ogr
-    import config
+    from . import config
 
     _f_shp = config.get('conf', 'wrs')
     _shp = ogr.Open(_f_shp)
@@ -273,7 +273,7 @@ def find_tiles(geom):
 
 def main():
     _f = '/export/data/bessie1/fengm/prog/vct/test1/w2p048r022_2002192LLE_sr'
-    print parse(_f)
+    print(parse(_f))
 
 def _init_env():
     import os, sys

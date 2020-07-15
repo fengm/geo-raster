@@ -15,9 +15,9 @@ def filter_noise(bnd, s):
     import logging
 
     _ss = stat_band.stat(bnd)
-    _vs = [_v for _v in _ss.keys() if _v != bnd.nodata]
+    _vs = [_v for _v in list(_ss.keys()) if _v != bnd.nodata]
 
-    print 'values:', sorted(_vs)
+    print('values:', sorted(_vs))
 
     if len(_vs) <= 0:
         return
@@ -32,7 +32,7 @@ def filter_noise(bnd, s):
         _dat = bnd.data
 
         for _v in _vs:
-            for _i in xrange(3):
+            for _i in range(3):
                 _num = mod_filter.expand(_dat, \
                         _dat != bnd.nodata,\
                         _v, _bv, 2, 20)
@@ -41,7 +41,7 @@ def filter_noise(bnd, s):
                     break
 
         for _v in _vs:
-            for _i in xrange(3):
+            for _i in range(3):
                 _num = mod_filter.expand(_dat, \
                         _dat != bnd.nodata,\
                         _v, _bv, 1, 5)
@@ -50,7 +50,7 @@ def filter_noise(bnd, s):
                     break
 
     logging.debug('filter noise (dis: %s, num: %s)' % (4, 10))
-    for _i in xrange(5):
+    for _i in range(5):
         _min = 5 * s
         _num = mod_filter.clean(bnd, 4, _min)
 
@@ -58,7 +58,7 @@ def filter_noise(bnd, s):
         if _num < 30:
             break
 
-    for _i in xrange(5):
+    for _i in range(5):
         _num = mod_filter.clean(bnd, 1, s)
         logging.debug('filtered %s %s pixels' % (_i, _num))
         if _num < 20:
@@ -76,7 +76,7 @@ def main(opts):
     if opts.exclude_noises < 0:
         raise Exception('wrong parameter')
 
-    print 'exclude noises (%s)' % opts.exclude_noises
+    print('exclude noises (%s)' % opts.exclude_noises)
     if _bnd.pixel_type != ge.pixel_type():
         raise Exception('only exclude noises for byte type raster')
 

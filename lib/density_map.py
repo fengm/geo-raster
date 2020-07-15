@@ -7,10 +7,10 @@ Description: draw density plot for the data
 '''
 
 import logging
-import landsat
+from . import landsat
 
 def compare_color(c1, c2):
-	return all([c1[_k] == c2[_k] for _k in xrange(3)])
+	return all([c1[_k] == c2[_k] for _k in range(3)])
 
 def crop_image(f):
 	import Image
@@ -195,7 +195,7 @@ def save(fig, out, dpi=150):
 def draw_bands(fig, vals, density=True, is_log=True, vmin=None, vmax=None, bins=400):
 	_pos = 0
 	for _band in landsat.band_vals:
-		print 'band', _band, len(vals[_band][0])
+		print('band', _band, len(vals[_band][0]))
 		_vx = vals[_band][0]
 		_vy = vals[_band][1]
 
@@ -205,7 +205,7 @@ def draw_bands(fig, vals, density=True, is_log=True, vmin=None, vmax=None, bins=
 def draw_bands_simple(fig, vals, vmin=None, vmax=None):
 	_pos = 0
 	for _band in landsat.band_vals:
-		print 'band', _band, len(vals[_band][0])
+		print('band', _band, len(vals[_band][0]))
 		_vx = vals[_band][0]
 		_vy = vals[_band][1]
 

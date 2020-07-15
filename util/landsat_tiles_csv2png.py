@@ -79,7 +79,7 @@ def estimate_levels(ts, num):
 
 	_d = len(_vs) * 1.0 / num
 	_ls = []
-	for i in xrange(num):
+	for i in range(num):
 		_p = _vs[int(_d * i)]
 		if len(_ls) > 0 and _p <= _ls[-1]:
 			continue
@@ -87,7 +87,7 @@ def estimate_levels(ts, num):
 		_ls.append(_p)
 	_ls.append(_vs[-1])
 
-	print 'estimated levels:', _ls
+	print('estimated levels:', _ls)
 
 	return _ls
 
@@ -109,7 +109,7 @@ def draw(f_shp, title, ts, show_val, levels, colors, f_out):
 
 	_levels = levels
 	if _levels == None and not show_val:
-		_levels = estimate_levels(ts.values(), 5)
+		_levels = estimate_levels(list(ts.values()), 5)
 
 	from matplotlib.patches import Polygon
 	_map.readshapefile(f_shp[:-4], 'data_wrs', drawbounds=False, antialiased=True)
@@ -126,7 +126,7 @@ def draw(f_shp, title, ts, show_val, levels, colors, f_out):
 		else:
 			if _color == None:
 				_color = matplotlib.cm.ScalarMappable(matplotlib.colors.BoundaryNorm(_levels, len(_levels)), cmap_discretize(matplotlib.cm.get_cmap(colors), len(_levels)))
-				_color.set_array(range(256))
+				_color.set_array(list(range(256)))
 			_plt.add_patch(Polygon(xy, facecolor=_color.to_rgba([_vale])[0], alpha=1.0, linewidth=0.2))
 
 	if _color:

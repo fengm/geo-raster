@@ -8,28 +8,11 @@ Description:
 
 import logging
 
-def to_dist(vs):
-    _w = float(sum([_v['dist'] for _v in vs]))
-
-    _ps = []
-    _cs = []
-
-    for _v in vs:
-        _w1 = (1.0 - _v['dist'] / _w)
-
-        _ps.append(_w1 * _v['pos'])
-        _cs.append([_w1 * _c for _c in _v['color']])
-
-    _p = int(sum(_ps))
-    _c = [int(sum([_c[_i] for _c in _cs])) for _i in xrange(4)]
-
-    return _p, _c
-
 def map_colortable(cs):
     from osgeo import gdal
 
     _color_tables = gdal.ColorTable()
-    for i in xrange(256):
+    for i in range(256):
         if i in cs:
             _color_tables.SetColorEntry(i, tuple(cs[i] if len(cs[i]) >= 4 else (list(cs[i]) + [255])))
 
@@ -39,16 +22,31 @@ def map_colortable(cs):
 class color_table:
 
     def __init__(self, ccs):
-        _rs = ccs if isinstance(ccs, dict) else self._load_color_file(ccs)
-        _vs = sorted(_rs.keys())
-        _cs = [map(int, list(_rs[_v]) + ([] if len(_rs[_v]) > 3 else [255])) for _v in _vs]
-
-        self._vs = _vs
-        self._rs = _rs
-        self._cs = _cs
-
-        self._color_table()
+        _rs = self._load(ccs)
         
+        for _r, _v in _rs.items():
+            if len(_v) == 3:
+                _rs[_r] = list(_v) + [255]
+                
+        self._colors = _rs
+    
+    def _load(self, ccs):
+        if isinstance(ccs, dict):
+            return ccs
+            
+        if isinstance(ccs, str):
+            return self._load_color_file(ccs)
+            
+        from osgeo import gdal
+        if isinstance(ccs, gdal.ColorTable):
+            _cs = {}
+            for _c in range(ccs.GetCount()):
+                _cs[_c] = ccs.GetColorEntry(_c)
+                
+            return _cs
+            
+        raise Exception('failed to parse the colortable %s' % ccs)
+            
     def _load_qgis_colors(self, ls):
         _ls = ls[2:]
     
@@ -61,7 +59,7 @@ class color_table:
                 continue
     
             _cc = tuple(map(int, _vv[1:5]))
-            _cs[_n] = _cc
+            _cs[float(_vv[0])] = _cc
     
             _n += 1
     
@@ -72,13 +70,14 @@ class color_table:
 
     def _load_color_file(self, f):
         import re
+        from gio import file_mag
 
         _colors = {}
-        with open(f) as _fi:
+        with open(file_mag.get(f).get()) as _fi:
             _ls = _fi.read().strip().splitlines()
             if len(_ls) == 0:
                 raise Exception('color table is empty')
-                
+
             if f.endswith('.csv') or 'QGIS' in _ls[0]:
                 return self._load_qgis_colors(_ls)
                 
@@ -109,119 +108,141 @@ class color_table:
 
         return tuple(_c)
 
-    def _color_table(self):
-        _vs = self._vs
-        _div = int(250 * 3.0 / len(_vs))
+    def write(self, f):
+        _ls = []
+        
+        _cs = self._colors
+        for _v in sorted(_cs.keys()):
+            _ls.append('%s\t%s' % (_v, ','.join(map(str, _cs[_v]))))
+        
+        from gio import file_unzip
+        with file_unzip.zip() as _zip:
+            _zip.save('\n'.join(_ls), f)
+            
+    def colors(self):
+        return self._colors
 
+    def ogr_color_table(self):
+        return map_colortable(self._colors)
+        
+class color_mapping:
+    
+    def __init__(self, cls, interpolate=False, clip=False, color_num=255):
+        self._inp_colors = cls
+        self._clip = clip
+        self._color_num = color_num
+        
+        self._gen_color_table(self._inp_colors.colors(), interpolate)
+    
+    def _gen_color_table(self, rs, interpolate):
+        import math
+        
+        _vs = list(sorted(rs.keys()))
+        # _cs = [rs[_v] for _v in _vs]
+        
         _colors = {}
         _values = {}
 
-        _vs.append(_vs[-1])
-        for i in xrange(len(_vs) - 1):
-            _a = _vs[i]
-            _d = (_vs[i+1] - _vs[i]) / float(_div)
-
-            for _n in xrange(_div):
-                _v, _c = self._interpolate(_a)
-
-                if _v not in _colors:
-                    _values[_a] = _v
-                    _colors[_v] = _c
-
-                _a += _d
-
+        _num = self._color_num
+        if not interpolate or len(_vs) >= _num or len(_vs) < 2:
+            for _r in _vs:
+                _values[_r] = _r
+                _colors[_r] = rs[_r]
+                
+        else:
+            _div = float(_num - 1) / (len(_vs) - 1)
+            _pos = 0
+            
+            for i in range(len(_vs) - 1):
+                _z = (_vs[i+1] - _vs[i])
+                if _z <= 0:
+                    continue
+                
+                _u = math.ceil(_div)
+                _d = _z / _u
+                _a = _vs[i]
+                
+                for _n in range(int(_u)):
+                    # _v, _c = self._interpolate(_vs, _cs, _a, _num, _div)
+                    _v, _c = self._interpolate_s(_vs[i], _vs[i+1], rs, _a, _pos)
+                    
+                    if _v > 0:
+                        _values[round(_a, 7)] = _pos
+                        _colors[_pos] = _c
+                        
+                        _pos = _v + _pos
+    
+                    _a += _d
+                    
+            _values[round(_a, 7)] = _pos
+            _colors[_pos] = rs[_vs[-1]]
+            
+            _colors[255] = [0, 0, 0, 0]
+            
         self._values = _values
-        self._colors = _colors
+        self._colors = color_table(_colors)
 
         self._v_min = min(self._values.keys())
         self._v_max = max(self._values.keys())
 
-        if self._v_min < 0 or self._v_max >= 250:
-            raise Exception('only accept value range between 0 and 250')
-            
-    def _to_byte_colors(self, clip=False):
-        import math
+    def _to_dist_s(self, vs):
+        _w = float(sum([_v['dist'] for _v in vs]))
         
-        _cs = {}
-        for _c in xrange(int(self._v_min), int(math.ceil(self._v_max)) + 1):
-            _cs[_c] = self.get_color(_c, clip)
-            
-        return _cs
-            
-    def write_file(self, f, clip=False):
-        _ls = []
+        _cs = []
+        for _v in vs:
+            _w1 = (1.0 - _v['dist'] / _w)
+            _cs.append([_w1 * _c for _c in _v['color']])
         
-        _cs = self._to_byte_colors(clip)
-        for _v in sorted(_cs.keys()):
-            _ls.append('%s\t%s' % (_v, ','.join(map(str, _cs[_v]))))
+        _c = [int(sum([_c[_i] for _c in _cs])) for _i in range(4)]
+        return _c
 
-        with open(f, 'w') as _fo:
-            _fo.write('\n'.join(_ls))
+    def _interpolate_s(self, v_min, v_max, cs, v, n):
+        if v >= v_max:
+            print(v, v_max)
+            raise Exception('higher than the upper range')
+        
+        if v <= v_min:
+            return 1, cs[v_min]
+            
+        _vv = []
+        _ds = abs(v - v_min)
+        if _ds < 0.00000000001:
+            return 1, cs[v_min]
 
-    def ogr_color_table(self, clip=False):
-        return map_colortable(self._to_byte_colors(clip))
+        _vv.append({'color': cs[v_min], 'dist': float(_ds)})
+        _vv.append({'color': cs[v_max], 'dist': float(abs(v - v_max))})
 
-    def get_code(self, v, clip=False):
-        if v >= 255:
-            return 255
+        return 1, self._to_dist_s(_vv)
 
+    def get_code(self, v):
         if v < self._v_min:
-            if clip:
+            if self._clip:
                 return 255
             return self._values[self._v_min]
+            
         if v > self._v_max:
-            if clip:
+            if self._clip:
                 return 255
             return self._values[self._v_max]
 
         _vs = []
-        for _v in self._values.keys():
+        for _v in list(self._values.keys()):
             if _v == v:
                 return self._values[_v]
 
             _vs.append({'d': abs(_v - v), 'c': self._values[_v]})
 
-        _cc = sorted(_vs, cmp=lambda x1, x2: cmp(x1['d'], x2['d']))[0]['c']
+        _cc = sorted(_vs, key=lambda x: x['d'])[0]['c']
         return _cc
 
-    def get_color(self, v, clip=False):
-        _c = self.get_code(v, clip)
+    def get_color(self, v):
+        _c = self.get_code(v)
 
-        if _c >= 255 or _c not in self._colors:
+        if _c >= 255 or _c not in self._colors._colors:
             return [0, 0, 0, 0]
 
-        return self._colors[_c]
-
-    def _interpolate(self, v):
-        _vs = self._vs
-        _cs = self._cs
-
-        _v = max(min(_vs), min(v, max(_vs) - 0.000000000001))
-        _dv = float(250) / (len(_vs) - 1)
-
-        _pp = 0.0
-
-        for _i in xrange(len(_vs) - 1):
-            _ds = abs(_v - _vs[_i])
-            _ps = int(_pp)
-
-            if _ds == 0:
-                return _ps, _cs[_i]
-
-            if _vs[_i] < _v < _vs[_i+1]:
-                _vv = []
-
-                _vv.append({'idx': _i, 'pos': _ps, 'value': _vs[_i], 'color': _cs[_i], 'dist': float(_ds)})
-
-                _ds = abs(_v - _vs[_i + 1])
-                _ps = int(_pp + _dv)
-                _vv.append({'idx': _i+1, 'pos': _ps, 'value': _vs[_i+1], 'color': _cs[_i+1], 'dist': float(_ds)})
-
-                return to_dist(_vv)
-            else:
-                _pp += _dv
-
-        raise Exception('failed to find value %s' % v)
-
+        return self._colors._colors[_c]
+    
 def load(f):
     return color_table(f).ogr_color_table()
+    

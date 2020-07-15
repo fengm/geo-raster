@@ -35,13 +35,13 @@ def output_tiles(f_in, f_out, col, duplicate):
 			_ts[_tile][1] += 1
 			_ts[_tile][2].append(_file)
 
-	_tt = _ts.keys()
+	_tt = list(_ts.keys())
 	_tt.sort()
 
-	print 'found', _nu, 'lines'
-	print 'exported', len(_tt), 'tiles'
+	print('found', _nu, 'lines')
+	print('exported', len(_tt), 'tiles')
 	if not duplicate:
-		print ' * combine duplicated records'
+		print(' * combine duplicated records')
 
 	_cols = ['tile', 'num', col]
 	_ls = [','.join(_cols)]
@@ -57,8 +57,8 @@ def output_tiles(f_in, f_out, col, duplicate):
 		_fo.write('\n'.join(_ls))
 
 def retrieve_landsat_tiles(f_in, f_out, col, exclude):
-	print 'column:', col
-	print 'output:', f_out
+	print('column:', col)
+	print('output:', f_out)
 	
 	from gio import file_mag
 	from gio import file_unzip

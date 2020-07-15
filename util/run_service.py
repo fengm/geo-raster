@@ -37,19 +37,19 @@ def main(opts):
     while True:
         _nu += 1
 
-        print 'run command #%d' % _nu, datetime.datetime.now()
+        print('run command #%d' % _nu, datetime.datetime.now())
         try:
             run_commands.run(opts.command, shell=True)
         except KeyboardInterrupt:
-            print '\n\n* User stopped the program'
+            print('\n\n* User stopped the program')
         except Exception:
-            print 'failed with the command'
+            print('failed with the command')
 
         if opts.kill:
-            print 'clean command'
+            print('clean command')
             kill_p(opts.command)
 
-        print 'waiting for restart %ss' % opts.time
+        print('waiting for restart %ss' % opts.time)
         time.sleep(opts.time)
 
 def usage():

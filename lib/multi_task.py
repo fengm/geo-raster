@@ -6,7 +6,7 @@ Create: 2013-04-03 15:54:01
 Description: processing with multiple instances
 '''
 import multiprocessing
-import Queue, signal
+import queue, signal
 import logging
 
 def _default_task_pos():
@@ -15,8 +15,35 @@ def _default_task_pos():
     _c = 'AWS_BATCH_JOB_ARRAY_INDEX'
     if _c in os.environ:
         return int(os.environ[_c])
-    
+
     return 0
+
+def init(opts):
+    from . import config
+    _tt = config.getint('conf', 'task_type')
+    
+    if _tt == 0:
+        return True
+
+    if _tt == 1:
+        from mpi4py import MPI
+
+        _comm=MPI.COMM_WORLD
+
+        _size=_comm.size
+        _rank=_comm.rank
+
+        logging.info('use MPI task pos %s/%s' % (_rank, _size))
+
+        opts.instance_num = _size
+        opts.instance_pos = _rank
+
+        config.set('conf', 'instance_num', _size)
+        config.set('conf', 'instance_pos', _rank)
+
+        return True
+
+    raise Exception('unsupported task type %s' % _tt)
 
 def add_task_opts(p):
     p.add_argument('-in', '--instance-num', dest='instance_num', type=int, default=1)
@@ -25,6 +52,7 @@ def add_task_opts(p):
     p.add_argument('-se', '--skip-error', dest='skip_error', default=False, action='store_true')
     p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=1)
     p.add_argument('-to', '--task-order', dest='task_order', type=int, default=0)
+    p.add_argument('-tt', '--task-type', dest='task_type', type=int, default=0, help='0: default; 1: mpi')
 
 def _get_task_pos(opts):
     return max(0, min(opts.instance_num - 1, opts.instance_pos))
@@ -36,7 +64,7 @@ def _list_sub_list(ls, opts):
     logging.debug('load sub list with type %s' % opts.task_order)
 
     if opts.task_order <= 1:
-        return [ls[i] for i in xrange(_get_task_pos(opts), len(ls), opts.instance_num)]
+        return [ls[i] for i in range(_get_task_pos(opts), len(ls), opts.instance_num)]
 
     # if opts.task_order == 1:
     #     import math
@@ -51,7 +79,7 @@ def _list_sub_list(ls, opts):
     _nd = int(math.ceil(float(len(ls)) / opts.task_order))
 
     _ss = []
-    for _id in xrange(_get_task_pos(opts), _nd, opts.instance_num):
+    for _id in range(_get_task_pos(opts), _nd, opts.instance_num):
         _ps = _id * opts.task_order
         _ss.extend(ls[min(len(ls), _ps): min(_ps + opts.task_order, len(ls))])
 
@@ -75,7 +103,7 @@ def load_list(f_ls, num, pos):
     logging.debug('loading ' + f_ls)
 
     with open(f_ls) as _fi:
-        _ls_a = _fi.strip().read().splitlines()
+        _ls_a = _fi.read().strip().splitlines()
         return _ls_a
 
 def run(func, ps, opts, vs=[]):
@@ -87,7 +115,7 @@ def run(func, ps, opts, vs=[]):
 
 def load_ids(size, num, pos):
     logging.debug('loading ids %d' % size)
-    return xrange(pos, size, num)
+    return range(pos, size, num)
 
 def text(t):
     import sys
@@ -155,9 +183,9 @@ def work_function(obj, job_queue, vs, mag, res, t_lock, pos):
 
             try:
                 _rs = obj.func(*_ps)
-            except KeyboardInterrupt, _err:
+            except KeyboardInterrupt as _err:
                 raise _err
-            except Exception, _err:
+            except Exception as _err:
                 import traceback
 
                 logging.error('Error (%s): %s' % (_nu, traceback.format_exc()))
@@ -179,7 +207,7 @@ def work_function(obj, job_queue, vs, mag, res, t_lock, pos):
             # mag['num_done'] = _nu
             print_percent(_nu, len(obj.args), obj.perc_step, end=True)
 
-        except Queue.Empty:
+        except queue.Empty:
             return
         finally:
             # print the progress percentage
@@ -252,7 +280,7 @@ class Pool:
                     if _task_num <= 0:
                         break
 
-                for _idx in xrange(len(_procs)):
+                for _idx in range(len(_procs)):
                     _proc = _procs[_idx]
                     if _proc == None:
                         continue
@@ -269,7 +297,7 @@ class Pool:
                     break
 
             # print_percent(len(self.args), len(self.args), True)
-            print ''
+            print('')
 
             _rs = []
             for _oo in _out:
@@ -279,8 +307,8 @@ class Pool:
 
         except KeyboardInterrupt:
             logging.warning('terminated by user')
-            print ''
-            print 'parent received ctrl-c'
+            print('')
+            print('parent received ctrl-c')
 
             if logging_util.cloud_enabled():
                 _log = logging_util.cloud()
@@ -295,14 +323,14 @@ class Pool:
             while not _jobs.empty():
                 _jobs.get(block=False)
 
-        except Exception, _err:
+        except Exception as _err:
             import traceback
 
             logging.error(traceback.format_exc())
             logging.error(str(_err))
 
-            print ''
-            print '* error:', _err
+            print('')
+            print('* error:', _err)
 
             if logging_util.cloud_enabled():
                 _log = logging_util.cloud()
@@ -339,11 +367,11 @@ class Pool:
                     _rs.append(self.func(*(tuple(_vs) + tuple(vs))))
                 except KeyboardInterrupt:
                     logging.warning('terminated by user')
-                    print ''
-                    print 'parent received ctrl-c'
+                    print('')
+                    print('parent received ctrl-c')
                     break
 
-                except Exception, _err:
+                except Exception as _err:
                     import traceback
 
                     logging.error('Error (%s): %s' % (_pos, traceback.format_exc()))

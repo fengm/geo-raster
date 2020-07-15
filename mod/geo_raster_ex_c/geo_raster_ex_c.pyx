@@ -796,14 +796,24 @@ class geo_band_stack_zip:
             file_unzip=None, check_layers=False, nodata=None, cache=None, extent=None):
         from osgeo import ogr
         import geo_base as gb
+        import os
 
+        logging.debug('loading from %s' % f_list)
+        
         import file_mag
         if isinstance(f_list, file_mag.obj_mag):
             _finp = f_list.get()
         elif f_list.startswith('s3://'):
+            logging.debug('loading s3 file %s' % f_list)
             _finp = file_mag.get(f_list).get()
         else:
             _finp = f_list
+            
+        if not _finp:
+            raise Exception('no valid file path provide %s' % _finp)
+            
+        if _finp.startswith('/') and (not os.path.exists(_finp)):
+            raise Exception('failed to find %s' % _finp)
 
         _bnds = []
         _shp = ogr.Open(_finp)
@@ -857,9 +867,10 @@ class geo_band_stack_zip:
                 band_idx, _name, file_unzip, cache)))
 
         if len(_bnds) == 0:
-            logging.warning('No images found')
+            logging.info('No images loaded')
             return None
 
+        logging.info('loaded %s tiles' % len(_bnds))
         return geo_band_stack_zip(_bnds, _lyr.GetSpatialRef(), check_layers, nodata)
 
     def clean(self):
@@ -967,11 +978,15 @@ class geo_band_stack_zip:
 
     def _read_band(self, bnd, bnd_info, nodata, pol_t1, dat_out, min_val=None, max_val=None):
         import geo_base as gb
-        _buffer_dist = 1.0E-25
+        _buffer_dist = 1.0E-15
 
         _bnd_info = bnd_info
         _nodata = nodata
+
         _dat_out = dat_out
+        if _dat_out is None:
+            return
+
         _pol_t1 = pol_t1
 
         _bnd = _bnd_info.get_band().band
@@ -989,21 +1004,13 @@ class geo_band_stack_zip:
             return
         # _pol_t1_proj = _pol_t1_proj.buffer(_buffer_dist)
 
-        # if 'p166r061_20000223' in _bnd_info.band_file.file:
-        #     import geo_base as gb
-        #     _ttt = _pol_s.buffer(0.00000001).intersect(_pol_t1_proj)
-        #     print _ttt
-        #     print _ttt.poly
-        #     gb.output_polygons([_pol_s, _pol_t1_proj],
-        #             '/data/glcf-nx-002/data/PALSAR/water/region/country3/raw4/test2.shp')
-
         if not _pol_s.extent().is_intersect(_pol_t1_proj.extent()):
             return
 
         _pol_c_s = _pol_s.intersect(_pol_t1_proj)
         if _pol_c_s.poly is None:
             _pol_c_s = _pol_s.buffer(_buffer_dist).intersect(_pol_t1_proj.buffer(_buffer_dist))
-            logging.warning('apply buffer to solve geometric conflicts')
+            logging.info('apply buffer to solve geometric conflicts')
 
         if _pol_c_s.poly is None:
             logging.debug('skip file #3 %s' % _bnd_info.band_file.file)
@@ -1043,6 +1050,8 @@ class geo_band_stack_zip:
 
         _dat = _bnd.read_rows(_row_s_s,
                 min(_row_s_e + 2, _bnd.height) - _row_s_s)
+        if _dat is None:
+            return
 
         _col_t_s, _row_t_s = to_cell(tuple(bnd.geo_transform),
                 _ext_t.minx, _ext_t.maxy)
@@ -1225,3 +1234,24 @@ def modis_projection():
     _modis_proj.ImportFromProj4('+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs')
 
     return _modis_proj
+
+def read_block(f, bnd):
+    _bnd = load(f, bnd)
+    
+    if _bnd is None:
+        return None
+        
+    return _bnd.read_block(bnd)
+
+def load(f, bnd=None):
+    if not f:
+        return None
+        
+    _f = str(f)
+    if _f.endswith('.shp') or _f.startswith('PG:'):
+        logging.info('loading geo_band_stack %s' % _f)
+        _shp = geo_band_stack_zip.from_shapefile(f, extent=bnd)
+        return _shp
+
+    from . import geo_raster as ge
+    return ge.open(f).get_band()

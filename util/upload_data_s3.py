@@ -20,8 +20,7 @@ def output_shp(f_inp, b, d_out, f_out):
     os.path.exists(f_out) and _drv.DeleteDataSource(f_out)
 
     _shp = _drv.CreateDataSource(f_out)
-    _lyr = _shp.CreateLayer(filter(lambda x: x[:-4] if x.lower().endswith('.shp') else x, \
-            os.path.basename(f_out)[:-4]), _yyy.GetSpatialRef(), ogr.wkbPolygon)
+    _lyr = _shp.CreateLayer([x for x in os.path.basename(f_out)[:-4] if x[:-4] if x.lower().endswith('.shp') else x], _yyy.GetSpatialRef(), ogr.wkbPolygon)
 
     _fld = ogr.FieldDefn('FILE', ogr.OFTString)
     _fld.SetWidth(254)
@@ -34,7 +33,7 @@ def output_shp(f_inp, b, d_out, f_out):
     for _r in _yyy:
         _ftr = ogr.Feature(_lyr.GetLayerDefn())
 
-        _vs = _r.items()
+        _vs = list(_r.items())
         _f = update_path(_vs['FILE'], b, d_out)
 
         _ftr.SetField('file', _f)
@@ -115,7 +114,7 @@ def load_list(f, b, d_out):
 
     _ls = []
     for _r in _yyy:
-        _f = _r.items()['FILE']
+        _f = list(_r.items())['FILE']
         _o = update_path(_f, b, d_out)
 
         _ls.append((_f, _o))
@@ -139,10 +138,10 @@ def main(opts):
 
         _ps.append((_f, _f_out))
 
-    for _i in xrange(min(len(_ps), 3)):
-        print '...', _ps[_i]
+    for _i in range(min(len(_ps), 3)):
+        print('...', _ps[_i])
 
-    print 'size', '%0.3fGb' % _s
+    print('size', '%0.3fGb' % _s)
     _rs = multi_task.run(upload_file, _ps, opts)
     del _rs
 
@@ -154,7 +153,7 @@ def main(opts):
         output_shp(opts.input, opts.base_path, opts.output + '/data', os.path.join(_d_tmp, 'list.shp'))
         file_unzip.compress_folder(_d_tmp, opts.output, [])
 
-    print 'done'
+    print('done')
 
 def usage():
     _p = environ_mag.usage(True)

@@ -15,7 +15,7 @@ def search_threshold(vs, ls, sh):
     _sum = int(sum(vs) * sh)
 
     _t = 0
-    for i in xrange(len(vs)):
+    for i in range(len(vs)):
         _t += vs[i]
         if _t > _sum:
             return ls[i]
@@ -116,14 +116,14 @@ def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
     from gio import geo_raster as ge
     import os
 
-    print 'loading', f_inp
+    print('loading', f_inp)
 
     _bnds = []
-    if '%s' in f_inp:
+    if '{}' in f_inp:
         for _b in bands:
-            _bnds.append(ge.open(fzip.unzip(f_inp % _b)).get_band())
+            _bnds.append(ge.open(fzip.unzip(f_inp.format(_b))).get_band())
     elif f_inp.endswith('.tar.gz'):
-        print 'processing tar.gz'
+        print('processing tar.gz')
         import tarfile
         import re
 
@@ -185,8 +185,8 @@ def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
     if convert_sr == 'sr':
         # _line = 5024
         _line = _bnd.height
-        for i in xrange(len(_bnds)):
-            print ' + band', bands[i], 'sr' if convert_sr else 'dn'
+        for i in range(len(_bnds)):
+            print(' + band', bands[i], 'sr' if convert_sr else 'dn')
 
             _bbb = _img.get_band(i + 1)
             _fun = convert_band_sr if convert_sr else convert_band
@@ -194,7 +194,7 @@ def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
             from gio import progress_percentage
             _ppp = progress_percentage.progress_percentage(_bnd.height)
 
-            for _row in xrange(0, _bnd.height, _line):
+            for _row in range(0, _bnd.height, _line):
                 _ppp.next(_line)
 
                 _dat = _fun(_bnds[i], _row, _line, _bnd, 0.2, _met)
@@ -205,8 +205,8 @@ def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
 
             _ppp.done()
     else:
-        for i in xrange(len(_bnds)):
-            print ' + band', bands[i], 'sr' if convert_sr else 'dn'
+        for i in range(len(_bnds)):
+            print(' + band', bands[i], 'sr' if convert_sr else 'dn')
 
             _bbb = _img.get_band(i + 1)
             _fun = convert_band_sr if convert_sr else convert_band
@@ -216,9 +216,10 @@ def visualize_bands(f_inp, bands, compress, convert_sr, f_out, fzip):
 
 def main(opts):
     import os
-    from gio import file_unzip
+    from gio import file_unzip, config
+    
     with file_unzip.file_unzip() as _zip:
-        _f_inp = opts.input
+        _f_inp = config.get('conf', 'input')
         _f_out = opts.output
 
         if os.path.isdir(_f_out):

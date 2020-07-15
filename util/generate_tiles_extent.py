@@ -20,8 +20,8 @@ def check_image(f):
         ge.open(_f).get_band().cache()
 
         return 1
-    except KeyboardInterrupt, _err:
-        print '\n\n* User stopped the program'
+    except KeyboardInterrupt as _err:
+        print('\n\n* User stopped the program')
         raise _err
     except Exception:
         pass
@@ -46,16 +46,26 @@ def _task(tile, u, image_check=False):
 
     if _o.exists():
         return (tile, _f, check_image(_o) if image_check else 2)
+    
+    import logging
+    logging.info('failed to find %s' % _f)
 
     return None
 
-def _format_url(f):
+def _format_url(inp, f):
     import re
 
     _f = f
+    if '/' not in _f and '\\' not in _f:
+        _t = _f
+        if _t.startswith('_'):
+            _t = _t[1:]
 
-    _f = re.sub('h\d+', '%(col)s', _f)
-    _f = re.sub('v\d+', '%(row)s', _f)
+        import os
+        _f = os.path.join(inp, 'data/h001/v001/h001v001/h001v001_%s' % (_t))
+
+    _f = re.sub('h\d\d\d+', '%(col)s', _f)
+    _f = re.sub('v\d\d\d+', '%(row)s', _f)
 
     return _f
 
@@ -72,7 +82,7 @@ def _get_tag(f):
 
     return ''
 
-def generate_shp(rs, f_out):
+def generate_shp(rs, ts, f_out):
     from gio import geo_base as gb
     from osgeo import ogr
     from gio import progress_percentage
@@ -87,7 +97,7 @@ def generate_shp(rs, f_out):
     os.path.exists(_tag) and _drv.DeleteDataSource(_tag)
     
     _shp = _drv.CreateDataSource(f_out)
-    _lyr = _shp.CreateLayer(_tag, gb.modis_projection(), ogr.wkbPolygon)
+    _lyr = _shp.CreateLayer(_tag, ts[0].proj_obj(), ogr.wkbPolygon)
 
     _fld = ogr.FieldDefn('FILE', ogr.OFTString)
     _fld.SetWidth(254)
@@ -142,15 +152,19 @@ def main(opts):
         logging.warning('skip processed %s' % opts.output)
         return
     
-    _u = _format_url(opts.ext)
-    if not _u.startswith('s3://'):
-        _u = os.path.join(opts.input, _u)
-
-    print 'url:', _u
-    logging.info('url: %s' % _u)
-
     _d_inp = config.get('conf', 'input')
+
+    if not _d_inp.startswith('s3://'):
+        _d_inp = os.path.abspath(_d_inp)
+
     _f_mak = file_mag.get(os.path.join(_d_inp, 'tasks.txt'))
+
+    _u = _format_url(_d_inp, opts.ext)
+    # if not _u.startswith('s3://'):
+    #     _u = os.path.join(opts.input, _u)
+
+    print('url:', _u)
+    logging.info('url: %s' % _u)
 
     from gio import global_task
     if not _f_mak.exists():
@@ -160,25 +174,26 @@ def main(opts):
 
     from gio import multi_task
     _rs = multi_task.run(_task, [(_r, _u, opts.check_image) for _r in multi_task.load(_ts, opts)], opts)
+    print('')
 
     from gio import file_unzip
     with file_unzip.file_unzip() as _zip:
         _d_tmp = _zip.generate_file()
         os.makedirs(_d_tmp)
 
-        _nu, _cs = generate_shp(_rs, os.path.join(_d_tmp, os.path.basename(opts.output)))
+        _nu, _cs = generate_shp(_rs, _ts, os.path.join(_d_tmp, os.path.basename(opts.output)))
         if _nu <= 0:
             raise Exception('no valid image was found')
 
         if len(_cs) > 0:
-            print 'found %s invalid files' % len(_cs)
+            print('found %s invalid files' % len(_cs))
             for _l in _cs:
-                print _l
+                print(_l)
             return
             # raise Exception('found invalid images')
 
         logging.info('added %s file' % _nu)
-        print 'added %s file' % _nu
+        print('added %s file' % _nu)
 
         file_unzip.compress_folder(_d_tmp, os.path.dirname(opts.output), [])
 
@@ -187,6 +202,7 @@ def usage():
 
     _p.add_argument('-i', '--input', dest='input', required=True)
     _p.add_argument('-c', '--cache', dest='cache')
+    _p.add_argument('-f', '--format-url', dest='format_url', type='bool', default=True)
     _p.add_argument('--check-image', dest='check_image', action='store_true')
     _p.add_argument('--over-write', '--over-write', dest='over_write', action='store_true', default=False)
     _p.add_argument('-e', '--ext', dest='ext', required=True)

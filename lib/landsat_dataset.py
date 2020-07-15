@@ -69,7 +69,8 @@ class sr:
     def get_band(self, b):
         _b = self._band_no(self._inf, b)
         if _b not in self._bs:
-            raise Exception('failed to find band %s (%s) (%s)' % (b, _b, str(self._bs)))
+            logging.error('failed to find band %s (%s) (%s)' % (b, _b, str(self._bs)))
+            return None
 
         logging.info('loading TM band %s (%s)' % (b, _b))
         return self._load_band(_b)
@@ -116,7 +117,7 @@ class sr_dir(sr):
     def __init__(self, p, fzip):
         self._p = p
 
-        import landsat
+        from . import landsat
         self._inf = landsat.parse(p)
         if not self._inf:
             raise Exception('failed to parse %s' % p)
@@ -131,6 +132,7 @@ class sr_dir(sr):
         self._bnds = {}
 
     def _is_img(self, f):
+        f = f.lower()
         return f.endswith('.img.gz') or f.endswith('.img') or f.endswith('.tif.gz') or f.endswith('.tif')
 
     def _list_dir(self, p):
@@ -141,6 +143,7 @@ class sr_dir(sr):
         _bs = []
         for _f in os.listdir(p):
             _p = os.path.join(p, _f)
+            _f = _f.lower()
 
             _m = self._is_img(_f) and re.search('sr_band(\d+)\.', _f)
             if _m:
@@ -150,7 +153,8 @@ class sr_dir(sr):
                     _bs.append(_b)
                 continue
 
-            _m = self._is_img(_f) and re.search('toa_band(\d+)\.', _f)
+            _m = self._is_img(_f) and (re.search('toa_band(\d+)\.', _f) or \
+                    re.search('toa_b(\d+)\.', _f))
             if _m:
                 _fs['toa_b%s' % _m.group(1)] = _p
                 _b = int(_m.group(1))
@@ -171,23 +175,24 @@ class sr_dir(sr):
                 _fs['cfmask'] = _p
                 continue
 
-            _m = (not _f.startswith('lnd')) and re.search('_MTL.txt', _f)
+            _m = (not _f.startswith('lnd')) and re.search('_mtl.txt', _f)
             if _m:
                 _fs['mtl'] = _p
                 continue
 
         self._fs = _fs
         self._bs = _bs
-
+        
+        logging.info('found bands: %s' % str(self._fs.keys()))
         assert 'mtl' in _fs
 
     def _load_band(self, b):
-        import geo_raster as ge
+        from . import geo_raster as ge
 
         _b = b
         logging.info('loading band %s (%s)' % (b, _b))
 
-        if _b not in self._bnds.keys():
+        if _b not in list(self._bnds.keys()):
             _bn = ('sr_b%s' if 'sr_b%s' % _b in self._fs else 'toa_b%s') % _b
             logging.info('caching band %s' % _bn)
 
@@ -197,14 +202,14 @@ class sr_dir(sr):
 
     def get_cloud(self, code_set=0):
         _b = 'cloud'
-        if _b in self._bnds.keys():
+        if _b in list(self._bnds.keys()):
             return self._bnds[_b]
 
         # if 'cloud' not in self._fs.keys():
         #     return None
 
         if _b in self._bs:
-            import geo_raster as ge
+            from . import geo_raster as ge
             _bnd = ge.open(self._fzip.unzip(self._fs[_b])).get_band().cache()
             self._bnds['cloud'] = _bnd
 
@@ -212,12 +217,15 @@ class sr_dir(sr):
 
         _b = 'cfmask'
         if _b in self._fs:
-            import geo_raster as ge
+            from . import geo_raster as ge
             _bnd = qa.from_fmask(ge.open(self._fzip.unzip(self._fs[_b])).get_band().cache(), code_set)
             self._bnds['cloud'] = _bnd
 
             return _bnd
-
+            
+        logging.warning('failed to find cfmask in (%s) (%s)' % \
+                    (str(self._fs.keys()), str(self._bs)))
+                    
         return None
 
     def tda_cloud(self, b):
@@ -246,13 +254,13 @@ class sr_dir(sr):
         return _bnd.from_grid(_ddd, nodata=255)
 
     def metadata(self):
-        if 'mtl' not in self._fs.keys():
+        if 'mtl' not in list(self._fs.keys()):
             return None
 
         _ms = {}
         with open(self._fzip.unzip(self._fs['mtl'])) as _fi:
             for _l in _fi:
-                _rs = map(lambda x: x.strip(), _l.strip().split('='))
+                _rs = [x.strip() for x in _l.strip().split('=')]
                 if len(_rs) == 2:
                     _ms[_rs[0]] = _rs[1]
 
@@ -275,12 +283,12 @@ class sr_hdf(sr):
         if not f.endswith('.hdf'):
             raise Exception('only support HDF file')
 
-        import landsat
+        from . import landsat
         self._inf = landsat.parse(f)
         if not self._inf:
             raise Exception('failed to parse %s' % f)
 
-        import geo_raster as ge
+        from . import geo_raster as ge
         import re
 
         _img = ge.open(f)
