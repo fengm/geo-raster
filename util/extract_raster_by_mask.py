@@ -71,9 +71,10 @@ def main(opts):
         _bnd = ge.open(opts.input).get_band()
 
     _mak = ge.open(opts.mask).get_band().cache()
-
     _bnd = _bnd.read_block(_mak)
-    _bnd.data[_mak.data != 1] = _bnd.nodata
+
+    if not opts.keep_pixels:
+        _bnd.data[_mak.data != 1] = _bnd.nodata
 
     if opts.exclude_noises > 0:
         print('exclude noises (%s)' % opts.exclude_noises)
@@ -96,6 +97,7 @@ def usage():
 
     _p.add_argument('-i', '--input', dest='input', required=True)
     _p.add_argument('-m', '--mask', dest='mask', required=True)
+    _p.add_argument('-k', '--keep-pixels', dest='keep_pixels', type='bool', default=False)
     _p.add_argument('-c', '--color', dest='color')
     _p.add_argument('-o', '--output', dest='output', required=True)
     _p.add_argument('-e', '--exclude-noises', dest='exclude_noises', type=int, default=0)
