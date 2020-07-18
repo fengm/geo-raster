@@ -250,7 +250,7 @@ def clean(fd_out, remove_root=False):
             shutil.rmtree(os.path.join(_root, _dir), True)
 
 class file_unzip:
-    def __init__(self, fd_out='', exclusive=True, debug=False):
+    def __init__(self, fd_out='', exclusive=True, keep=False):
         import os
 
         _fd_out = default_dir(fd_out)
@@ -266,10 +266,10 @@ class file_unzip:
         self.exclusive = exclusive
 
         from . import config
-        self._debug = debug | config.getboolean('conf', 'debug', False)
+        self._keep = keep | config.getboolean('conf', 'keep_temp', False)
 
         logging.debug('temp: %s' % self.fd_out)
-        if self._debug:
+        if self._keep:
             print('temp:', self.fd_out)
 
     # support with statement
@@ -334,8 +334,8 @@ class file_unzip:
         return
 
     def clean(self):
-        if self._debug:
-            logging.warning('remain the temporary files in debug mode')
+        if self._keep:
+            logging.warning('kieep the temporary files')
         else:
             self._clean()
             
