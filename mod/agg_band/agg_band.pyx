@@ -56,7 +56,7 @@ def mean(bnd_in, bnd_ot, float v_min=0, float v_max=100):
     return ge.geo_band_cache(_dat, _geo_ot, bnd_ot.proj,
                 _nodata, bnd_in.pixel_type)
 
-def median(bnd_in, bnd_ot, pro_nodata, zero_rate=1.0):
+def median(bnd_in, bnd_ot, pro_nodata=False, zero_rate=1.0):
     if bnd_in is None:
         return None
     if bnd_ot is None:
@@ -115,8 +115,8 @@ def mean_std(bnd_in, bnd_ot):
             _offs[0], _offs[1], _dive,
             bnd_in.get_nodata(), _size[0], _size[1])
 
-    if bnd_in.data.dtype != np.float32:
-        _dat = _dat.astype(bnd_in.data.dtype)
+    # if bnd_in.data.dtype != np.float32:
+    #     _dat = _dat.astype(bnd_in.data.dtype)
 
     from . import geo_raster as ge
     return ge.geo_band_cache(_dat, _geo_ot, bnd_ot.proj,
