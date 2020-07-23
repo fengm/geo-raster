@@ -139,15 +139,23 @@ class geo_raster_info:
         return gb.geo_extent(_pt0[0] - _cell_x, _pt0[1] - _cell_y,
                 _pt0[0] + _cell_x, _pt0[1] + _cell_y, self.proj)
 
-    def scale(self, ratio, ceil=False):
-        _cols = int(math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio))
-        _rows = int(math.ceil(self.height * ratio) if ceil else math.floor(self.height * ratio))
-
+    def scale(self, ratio=None, ceil=False, cell_size=None):
         _geo = list(self.geo_transform)
-        _geo[1] /= ratio
-        _geo[2] /= ratio
-        _geo[4] /= ratio
-        _geo[5] /= ratio
+
+        _r = ratio
+        if cell_size is not None:
+            _r = _geo[1] / cell_size
+
+        if _r is None:
+            raise Exception('no valid param provided')
+
+        _cols = int(math.ceil(self.width * _r) if ceil else math.floor(self.width * _r))
+        _rows = int(math.ceil(self.height * _r) if ceil else math.floor(self.height * _r))
+
+        _geo[1] /= _r
+        _geo[2] /= _r
+        _geo[4] /= _r
+        _geo[5] /= _r
 
         return geo_raster_info(_geo, _cols, _rows, self.proj)
 
@@ -276,15 +284,23 @@ class geo_band_info(geo_raster_info):
         return geo_band_info([_min_x, _cell, 0, _max_y, 0, _cell * -1], _cols, _rows, self.proj, \
                 self.nodata, self.pixel_type)
 
-    def scale(self, ratio, ceil=False):
-        _cols = int(math.ceil(self.width * ratio) if ceil else math.floor(self.width * ratio))
-        _rows = int(math.ceil(self.height * ratio) if ceil else math.floor(self.height * ratio))
-
+    def scale(self, ratio=None, ceil=False, cell_size=None):
         _geo = list(self.geo_transform)
-        _geo[1] /= ratio
-        _geo[2] /= ratio
-        _geo[4] /= ratio
-        _geo[5] /= ratio
+
+        _r = ratio
+        if cell_size is not None:
+            _r = _geo[1] / cell_size
+
+        if _r is None:
+            raise Exception('no valid param provided')
+
+        _cols = int(math.ceil(self.width * _r) if ceil else math.floor(self.width * _r))
+        _rows = int(math.ceil(self.height * _r) if ceil else math.floor(self.height * _r))
+
+        _geo[1] /= _r
+        _geo[2] /= _r
+        _geo[4] /= _r
+        _geo[5] /= _r
 
         return geo_band_info(_geo, _cols, _rows, self.proj, self.nodata, self.pixel_type)
 
