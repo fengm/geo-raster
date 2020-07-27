@@ -62,29 +62,35 @@ def load_from_list(f_ls, opts):
 
 def _list_sub_list(ls, opts):
     logging.debug('load sub list with type %s' % opts.task_order)
+    
+    _ls = ls
+    _to = opts.task_order
+    
+    if _to < 0:
+        _ls = list(reversed(_ls))
+        _to = _to * -1
 
-    if opts.task_order <= 1:
-        return [ls[i] for i in range(_get_task_pos(opts), len(ls), opts.instance_num)]
+    if _to <= 1:
+        return [_ls[i] for i in range(_get_task_pos(opts), len(_ls), opts.instance_num)]
 
     # if opts.task_order == 1:
     #     import math
-    #     _sz = int(math.ceil(len(ls) / float(opts.instance_num)))
+    #     _sz = int(math.ceil(len(_ls) / float(opts.instance_num)))
 
     #     _ns = _sz * opts.instance_pos
-    #     _ne = min(_ns + _sz, len(ls))
+    #     _ne = min(_ns + _sz, len(_ls))
 
-    #     return ls[_ns: _ne]
+    #     return _ls[_ns: _ne]
 
     import math
-    _nd = int(math.ceil(float(len(ls)) / opts.task_order))
+    _nd = int(math.ceil(float(len(_ls)) / _to))
 
     _ss = []
     for _id in range(_get_task_pos(opts), _nd, opts.instance_num):
-        _ps = _id * opts.task_order
-        _ss.extend(ls[min(len(ls), _ps): min(_ps + opts.task_order, len(ls))])
+        _ps = _id * _to
+        _ss.extend(_ls[min(len(_ls), _ps): min(_ps + _to, len(_ls))])
 
     return _ss
-    # raise Exception('unsupported order type %s' % opts.task_order)
 
 def load(ls, opts):
     import os
