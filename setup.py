@@ -29,7 +29,7 @@ for _root, _dirs, _files in os.walk('util'):
 		_f = os.path.join(_root, _file)
 		_ss.append(_f)
 
-setuptools.setup(name='geo-raster', version='2.0.4', description='', \
+setuptools.setup(name='geo-raster', version='2.0.6', description='', \
 		author='Min Feng', author_email='mfeng.geo@gmail.com', \
 		# packages=['gio', 'gio/data/landsat'],
 		# package_dir={'gio': 'lib', 'gio/data/landsat': 'lib/data/landsat'},
