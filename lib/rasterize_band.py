@@ -132,28 +132,50 @@ def to_mask(bnd, poly, f_img=None, f_shp=None, touched=True):
         _f_img = f_img if f_img else _zip.generate_file('', '.img')
         _f_shp = f_shp if f_shp else _zip.generate_file('', '.shp')
         
-        if isinstance(poly, list) or isinstance(poly, tuple):
-            _ps = poly
-        else:
-            _ps = [poly]
-        
+        _ps = _to_list(poly, False)
         _ps = [_p.project_to(bnd.proj) for _p in _ps]
+
         return rasterize_polygons(bnd, _ps, _f_img, _f_shp, touched).get_band().cache()
 
+def _to_list(poly, reproject=True):
+    if isinstance(poly, list) or isinstance(poly, tuple):
+        _ps = []
+        _pj = None
+
+        for _p in poly:
+            if reproject:
+                if _pj is None:
+                    _pj = _p.proj
+                else:
+                    _p = _p.project_to(_pj)
+
+            _ps.append(_p)
+        
+        return _ps
+    else:
+        retunr [poly]
+
 def to_raster(poly, cell, ceil=True):
-    import math
-    
-    _ext = poly.extent()
+    _ps = _to_list(poly)
+
+    _ext = None
+    for _p in _ps:
+        if _ext is None:
+            _ext = _p.extent()
+        else:
+            _ext = _ext.union(_p.extent())
+
     _geo = [_ext.minx, cell, 0, _ext.maxy, 0, -cell]
 
     _col = _ext.width() / cell
     _row = _ext.height() / cell
 
+    import math
     _col = int(math.ceil(_col)) if ceil else int(_col)
     _row = int(math.ceil(_row)) if ceil else int(_row)
 
     from gio import geo_raster as ge
-    return ge.geo_band_info(_geo, _col, _row, poly.proj)
+    return ge.geo_band_info(_geo, _col, _row, _ps[0].proj)
    
 def mask(bnd, poly, touched=True):
     if bnd.nodata is None:
