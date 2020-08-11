@@ -1326,7 +1326,7 @@ def load_colortable(f):
         if len(_cs) < 3:
             raise Exception('insufficent color values %s' % len(_cs))
 
-        _colors[float(_vs[0])] = _cs
+        _colors[float(_vs[0])] = _cs if len(_cs) <= 4 else _cs[:4]
 
     return map_colortable(_colors)
 
