@@ -138,7 +138,7 @@ class tile:
         self.cell_size = cell_size
         self.col = col
         self.row = row
-        self.files = fs
+        self.files = len(fs) if isinstance(fs, list) else fs
         self.params = ps
         self.tag = 'h%03dv%03d' % (col, row)
         self.edge = edge
@@ -163,8 +163,7 @@ class tile:
                 'cell_size': self.cell_size,
                 'col': self.col,
                 'row': self.row,
-                # 'files': self.files,
-                'files': len(self.files),
+                'files': self.files,
                 'params': self.params,
                 'tag': self.tag,
                 'edge': self.edge,
