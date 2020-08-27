@@ -153,7 +153,7 @@ def _to_list(poly, reproject=True):
         
         return _ps
     else:
-        retunr [poly]
+        return [poly]
 
 def to_raster(poly, cell, ceil=True):
     _ps = _to_list(poly)
