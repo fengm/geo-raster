@@ -307,7 +307,7 @@ class geo_band_info(geo_raster_info):
 class geo_band_cache(geo_band_info):
 
     def __init__(self, data, geo_transform, proj, nodata=None, pixel_type=None, color_table=None):
-        geo_band_info.__init__(self, geo_transform, data.shape[1], data.shape[0], proj, nodata, pixel_type)
+        geo_band_info.__init__(self, geo_transform, data.shape[-1], data.shape[-2], proj, nodata, pixel_type)
         self.data = data
         self.color_table = color_table
 
