@@ -830,7 +830,11 @@ class geo_band_stack_zip:
             if isinstance(_ext, ge.geo_raster_info):
                 _ext = extent.extent().to_polygon().segment_ratio(10)
 
-            _lyr.SetSpatialFilter(_ext.project_to(_lyr.GetSpatialRef()).poly)
+            _ext = _ext.project_to(_lyr.GetSpatialRef())
+            if _ext is None:
+                return None
+                
+            _lyr.SetSpatialFilter(_ext.poly)
 
         import os
         _d_shp = os.path.dirname(_finp)
