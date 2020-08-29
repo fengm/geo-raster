@@ -335,7 +335,7 @@ class file_unzip:
 
     def clean(self):
         if self._keep:
-            logging.warning('kieep the temporary files')
+            logging.warning('keep the temporary files')
         else:
             self._clean()
             
