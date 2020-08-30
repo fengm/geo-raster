@@ -871,10 +871,10 @@ class geo_band_stack_zip:
                 band_idx, _name, file_unzip, cache)))
 
         if len(_bnds) == 0:
-            logging.info('No images loaded')
+            logging.debug('No images loaded')
             return None
 
-        logging.info('loaded %s tiles' % len(_bnds))
+        logging.debug('loaded %s tiles' % len(_bnds))
         return geo_band_stack_zip(_bnds, _lyr.GetSpatialRef(), check_layers, nodata)
 
     def clean(self):
@@ -1014,7 +1014,7 @@ class geo_band_stack_zip:
         _pol_c_s = _pol_s.intersect(_pol_t1_proj)
         if _pol_c_s.poly is None:
             _pol_c_s = _pol_s.buffer(_buffer_dist).intersect(_pol_t1_proj.buffer(_buffer_dist))
-            logging.info('apply buffer to solve geometric conflicts')
+            logging.debug('apply buffer to solve geometric conflicts')
 
         if _pol_c_s.poly is None:
             logging.debug('skip file #3 %s' % _bnd_info.band_file.file)
@@ -1253,7 +1253,7 @@ def load(f, bnd=None):
         
     _f = str(f)
     if _f.endswith('.shp') or _f.startswith('PG:'):
-        logging.info('loading geo_band_stack %s' % _f)
+        logging.debug('loading geo_band_stack %s' % _f)
         _shp = geo_band_stack_zip.from_shapefile(f, extent=bnd)
         return _shp
 
