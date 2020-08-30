@@ -46,6 +46,18 @@ class metadata(dict):
 
         return _ls
 
+    def getint(self, k, val=None):
+        _v = self.get(k, val)
+        if _v is None:
+            return _v
+        return int(_v)
+
+    def getfloat(self, k, val=None):
+        _v = self.get(k, val)
+        if _v is None:
+            return _v
+        return float(_v)
+
     def save(self, f_out):
         import json
         from gio import file_unzip
@@ -71,7 +83,7 @@ class metadata_v0(object):
 
     def __getitem__(self, idx):
         from gio import config
-        if config.cfg.has_option('conf', 'debug') and config.cfg.getboolean('conf', 'debug'):
+        if config.getboolean('conf', 'debug', False):
             import sys
             sys.stdout.write('[%s].' % idx)
 
@@ -82,7 +94,7 @@ class metadata_v0(object):
 
     def __setitem__(self, idx, val):
         from gio import config
-        if config.cfg.has_option('conf', 'debug') and config.cfg.getboolean('conf', 'debug'):
+        if config.getboolean('conf', 'debug', False):
             print('[%s] = %s' % (idx, val))
 
         self._meta[idx] = val
