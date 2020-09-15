@@ -6,6 +6,16 @@ Create: 2018-07-22 17:33:46
 Description:
 '''
 
+def _load(fs, bnd):
+    from gio import geo_raster_ex as gx
+    
+    for _f in fs:
+        _bnd = gx.read_block(_f, bnd)
+        if _bnd:
+            return _bnd
+            
+    return None
+
 def _task(tile, t, f_inp, d_out, ps):
     import os
     from gio import file_unzip
@@ -23,10 +33,8 @@ def _task(tile, t, f_inp, d_out, ps):
         logging.debug('skip existing result for %s' % _tag)
         return
 
-    _mak = tile.extent()
     with file_unzip.zip() as _zip:
-        _bnd = gx.geo_band_stack_zip.from_shapefile(f_inp, file_unzip=_zip)\
-            .read_block(_mak)
+        _bnd = _load(f_inp, tile.extent())
 
         _f_clr = config.get('conf', 'color_table')
         if _f_clr:
@@ -85,29 +93,29 @@ def main(opts):
                 cell_size=_cell_size)
 
         global_task.save(_ts, _f_mak, \
-                {'input': opts.input, 'output': opts.output, 'edge': _edge, \
+                {'edge': _edge, \
                     't': _tag, 'proj': _proj.ExportToProj4()})
-    else:
-        _gs = global_task.loads(_f_mak)
-        _ms = _gs['params']
-        _ts = _gs['tiles']
+                    
+        return
+    
+    _gs = global_task.loads(_f_mak)
+    _ms = _gs['params']
+    _ts = _gs['tiles']
 
-        opts.input = opts.input if opts.input is not None else _ms['input']
-        opts.output = opts.output if opts.output is not None else _ms['output']
-        _tt = _ms.get('t', opts.tag) if opts.tag is None else opts.tag
+    _tt = _ms.get('t', opts.tag) if opts.tag is None else opts.tag
 
-        _d_out = opts.output
+    _d_out = opts.output
 
-        from gio import multi_task
-        multi_task.run(_task, [(_r, _tt, opts.input, os.path.join(_d_out, 'data'), opts) \
-                for _r in multi_task.load(_ts, opts)], opts)
+    from gio import multi_task
+    multi_task.run(_task, [(_r, _tt, opts.input, os.path.join(_d_out, 'data'), opts) \
+            for _r in multi_task.load(_ts, opts)], opts)
 
 def usage():
     _p = environ_mag.usage(True)
 
-    _p.add_argument('-i', '--input', dest='input')
+    _p.add_argument('-i', '--input', dest='input', nargs='+')
     _p.add_argument('-r', '--region', dest='region')
-    _p.add_argument('-e', '--edge', dest='edge', type=int, default=1)
+    _p.add_argument('-e', '--edge', dest='edge', type=int, default=0)
     _p.add_argument('-t', '--tag', dest='tag')
     _p.add_argument('--geog', dest='geog', type='bool', default=True)
     _p.add_argument('-p', '--proj', dest='proj', \
