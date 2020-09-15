@@ -51,7 +51,7 @@ def main(opts):
         if not opts.input:
             raise Exception('need to previde input extent file')
 
-        _f_inp = file_mag.get(opts.input)
+        _f_inp = file_mag.get(opts.region)
         if not _f_inp:
             raise Exception('need to provide extent file for initailization')
 
@@ -106,6 +106,7 @@ def usage():
     _p = environ_mag.usage(True)
 
     _p.add_argument('-i', '--input', dest='input')
+    _p.add_argument('-r', '--region', dest='region')
     _p.add_argument('-e', '--edge', dest='edge', type=int, default=1)
     _p.add_argument('-t', '--tag', dest='tag')
     _p.add_argument('--geog', dest='geog', type='bool', default=True)
