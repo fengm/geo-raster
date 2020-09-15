@@ -35,6 +35,8 @@ def _task(tile, t, f_inp, d_out, ps):
 
     with file_unzip.zip() as _zip:
         _bnd = _load(f_inp, tile.extent())
+        if _bnd is None:
+            return
 
         _f_clr = config.get('conf', 'color_table')
         if _f_clr:
