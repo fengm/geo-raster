@@ -158,7 +158,7 @@ class color_mapping:
                 if _z <= 0:
                     continue
                 
-                _u = math.ceil(_div)
+                _u = math.floor(_div)
                 _d = _z / _u
                 _a = _vs[i]
                 
