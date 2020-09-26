@@ -346,6 +346,10 @@ class file_unzip:
     def save(self, o, f_out):
         import os
         
+        if o is None:
+            logging.warning('skip saving none object to %s' % f_out)
+            return
+        
         _d_tmp = self.generate_file()
         os.makedirs(_d_tmp)
         
@@ -370,4 +374,11 @@ class file_unzip:
 
 zip = file_unzip
 
-    
+def save(o, f_out):
+    with zip() as _zip:
+        return _zip.save(o, f_out)
+        
+def copy(self, fd_in, fd_ot, exclude_exts=None, include_exts=None):
+    with zip() as _zip:
+        return _zip.copy(fd_in, fd_ot, exclude_exts, include_exts)
+        
