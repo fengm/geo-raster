@@ -22,7 +22,7 @@ cimport cython
 @cython.boundscheck(False)
 @cython.wraparound(False)
 
-def mean(bnd_in, bnd_ot, float v_min=0, float v_max=100):
+def mean(bnd_in, bnd_ot, float v_min=0, float v_max=100, min_rate=0.1):
     if bnd_in is None:
         return None
     if bnd_ot is None:
@@ -47,7 +47,7 @@ def mean(bnd_in, bnd_ot, float v_min=0, float v_max=100):
 
     _dat = average_pixels(_dat,
             _offs[0], _offs[1], _dive,
-            _nodata, _size[0], _size[1], v_min, v_max)
+            _nodata, _size[0], _size[1], v_min, v_max, min_rate)
 
     if bnd_in.data.dtype != np.float32:
         _dat = _dat.astype(bnd_in.data.dtype)
@@ -124,7 +124,7 @@ def mean_std(bnd_in, bnd_ot):
 
 def average_pixels(np.ndarray[np.float32_t, ndim=2] dat,
         float off_y, float off_x, float scale,
-        float nodata, unsigned int rows, unsigned int cols, float v_min, float v_max):
+        float nodata, unsigned int rows, unsigned int cols, float v_min, float v_max, float min_rate):
 
     cdef unsigned int _rows_o, _cols_o
     cdef unsigned int _rows_n, _cols_n
@@ -206,17 +206,20 @@ def average_pixels(np.ndarray[np.float32_t, ndim=2] dat,
 
             if _aa <= 0.0:
                 continue
-
-            if _ns < _aa / 2:
-                _vv = nodata
-                _vx = 0 
-                for _k, _v in _ss.items():
-                    if _v > _vx:
-                        _vv = _k
-                        _vx = _v
-
-                _dat[_row_n, _col_n] = _vv
+            
+            if _ns < _aa * min_rate:
                 continue
+
+            # if _ns < _aa / 2:
+            #     _vv = nodata
+            #     _vx = 0 
+            #     for _k, _v in _ss.items():
+            #         if _v > _vx:
+            #             _vv = _k
+            #             _vx = _v
+
+            #     _dat[_row_n, _col_n] = _vv
+            #     continue
 
             _dat[_row_n, _col_n] = _vs / _ns
 
