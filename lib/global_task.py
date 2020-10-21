@@ -136,7 +136,12 @@ class tile:
     def __init__(self, image_size, cell_size, col, row, fs, ps=None, edge=1, proj=None):
         self.image_size = image_size
         self.cell_size = cell_size
+
         self.col = col
+        self.row = row
+        self.h = 'h%03d' % col
+        self.v = 'v%03d' % row
+
         self.row = row
         self.files = len(fs) if isinstance(fs, list) else fs
         self.params = ps
@@ -325,3 +330,54 @@ def loads(f_inp):
         _ts = [tile.from_obj(_r) for _r in _rs['tiles']]
         return {'tiles': _ts, 'params': _rs['params']}
 
+def filter_tiles(ts, f, f_shp=None, column=None):
+    from gio import global_task
+
+    if not ts or not len(ts):
+        return ts
+
+    _ext, _objs = global_task.load_shp(global_task.file_obj(f).get(), column, proj=ts[0].proj_obj())
+    if _ext == None:
+        logging.warning('no valid polygons provided')
+        return []
+
+    _pp = []
+    _ps = []
+
+    for _tile in ts:
+        _bnd = _tile.extent()
+
+        _fs = global_task.files(_bnd, _objs)
+        if len(_fs) == 0:
+            continue
+
+        _ps.append(_tile)
+        if f_shp:
+            _pp.append((_bnd.extent().to_polygon(), _tile.tag))
+
+    if f_shp:
+        global_task._output_polygons(_pp, global_task.file_obj(f_shp))
+
+    return _ps
+
+def copy(d_inp, d_out, f_reg=None):
+    from gio import file_mag
+    import os
+
+    _f_tsk = file_mag.get(os.path.join(d_out, 'tasks.txt'))
+
+    if not _f_tsk.exists():
+        logging.info('copy tasks from %s to %s' % (d_inp, d_out))
+
+        _f_mak = file_mag.get(os.path.join(d_inp, 'tasks.txt'))
+        _ps = loads(_f_mak)
+        _ts = _ps['tiles']
+
+        if f_reg:
+            logging.info('filter tasks with region %s' % f_reg)
+            _f_shp = file_mag.get(os.path.join(d_out, 'tasks.shp'))
+            _ts = filter_tiles(_ts, f_reg, _f_shp)
+
+        save(_ts, _f_tsk, _ps['params'])
+
+    return _f_tsk
