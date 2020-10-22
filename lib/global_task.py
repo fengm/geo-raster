@@ -379,5 +379,6 @@ def copy(d_inp, d_out, f_reg=None):
             _ts = filter_tiles(_ts, f_reg, _f_shp)
 
         save(_ts, _f_tsk, _ps['params'])
+        return True
 
-    return _f_tsk
+    return False
