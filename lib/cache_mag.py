@@ -341,7 +341,7 @@ class s3():
 
                 _kkk = self.get_key(k)
                 if _kkk is None:
-                    logging.warning('no key was found: %s' % k)
+                    logging.warning('no key was found: s3://%s/%s' % (self._t, k))
                     return None
                     
                 with open(_t, 'wb') as _fo:
@@ -365,7 +365,7 @@ class s3():
                 if os.path.exists(_t):
                     os.remove(_t)
 
-        raise Exception('failed to load S3 file %s' % _key)
+        raise Exception('failed to load S3 file s3://%s/%s' % (self._t, _key))
 
     def get_key(self, k):
         if not k:

@@ -1258,4 +1258,8 @@ def load(f, bnd=None):
         return _shp
 
     from . import geo_raster as ge
-    return ge.open(f).get_band()
+    _img = ge.open(f)
+    if _img is None:
+        return None
+        
+    return _img.get_band()
