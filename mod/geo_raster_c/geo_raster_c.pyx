@@ -1107,7 +1107,8 @@ class geo_raster(geo_raster_info):
         import os
 
         if not _f.startswith('/vsi') and (check_exist and (not os.path.exists(_f))):
-            raise Exception('failed to find the image %s' % f)
+            logging.warning('failed to find the image %s' % f)
+            return True
 
         if update:
             _img = gdal.Open(_f, gdal.GA_Update)
