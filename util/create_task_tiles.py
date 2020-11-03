@@ -1,6 +1,7 @@
 def main(opts):
     from gio import config
     from gio import file_mag
+    from gio import geo_base as gb
     import os
 
     _d_out = config.get('conf', 'output')
@@ -15,11 +16,10 @@ def main(opts):
     
     _f_inp = config.get('conf', 'region')
 
-    _proj = None
+    _proj = gb.proj_from_proj4(opts.proj) if opts.proj else None
     _cell = config.getfloat('conf', 'cell_size')
-    
-    if opts.geog == True:
-        from gio import geo_base as gb
+
+    if _proj is None and opts.geog == True:
         _proj = gb.proj_from_epsg()
         _cell = _cell / 120000.0
         
@@ -41,6 +41,7 @@ def usage():
 
     _p.add_argument('-r', '--region', dest='region', required=True)
     _p.add_argument('-i', '--image-size', dest='image_size', type=int, required=True)
+    _p.add_argument('-p', '--proj', dest='proj')
     _p.add_argument('--geog', dest='geog', type='bool', default=True)
     _p.add_argument('--cell-size', dest='cell_size', type=float, default=30.0)
     _p.add_argument('--edge-cell', dest='edge_cell', type=int, default=1)
