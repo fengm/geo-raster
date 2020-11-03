@@ -22,7 +22,7 @@ cimport cython
 @cython.boundscheck(False)
 @cython.wraparound(False)
 
-def mean(bnd_in, bnd_ot, float v_min=0, float v_max=100, min_rate=0.1):
+def mean(bnd_in, bnd_ot, v_min=None, v_max=None, min_rate=0.1):
     if bnd_in is None:
         return None
     if bnd_ot is None:
@@ -56,7 +56,7 @@ def mean(bnd_in, bnd_ot, float v_min=0, float v_max=100, min_rate=0.1):
     return ge.geo_band_cache(_dat, _geo_ot, bnd_ot.proj,
                 _nodata, bnd_in.pixel_type)
 
-def median(bnd_in, bnd_ot, pro_nodata=False, zero_rate=1.0):
+def median(bnd_in, bnd_ot, min_rate=0):
     if bnd_in is None:
         return None
     if bnd_ot is None:
@@ -81,7 +81,7 @@ def median(bnd_in, bnd_ot, pro_nodata=False, zero_rate=1.0):
 
     _dat = median_pixels(_dat,
             _offs[0], _offs[1], _dive,
-            _nodata, _size[0], _size[1], pro_nodata, zero_rate=zero_rate)
+            _nodata, _size[0], _size[1], min_rate=min_rate)
 
     if bnd_in.data.dtype != np.int16:
         _dat = _dat.astype(bnd_in.data.dtype)
@@ -124,7 +124,7 @@ def mean_std(bnd_in, bnd_ot):
 
 def average_pixels(np.ndarray[np.float32_t, ndim=2] dat,
         float off_y, float off_x, float scale,
-        float nodata, unsigned int rows, unsigned int cols, float v_min, float v_max, float min_rate):
+        float nodata, unsigned int rows, unsigned int cols, v_min, v_max, float min_rate):
 
     cdef unsigned int _rows_o, _cols_o
     cdef unsigned int _rows_n, _cols_n
@@ -194,10 +194,14 @@ def average_pixels(np.ndarray[np.float32_t, ndim=2] dat,
                             max(_row_o, _row_min_f)) * \
                             (min(_col_o + 1, _col_max_f) - \
                             (max(_col_o, _col_min_f)))
+
                     _aa += _a
 
                     _v = dat[_row_o, _col_o]
-                    if _v == _nodata or _v < v_min or _v > v_max:
+                    if _v == _nodata or \
+                            (v_min is not None and _v < v_min) or \
+                            (v_max is not None and _v > v_max):
+
                         _ss[_v] += _a
                         continue
 
@@ -444,7 +448,7 @@ cdef np.ndarray[np.int16_t, ndim=2] dominated_pixels(np.ndarray[np.int16_t, ndim
 
 cdef np.ndarray[np.int16_t, ndim=2] median_pixels(np.ndarray[np.int16_t, ndim=2] dat,
         float off_y, float off_x, float scale,
-        int nodata, unsigned int rows, unsigned int cols, pro_nodata, zero_rate):
+        int nodata, unsigned int rows, unsigned int cols, min_rate):
 
     cdef unsigned int _rows_o, _cols_o
     cdef unsigned int _rows_n, _cols_n
@@ -504,7 +508,7 @@ cdef np.ndarray[np.int16_t, ndim=2] median_pixels(np.ndarray[np.int16_t, ndim=2]
 
             _vs = []
             _ns = 0
-            _tp = False
+            _aa = 0.0
 
             for _row_o from _row_min<=_row_o<_row_max:
                 for _col_o from _col_min<=_col_o<_col_max:
@@ -516,30 +520,16 @@ cdef np.ndarray[np.int16_t, ndim=2] median_pixels(np.ndarray[np.int16_t, ndim=2]
                     if _a < 0.5:
                         continue
 
+                    _aa += _a
+
                     _v = dat[_row_o, _col_o]
                     if _v == _nodata:
-                        if pro_nodata:
-                            _tp = True
-                            break
-                        else:
-                            continue
-
-                    if _v == 0:
-                        if zero_rate <= 0:
-                            continue
-
-                        if len(_vs) > 0:
-                            if zero_rate < 1.0:
-                                if random.random() > zero_rate:
-                                    continue
+                        continue
 
                     _ns += _a
                     _vs.append(_v)
 
-                if _tp:
-                    break
-
-            if _ns <= 0 or _tp:
+            if _ns < _aa * min_rate:
                 continue
 
             _mx = 0
