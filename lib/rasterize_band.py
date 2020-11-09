@@ -11,62 +11,52 @@ Date: 2013-11-15 09:48:11
 Note: Added the function for detecting the polygon extent for a Landsat scene
 '''
 
-def rasterize_polygons(bnd, polys, f_img, f_shp, touched=True):
+def rasterize(bnd, polys, f_img=None, f_shp=None, touched=True, pixel_type=None):
     '''rasterize ploygon to match a raster band'''
     from osgeo import ogr, gdal
+    from . import geo_raster as ge
+    from . import file_unzip
     import os
-
-    _drv = ogr.GetDriverByName('ESRI Shapefile')
-
-    if os.path.exists(f_shp):
-        _drv.DeleteDataSource(f_shp)
-
-    _shp = _drv.CreateDataSource(f_shp)
-    _lyr = _shp.CreateLayer(f_shp[:-4], bnd.proj, ogr.wkbPolygon)
-
-    for _poly in polys:
-        _fea = ogr.Feature(_lyr.GetLayerDefn())
-        _fea.SetGeometry(_poly.poly)
-        _lyr.CreateFeature(_fea)
-        _fea.Destroy()
+    
+    with file_unzip.zip() as _zip:
+        _f_shp = f_shp or _zip.generate_file('', '.shp')
+        _f_img = f_img or _zip.generate_file('', '.img')
         
-    from . import geo_raster as ge
-    _img = ge.geo_raster.create(f_img, [bnd.height, bnd.width], bnd.geo_transform, bnd.proj.ExportToWkt())
+        _drv = ogr.GetDriverByName('ESRI Shapefile')
     
-    gdal.RasterizeLayer(_img.raster, [1], _lyr, burn_values=[1], options=['ALL_TOUCHED=TRUE'] if touched else [])
-    del _lyr, _shp, _drv
+        if os.path.exists(_f_shp):
+            _drv.DeleteDataSource(_f_shp)
+    
+        _shp = _drv.CreateDataSource(_f_shp)
+        _lyr = _shp.CreateLayer(_f_shp[:-4], bnd.proj, ogr.wkbPolygon)
+        
+        _pps = [_p.project_to(bnd.proj) for _p in _to_list(polys, False)]
+        for _poly in _pps:
+            _fea = ogr.Feature(_lyr.GetLayerDefn())
+            _fea.SetGeometry(_poly.poly)
+            _lyr.CreateFeature(_fea)
+            _fea.Destroy()
+            
+        _pixel_type = ge.pixel_type() if pixel_type is None else pixe_type
+        _img = ge.geo_raster.create(_f_img, [bnd.height, bnd.width], bnd.geo_transform, \
+                    bnd.proj.ExportToWkt(), pixel_type=_pixel_type)
+        
+        _opts = []
+        if touched:
+            _opts.append('ALL_TOUCHED=TRUE')
+            
+        # if attribute_name:
+        #     _opts.append('ATTRIBUTE=value')
+            
+        gdal.RasterizeLayer(_img.raster, [1], _lyr, burn_values=[1], options=_opts)
+        del _lyr, _shp, _drv
 
     return _img
 
-def rasterize_polygon(bnd, poly, f_img, f_shp, touched=True):
-    '''rasterize ploygon to match a raster band'''
-    from osgeo import ogr, gdal
-    import os
-
-    _drv = ogr.GetDriverByName('ESRI Shapefile')
-
-    if os.path.exists(f_shp):
-        _drv.DeleteDataSource(f_shp)
-
-    _shp = _drv.CreateDataSource(f_shp)
-    _lyr = _shp.CreateLayer(os.path.basename(f_shp)[:-4], bnd.proj, ogr.wkbPolygon)
-
-    _fea = ogr.Feature(_lyr.GetLayerDefn())
-    _fea.SetGeometry(poly.poly)
-    _lyr.CreateFeature(_fea)
-    _fea.Destroy()
-
-    from . import geo_raster as ge
-    _img = ge.geo_raster.create(f_img, [bnd.height, bnd.width], bnd.geo_transform, bnd.proj.ExportToWkt())
-
-    gdal.RasterizeLayer(_img.raster, [1], _lyr, burn_values=[1], options=['ALL_TOUCHED=TRUE'] if touched else [])
-    del _lyr, _shp, _drv
+rasterize_polygons = rasterize
+rasterize_polygon = rasterize
+rasterize_band = rasterize
     
-    return _img
-
-def rasterize_band(bnd, poly, f_img, f_shp):
-    return rasterize_polygon(bnd, poly, f_img, f_shp)
-
 def detect_corner_x(bnd, xd):
     from . import geo_base as gb
     assert(bnd.nodata != None)
@@ -126,16 +116,12 @@ def detect_landsat_extent(bnd):
 
     return _pol
 
-def to_mask(bnd, poly, f_img=None, f_shp=None, touched=True):
-    from gio import file_unzip
-    with file_unzip.zip() as _zip:
-        _f_img = f_img if f_img else _zip.generate_file('', '.img')
-        _f_shp = f_shp if f_shp else _zip.generate_file('', '.shp')
-        
-        _ps = _to_list(poly, False)
-        _ps = [_p.project_to(bnd.proj) for _p in _ps]
-
-        return rasterize_polygons(bnd, _ps, _f_img, _f_shp, touched).get_band().cache()
+def to_mask(bnd, poly, touched=True, f_img=None, f_shp=None):
+    _bnd = rasterize(bnd, poly, f_img, f_shp, touched)
+    if _bnd is None:
+        return None
+    
+    return _bnd.get_band().cache()
 
 def _to_list(poly, reproject=True):
     if isinstance(poly, list) or isinstance(poly, tuple):
