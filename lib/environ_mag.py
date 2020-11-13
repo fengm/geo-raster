@@ -8,7 +8,7 @@ Description: provide functions to help commands to setup the environments
 def bool_type(v):
     return v.lower() in ("yes", "true", "t", "1")
 
-def usage(multi_task=False):
+def usage(multi_task=True):
     import argparse
 
     _p = argparse.ArgumentParser()
