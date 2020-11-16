@@ -183,14 +183,14 @@ def main(opts):
 
         _nu, _cs = generate_shp(_rs, _ts, os.path.join(_d_tmp, os.path.basename(opts.output)))
         if _nu <= 0:
-            raise Exception('no valid image was found')
+            logging.error('no valid image was found')
+            return False
 
         if len(_cs) > 0:
             print('found %s invalid files' % len(_cs))
             for _l in _cs:
                 print(_l)
             return
-            # raise Exception('found invalid images')
 
         logging.info('added %s file' % _nu)
         print('added %s file' % _nu)
