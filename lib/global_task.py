@@ -244,7 +244,13 @@ def make(f_inp, column=None, image_size=1000, cell_size=30, ps=None, f_shp=None,
     from gio import geo_base as gb
 
     _proj = proj or gb.modis_projection()
-    _ext, _objs = load_shp(file_obj(f_inp).get(), column, proj=_proj)
+    
+    if isinstance(f_inp, gb.geo_polygon):
+        _ext, _objs = f_inp.extent(), None
+    elif  isinstance(f_inp, gb.geo_extent):
+        _ext, _objs = f_inp, None
+    else:
+        _ext, _objs = load_shp(file_obj(f_inp).get(), column, proj=_proj)
 
     if _ext == None:
         return []
@@ -259,9 +265,12 @@ def make(f_inp, column=None, image_size=1000, cell_size=30, ps=None, f_shp=None,
     for _col, _row in _tils.list(_ext):
         _bnd = _tils.extent(_col, _row)
 
-        _fs = _tils.files(_bnd, _objs)
-        if len(_fs) == 0:
-            continue
+        if _objs is None:
+            _fs = []
+        else:
+            _fs = _tils.files(_bnd, _objs)
+            if len(_fs) == 0:
+                continue
 
         _tile = tile(image_size, cell_size, _col, _row, _fs, ps, edge, _proj)
         _ps.append(_tile)

@@ -87,6 +87,9 @@ class hls_info:
         return cmp(str(self), str(obj))
 
 def parse(code, file_only=False):
+    if code.endswith('/'):
+        code = code[:-1]
+        
     if file_only:
         return _parse_item(code)
 

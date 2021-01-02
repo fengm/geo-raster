@@ -123,7 +123,7 @@ class sr_dir(sr):
             raise Exception('failed to parse %s' % p)
 
         import os
-        if os.path.isdir(p):
+        if p.endswith('/'):
             self._list_dir(p)
         else:
             raise Exception('not support the file %s' % p)
@@ -132,20 +132,21 @@ class sr_dir(sr):
         self._bnds = {}
 
     def _is_img(self, f):
-        f = f.lower()
+        f = str(f).lower()
         return f.endswith('.img.gz') or f.endswith('.img') or f.endswith('.tif.gz') or f.endswith('.tif')
 
     def _list_dir(self, p):
         import os
         import re
+        from gio import file_mag
 
         _fs = {}
         _bs = []
-        for _f in os.listdir(p):
-            _p = os.path.join(p, _f)
-            _f = _f.lower()
-
-            _m = self._is_img(_f) and re.search('sr_band(\d+)\.', _f)
+        
+        for _f in file_mag.get(p).list():
+            _p = str(_f)
+            
+            _m = self._is_img(_p) and re.search('sr_band(\d+)\.', _p)
             if _m:
                 _fs['sr_b%s' % _m.group(1)] = _p
                 _b = int(_m.group(1))
@@ -153,8 +154,8 @@ class sr_dir(sr):
                     _bs.append(_b)
                 continue
 
-            _m = self._is_img(_f) and (re.search('toa_band(\d+)\.', _f) or \
-                    re.search('toa_b(\d+)\.', _f))
+            _m = self._is_img(_p) and (re.search('toa_band(\d+)\.', _p) or \
+                    re.search('toa_b(\d+)\.', str(_f)))
             if _m:
                 _fs['toa_b%s' % _m.group(1)] = _p
                 _b = int(_m.group(1))
@@ -162,7 +163,7 @@ class sr_dir(sr):
                     _bs.append(_b)
                 continue
 
-            _m = self._is_img(_f) and re.search('bt_band(\d+)\.', _f)
+            _m = self._is_img(_p) and re.search('bt_band(\d+)\.', _p)
             if _m:
                 _fs['toa_b%s' % _m.group(1)] = _p
                 _b = int(_m.group(1))
@@ -170,12 +171,12 @@ class sr_dir(sr):
                     _bs.append(_b)
                 continue
 
-            _m = self._is_img(_f) and re.search('_cfmask\.', _f)
+            _m = self._is_img(_p) and re.search('_cfmask\.', _p)
             if _m:
                 _fs['cfmask'] = _p
                 continue
 
-            _m = (not _f.startswith('lnd')) and re.search('_mtl.txt', _f)
+            _m = (not _p.startswith('lnd')) and re.search('_mtl.txt', _p.lower())
             if _m:
                 _fs['mtl'] = _p
                 continue
@@ -188,6 +189,7 @@ class sr_dir(sr):
 
     def _load_band(self, b):
         from . import geo_raster as ge
+        from . import file_mag
 
         _b = b
         logging.info('loading band %s (%s)' % (b, _b))
@@ -196,11 +198,13 @@ class sr_dir(sr):
             _bn = ('sr_b%s' if 'sr_b%s' % _b in self._fs else 'toa_b%s') % _b
             logging.info('caching band %s' % _bn)
 
-            self._bnds[_b] = ge.open(self._fzip.unzip(self._fs[_bn])).get_band()
+            self._bnds[_b] = ge.open(self._fzip.unzip(file_mag.get(self._fs[_bn]).get())).get_band()
 
         return self._bnds[_b]
 
     def get_cloud(self, code_set=0):
+        from . import file_mag
+        
         _b = 'cloud'
         if _b in list(self._bnds.keys()):
             return self._bnds[_b]
@@ -210,7 +214,7 @@ class sr_dir(sr):
 
         if _b in self._bs:
             from . import geo_raster as ge
-            _bnd = ge.open(self._fzip.unzip(self._fs[_b])).get_band().cache()
+            _bnd = ge.open(self._fzip.unzip(file_mag.get(self._fs[_b]).get())).get_band().cache()
             self._bnds['cloud'] = _bnd
 
             return _bnd
@@ -218,7 +222,7 @@ class sr_dir(sr):
         _b = 'cfmask'
         if _b in self._fs:
             from . import geo_raster as ge
-            _bnd = qa.from_fmask(ge.open(self._fzip.unzip(self._fs[_b])).get_band().cache(), code_set)
+            _bnd = qa.from_fmask(ge.open(self._fzip.unzip(file_mag.get(self._fs[_b]).get())).get_band().cache(), code_set)
             self._bnds['cloud'] = _bnd
 
             return _bnd
@@ -258,7 +262,7 @@ class sr_dir(sr):
             return None
 
         _ms = {}
-        with open(self._fzip.unzip(self._fs['mtl'])) as _fi:
+        with open(self._fzip.unzip(file_mag.get(self._fs['mtl']).get())) as _fi:
             for _l in _fi:
                 _rs = [x.strip() for x in _l.strip().split('=')]
                 if len(_rs) == 2:
@@ -316,7 +320,7 @@ class sr_hdf(sr):
 def load(f, fzip):
     import os
 
-    if os.path.isdir(f):
+    if f.endswith('/'):
         return sr_dir(f, fzip)
 
     if f.endswith('.hdf.gz') or f.endswith('.hdf'):
