@@ -258,6 +258,7 @@ class sr_dir(sr):
         return _bnd.from_grid(_ddd, nodata=255)
 
     def metadata(self):
+        from . import file_mag
         if 'mtl' not in list(self._fs.keys()):
             return None
 
