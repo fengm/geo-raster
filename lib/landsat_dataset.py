@@ -320,6 +320,9 @@ class sr_hdf(sr):
 
 def load(f, fzip):
     import os
+    
+    if not f.startswith('s3://') and os.path.isdir(f):
+        f = f + '/'
 
     if f.endswith('/'):
         return sr_dir(f, fzip)
