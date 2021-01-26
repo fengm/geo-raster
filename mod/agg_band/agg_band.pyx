@@ -56,7 +56,7 @@ def mean(bnd_in, bnd_ot, v_min=None, v_max=None, min_rate=0.1):
     return ge.geo_band_cache(_dat, _geo_ot, bnd_ot.proj,
                 _nodata, bnd_in.pixel_type)
 
-def median(bnd_in, bnd_ot, min_rate=0):
+def median(bnd_in, bnd_ot, min_rate=0, pval=50):
     if bnd_in is None:
         return None
     if bnd_ot is None:
@@ -81,7 +81,7 @@ def median(bnd_in, bnd_ot, min_rate=0):
 
     _dat = median_pixels(_dat,
             _offs[0], _offs[1], _dive,
-            _nodata, _size[0], _size[1], min_rate=min_rate)
+            _nodata, _size[0], _size[1], min_rate=min_rate, pval=pval)
 
     if bnd_in.data.dtype != np.int16:
         _dat = _dat.astype(bnd_in.data.dtype)
@@ -448,7 +448,7 @@ cdef np.ndarray[np.int16_t, ndim=2] dominated_pixels(np.ndarray[np.int16_t, ndim
 
 cdef np.ndarray[np.int16_t, ndim=2] median_pixels(np.ndarray[np.int16_t, ndim=2] dat,
         float off_y, float off_x, float scale,
-        int nodata, unsigned int rows, unsigned int cols, min_rate):
+        int nodata, unsigned int rows, unsigned int cols, min_rate, pval=50):
 
     cdef unsigned int _rows_o, _cols_o
     cdef unsigned int _rows_n, _cols_n
@@ -541,7 +541,7 @@ cdef np.ndarray[np.int16_t, ndim=2] median_pixels(np.ndarray[np.int16_t, ndim=2]
                     _vv = _vs[0]
                 else:
                     _vs.sort()
-                    _vv = _vs[int(_len / 2)]
+                    _vv = _vs[int(_len * (pval / 100.0))]
 
             _dat[_row_n, _col_n] = _vv
 
