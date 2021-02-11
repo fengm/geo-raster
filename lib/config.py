@@ -105,8 +105,11 @@ def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_
             if not _d_ini:
                 raise Exception('failed to find the G_INI environ')
                 
-            _f_out = os.path.abspath(os.path.join(_d_ini, os.path.basename(_f)))
-            if not os.path.exists(_f_out):
+            _f_out = os.path.abspath(os.path.join(_d_ini, _f[5:]))
+            # if not os.path.exists(_f_out):
+            # if os.path.exists(_f_out):
+            if True:
+                # update the config file every time
                 os.system('aws s3 cp %s %s' %  (_f, _f_out))
             _f = _f_out
 
