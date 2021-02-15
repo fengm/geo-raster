@@ -23,6 +23,9 @@ class obj_mag:
     def list(self, recursive=False):
         raise NotImplementedError()
         
+    def remove(self):
+        raise NotImplementedError()
+        
     def __enter__(self):
         return self
 
@@ -78,6 +81,17 @@ class file_mag(obj_mag):
 
         _fs = [file_mag(os.path.join(self._f, _f)) for _f in os.listdir(self._f)]
         return _fs
+        
+    def remove(self):
+        import os
+        if not os.path.exists(self._f):
+            return False
+        
+        if os.path.isfile(self._f):
+            return os.remove(self._f)
+            
+        import shutil
+        return shutil.rmtree(self._f, True)
 
     def __str__(self):
         return self._f
@@ -151,6 +165,9 @@ class s3_mag(obj_mag):
                 _f = f[:-4] + _e
                 if os.path.exists(_f):
                     self._s3.put(self._path[:-4] + _e, _f)
+                    
+    def remove(self):
+        _c = 'aws s3 rm %s --recursive' % self._f
 
     def __str__(self):
         return self._f
