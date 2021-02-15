@@ -53,7 +53,7 @@ def add_task_opts(p):
     p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=1)
     p.add_argument('-to', '--task-order', dest='task_order', type=int, default=0)
     p.add_argument('-tt', '--task-type', dest='task_type', type=int, default=0, help='0: default; 1: mpi')
-    p.add_argument('--use-process-temp', dest='use_process_temp', type='bool', default=False, \
+    p.add_argument('--use-process-temp', dest='use_process_temp', type='bool', default=True, \
         help='use seperated temporary path for each process and clean up after each task is completed')
 
 def _get_task_pos(opts):
