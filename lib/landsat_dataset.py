@@ -272,7 +272,10 @@ class sr_dir(sr):
         if 'SUN_AZIMUTH' in _ms:
             _ms['SolarAzimuth'] = _ms['SUN_AZIMUTH']
         if 'SUN_ELEVATION' in _ms:
-            _ms['SolarZenith'] = 1 - float(_ms['SUN_ELEVATION'])
+            _ms['SolarZenith'] = 90 - float(_ms['SUN_ELEVATION'])
+            
+        assert(_ms['SolarZenith'] >= 0)
+        # print('sun params: %s, %s, %s' % (_ms['SolarAzimuth'], _ms['SolarZenith'], _ms['SUN_ELEVATION']))
 
         # if 'SolarAzimuth' not in _ms:
         #     print _ms.keys()
