@@ -23,6 +23,21 @@ class file_obj():
 _w_lock = {}
 _w_nums = {}
 
+def _get_cache_dir(d=None):
+    if d:
+        return d
+    
+    from . import config
+    
+    _d_tmp = config.get('conf', 'cache')
+    if _d_tmp:
+        return _d_tmp
+        
+    from . import file_unzip
+    import os
+    
+    return os.path.join(file_unzip.default_dir(None), 'cache')
+
 class cache_mag():
     """manage Landsat cache files"""
 
@@ -30,11 +45,7 @@ class cache_mag():
         from . import config
 
         self._t = tag
-        
-        if cache:
-            self._d = cache
-        else:
-            self._d = config.get('conf', 'cache')
+        self._d = _get_cache_dir(cache)
 
         if not self._d:
             raise Exception('no cache folder specified')
@@ -235,7 +246,7 @@ class s3():
                 
             _p = _zip.generate_file()
         else:
-            _p = config.get('conf', 'cache')
+            _p = _get_cache_dir()
             if not _p:
                 if _zip is None:
                     raise Exception('need to provide zip obj when cache is disabled')

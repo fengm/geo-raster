@@ -134,9 +134,9 @@ def run(func, opts):
         _tmp = _zip.generate_file()
         config.set('conf', 'temp', _tmp)
 
-        _cache = config.get('conf', 'cache', None)
-        if not _cache:
-            config.set('conf', 'cache', os.path.join(_tmp, 'cache'))
+        # _cache = config.get('conf', 'cache', None)
+        # if not _cache:
+        #     config.set('conf', 'cache', os.path.join(_tmp, 'cache'))
 
         if config.getint('conf', 'task_type') is not None:
             from . import multi_task

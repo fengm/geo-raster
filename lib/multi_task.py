@@ -53,6 +53,8 @@ def add_task_opts(p):
     p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=1)
     p.add_argument('-to', '--task-order', dest='task_order', type=int, default=0)
     p.add_argument('-tt', '--task-type', dest='task_type', type=int, default=0, help='0: default; 1: mpi')
+    p.add_argument('--use-process-temp', dest='use_process_temp', type='bool', default=False, \
+        help='use seperated temporary path for each process and clean up after each task is completed')
 
 def _get_task_pos(opts):
     return max(0, min(opts.instance_num - 1, opts.instance_pos))
@@ -188,7 +190,11 @@ def work_function(obj, job_queue, vs, mag, res, t_lock, pos):
             _rs = None
 
             try:
+                from gio import file_unzip
+                from gio import config
+                
                 _rs = obj.func(*_ps)
+                
             except KeyboardInterrupt as _err:
                 raise _err
             except Exception as _err:
@@ -203,6 +209,9 @@ def work_function(obj, job_queue, vs, mag, res, t_lock, pos):
                     mag['stop'] = True
                     raise _err
 
+            if config.getboolean('conf', 'use_process_temp', False):
+                file_unzip.clean(file_unzip.default_dir(None))
+                    
             if mag['stop']:
                 return
 

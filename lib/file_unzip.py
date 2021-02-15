@@ -220,35 +220,51 @@ def default_dir(fd_out):
     # use 'tmp' folder at the root of the code when no folder specified
     if fd_out:
         return fd_out
-
+        
     from . import config
-    if config.cfg.has_option('conf', 'temp'):
-        return os.path.join(config.cfg.get('conf', 'temp'), _file_name())
+    
+    _d_tmp = config.get('conf', 'temp', os.environ.get('G_TMP', os.path.join(sys.path[0], 'tmp')))
+    
+    # if config.cfg.has_option('conf', 'temp'):
+    #     _d_tmp = config.
+    #     return os.path.join(config.cfg.get('conf', 'temp'), _file_name())
 
-    if 'G_TMP' in os.environ:
-        return os.path.join(os.environ['G_TMP'], _file_name())
+    # if 'G_TMP' in os.environ:
+    #     return os.path.join(os.environ['G_TMP'], _file_name())
+    
+    if not _d_tmp:
+        raise Exception('failed to find temp path')
+        
+    if config.getboolean('conf', 'use_process_temp', False):
+        import os
+        _d_tmp = os.path.join(_d_tmp, 'p%d' % os.getpid())
+        logging.debug('use process temp: %s' % _d_tmp)
 
-    return os.path.join(sys.path[0], 'tmp', _file_name())
+    return os.path.join(_d_tmp, _file_name())
 
-def clean(fd_out, remove_root=False):
+def clean(fd_out, remove_root=True):
     '''force to clean the folder'''
-    import shutil, os
+    try:
+        import shutil, os
+        
+        logging.debug('clean folder: %s (%s)' % (fd_out, remove_root))
+        if remove_root:
+            shutil.rmtree(fd_out, True)
+            return
+    
+        for _root, _dirs, _files in os.walk(fd_out):
+            for _file in _files:
+                try:
+                    os.remove(os.path.join(_root, _file))
+                except Exception:
+                    # ignore the errors
+                    pass
+            for _dir in _dirs:
+                shutil.rmtree(os.path.join(_root, _dir), True)
 
-    logging.debug('clean folder: %s (%s)' % (fd_out, remove_root))
-    if remove_root:
-        shutil.rmtree(fd_out, True)
-        return
-
-    for _root, _dirs, _files in os.walk(fd_out):
-        for _file in _files:
-            try:
-                os.remove(os.path.join(_root, _file))
-            except Exception:
-                # ignore the errors
-                pass
-        for _dir in _dirs:
-            shutil.rmtree(os.path.join(_root, _dir), True)
-
+    except Exception:
+        pass
+        
 class file_unzip:
     def __init__(self, fd_out='', exclusive=True, keep=False):
         import os
@@ -319,7 +335,7 @@ class file_unzip:
 
     def _clean(self):
         import shutil, os
-
+        
         if self.exclusive:
             # shutil.rmtree(self.fd_out if self.existed else self.pfolder, True)
             # forbidden the code for removing the parent dir because it may cause
