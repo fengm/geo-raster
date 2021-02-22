@@ -202,18 +202,24 @@ class geo_band_info(geo_raster_info):
 
     def __init__(self, geo_transform, width, height, proj, nodata=None, pixel_type=None):
         geo_raster_info.__init__(self, geo_transform, width, height, proj)
-        self.nodata = nodata
+            
         self.pixel_type = pixel_type
+        self.nodata = self.est_nodata(nodata)
 
     def __del__(self):
         geo_raster_info.__del__(self)
 
-        self.nodata = None
         self.pixel_type = None
+        self.nodata = None
 
-    def get_nodata(self):
-        _nodata = self.nodata
-
+    def get_nodata(self, nodata=None):
+        return self.nodata
+        
+    def est_nodata(self, nodata=None):
+        _nodata = nodata
+        if self.pixel_type < 3 and _nodata <= -32767.0:
+            _nodata = None
+            
         if _nodata is None:
             _default_nodata = {1: 255, 2: 65535, 3: -9999, 4: (2 ** 32) - 1, 5: -9999, 6: -9999}
             if self.pixel_type not in _default_nodata.keys():

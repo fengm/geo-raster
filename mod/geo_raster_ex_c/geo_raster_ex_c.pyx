@@ -746,10 +746,9 @@ class geo_band_stack_zip:
             raise Exception('No band loaded')
 
         _bnd = self.bands[0].get_band()
-
         if self.nodata is None:
-            self.nodata = _bnd.band.nodata
-
+            self.nodata = _bnd.band.get_nodata()
+            
         self.pixel_type = _bnd.band.pixel_type
         self.cell_size = _bnd.band.geo_transform[1]
         self.cell_size_y = _bnd.band.geo_transform[5]
