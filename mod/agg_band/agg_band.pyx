@@ -74,6 +74,8 @@ def median(bnd_in, bnd_ot, min_rate=0, pval=50):
                 (_geo_ot[0] - _geo_in[0]) / _geo_in[1]]
 
     _nodata = bnd_in.get_nodata()
+    print('nodata', _nodata)
+    
     _dat = bnd_in.data
 
     if bnd_in.data.dtype != np.int16:
@@ -449,7 +451,7 @@ cdef np.ndarray[np.int16_t, ndim=2] dominated_pixels(np.ndarray[np.int16_t, ndim
 cdef np.ndarray[np.int16_t, ndim=2] median_pixels(np.ndarray[np.int16_t, ndim=2] dat,
         float off_y, float off_x, float scale,
         int nodata, unsigned int rows, unsigned int cols, min_rate, pval=50):
-
+            
     cdef unsigned int _rows_o, _cols_o
     cdef unsigned int _rows_n, _cols_n
 
@@ -493,7 +495,7 @@ cdef np.ndarray[np.int16_t, ndim=2] median_pixels(np.ndarray[np.int16_t, ndim=2]
             if _row_max_f <= 0 or _col_max_f <= 0 or \
                     _row_min_f >= _rows_o or _col_min_f >= _cols_o:
                 continue
-
+            
             _row_min = int(math.floor(_row_min_f))
             _row_min = max(0, _row_min)
 
@@ -529,7 +531,7 @@ cdef np.ndarray[np.int16_t, ndim=2] median_pixels(np.ndarray[np.int16_t, ndim=2]
                     _ns += _a
                     _vs.append(_v)
 
-            if _ns < _aa * min_rate:
+            if _ns <= 0 or _ns < _aa * min_rate:
                 continue
 
             _mx = 0
