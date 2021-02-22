@@ -41,7 +41,7 @@ def _task(tile, u, image_check=False):
     # if tile.row != 970:
     #     return
 
-    _f = u % {'col': 'h%03d' % tile.col, 'row': 'v%03d' % tile.row}
+    _f = u % {'h': 'h%03d' % tile.col, 'v': 'v%03d' % tile.row}
     _o = file_mag.get(_f)
 
     if _o.exists():
@@ -64,8 +64,8 @@ def _format_url(inp, f):
         import os
         _f = os.path.join(inp, 'data/h001/v001/h001v001/h001v001_%s' % (_t))
 
-    _f = re.sub('h\d\d\d+', '%(col)s', _f)
-    _f = re.sub('v\d\d\d+', '%(row)s', _f)
+    _f = re.sub('h\d\d\d+', '%(h)s', _f)
+    _f = re.sub('v\d\d\d+', '%(v)s', _f)
 
     return _f
 
@@ -159,10 +159,10 @@ def main(opts):
 
     _f_mak = file_mag.get(os.path.join(_d_inp, 'tasks.txt'))
 
-    _u = _format_url(_d_inp, opts.ext)
-    # if not _u.startswith('s3://'):
-    #     _u = os.path.join(opts.input, _u)
-
+    _u = opts.ext
+    if opts.format_url:
+        _u = _format_url(_d_inp, opts.ext)
+        
     print('url:', _u)
     logging.info('url: %s' % _u)
 
