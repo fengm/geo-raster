@@ -222,6 +222,9 @@ class geo_band_info(geo_raster_info):
             # reset the nodata to address the incorrect nodata when nodata set
             if self.pixel_type < 3 and _nodata <= -32767.0:
                 _nodata = None
+                
+        if self.pixel_type is None:
+            return _nodata
             
         if _nodata is None:
             _default_nodata = {1: 255, 2: 65535, 3: -9999, 4: (2 ** 32) - 1, 5: -9999, 6: -9999}
