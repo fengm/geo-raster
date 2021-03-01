@@ -204,7 +204,7 @@ def usage():
     _p.add_argument('-c', '--cache', dest='cache')
     _p.add_argument('-f', '--format-url', dest='format_url', type='bool', default=True)
     _p.add_argument('--check-image', dest='check_image', action='store_true')
-    _p.add_argument('--over-write', '--over-write', dest='over_write', action='store_true', default=False)
+    _p.add_argument('-w', '--over-write', '--over-write', dest='over_write', type='bool')
     _p.add_argument('-e', '--ext', dest='ext', required=True)
     _p.add_argument('-o', '--output', dest='output', required=True)
 
