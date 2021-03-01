@@ -74,8 +74,6 @@ def median(bnd_in, bnd_ot, min_rate=0, pval=50):
                 (_geo_ot[0] - _geo_in[0]) / _geo_in[1]]
 
     _nodata = bnd_in.get_nodata()
-    print('nodata', _nodata)
-    
     _dat = bnd_in.data
 
     if bnd_in.data.dtype != np.int16:
