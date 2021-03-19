@@ -959,7 +959,10 @@ class geo_band(geo_band_info):
         _pol_t1 = geo_base.geo_polygon.from_raster(bnd).segment_ratio(10)
         _pol_t2 = _pol_t1.project_to(self.proj)
         if _pol_t2 is None:
-            raise Exception('failed to project the grid extent')
+            # raise Exception('failed to project the grid extent')
+            # skip the error and return None
+            logging.debug('failed to project the grid extent')
+            return None
 
         _bnd = self
         _pol_s = geo_base.geo_polygon.from_raster(_bnd).segment_ratio(10)
