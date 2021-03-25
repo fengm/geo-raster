@@ -22,16 +22,16 @@ class obj_mag:
 
     def list(self, recursive=False):
         raise NotImplementedError()
-        
+
     def remove(self):
         raise NotImplementedError()
-        
+
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, traceback):
         pass
-        
+
 class file_mag(obj_mag):
 
     def __init__(self, f):
@@ -41,7 +41,7 @@ class file_mag(obj_mag):
     def exists(self):
         if not self._f:
             return False
-            
+
         import os
         return os.path.exists(self._f)
 
@@ -61,7 +61,7 @@ class file_mag(obj_mag):
                 _f = f[:-4] + _e
                 if os.path.exists(_f):
                     shutil.copy(_f, self._f[:-4] + _e)
-                    
+
     def list(self, recursive=False):
         import os
         if not os.path.exists(self._f):
@@ -69,27 +69,27 @@ class file_mag(obj_mag):
 
         if os.path.isfile(self._f):
             return [file_mag(self._f)]
-            
+
         if recursive:
             _fs = []
-            
+
             for _root, _dirs, _files in os.walk(str(self._f)):
                 for _f in _files:
                     _fs.append(file_mag(os.path.join(_root, _f)))
-            
+
             return _fs
 
         _fs = [file_mag(os.path.join(self._f, _f)) for _f in os.listdir(self._f)]
         return _fs
-        
+
     def remove(self):
         import os
         if not os.path.exists(self._f):
             return False
-        
+
         if os.path.isfile(self._f):
             return os.remove(self._f)
-            
+
         import shutil
         return shutil.rmtree(self._f, True)
 
@@ -100,8 +100,8 @@ class s3_mag(obj_mag):
 
     def __init__(self, f, s3=None):
         import re
-        
-        _m = re.match('s3://([^/]+)/(.+)', f)
+
+        _m = re.match('s3://([^/]+)/(.*)', f)
         if _m is None:
             raise Exception('failed to parse S3 file %s' % f)
 
@@ -125,21 +125,21 @@ class s3_mag(obj_mag):
     def exists(self):
         if not self._path:
             return False
-            
+
         return self._s3.exists(self._path)
 
     def get(self):
         if not self._path:
             return None
-            
+
         _o = self._s3.get(self._path)
         if _o:
             if self._path.endswith('.shp'):
                 for _e in ['.prj', '.shx', '.dbf']:
                     self._s3.get(self._path[:-4] + _e)
-        
+
         return _o
-    
+
     def _list(self, d, fs):
         if str(d).endswith('/'):
             for _f in d.list(False):
@@ -152,9 +152,9 @@ class s3_mag(obj_mag):
             _fs = []
             self._list(self, _fs)
             return _fs
-            
+
         # return [s3_mag('s3://%s/%s' % (self._bucket, _f.key), s3=self._s3) for _f in list(self._s3.bucket.list(self._path))]
-        return [s3_mag('s3://%s/%s' % (self._bucket, _f.key), s3=self._s3) for _f in self._s3.list(self._path)]
+        return [s3_mag('s3://%s/%s' % (self._bucket, _f['Key']), s3=self._s3) for _f in self._s3.list(self._path)]
 
     def put(self, f, update=True):
         self._s3.put(self._path, f, update=update)
@@ -165,13 +165,13 @@ class s3_mag(obj_mag):
                 _f = f[:-4] + _e
                 if os.path.exists(_f):
                     self._s3.put(self._path[:-4] + _e, _f)
-                    
+
     def remove(self):
-        _c = 'aws s3 rm %s --recursive' % self._f
+        return self._s3.remove(self._path)
 
     def __str__(self):
         return self._f
-        
+
     def __exit__(self, type, value, traceback):
         if self._s3_inner:
             self._s3.clean()
@@ -179,7 +179,7 @@ class s3_mag(obj_mag):
 def get(f):
     if not f:
         return None
-        
+
     _f = f.strip()
     if _f.startswith('s3://'):
         return s3_mag(_f)

@@ -26,16 +26,16 @@ _w_nums = {}
 def _get_cache_dir(d=None):
     if d:
         return d
-    
+
     from . import config
-    
+
     _d_tmp = config.get('conf', 'cache')
     if _d_tmp:
         return _d_tmp
-        
+
     from . import file_unzip
     import os
-    
+
     return os.path.join(file_unzip.default_dir(None), 'cache')
 
 class cache_mag():
@@ -243,61 +243,71 @@ class s3():
             if _zip is None:
                 from gio import file_unzip
                 _zip = file_unzip.file_unzip()
-                
+
             _p = _zip.generate_file()
         else:
             _p = _get_cache_dir()
             if not _p:
                 if _zip is None:
                     raise Exception('need to provide zip obj when cache is disabled')
-    
+
                 logging.info('disabled caching S3 files')
                 _p = _zip.generate_file()
 
         self._zip = _zip
         self._zip_inner = fzip is None
-        
+
         self._path = _p
         self._c = cache_mag(bucket, _p)
 
         import boto3
-        self._s3 = boto3.resource('s3')
-        self.bucket = self._s3.Bucket(self._t)
+        # self._s3 = boto3.resource('s3')
+
+        self._s3 = boto3.client('s3')
+        self.bucket = self._t
 
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, traceback):
         self.clean()
-    
+
     def clean(self):
         if (not self._enable_cache) and (self._path):
             import shutil
             shutil.rmtree(self._path, True)
-            
+
         if self._zip_inner and self._zip:
             self._zip.clean()
 
-    def list(self, k, limit=-1):
-        if limit >= 0:
-            return list(self.bucket.objects.filter(Prefix=k).limit(limit))
-            
-        _ls = list(self.bucket.objects.filter(Prefix=k))
-        return _ls
+    def list(self, k, limit=1000):
+        from . import config
+
+        _ps = {'Bucket': self._t, 'Prefix': k, 'MaxKeys': limit}
+        if config.getboolean('aws', 's3_requester_pay', False):
+            _ps['RequestPayer'] = 'requester'
+
+        _ts = self._s3.list_objects(**_ps)
+        if 'Contents' not in _ts:
+            return []
+
+        return _ts['Contents']
 
     def exists(self, k):
         if not k:
             return False
-            
-        if k.endswith('/'):
-            _os = self.list(k, limit=1)
-            return len(_os) > 0
-            
-        _k = self.get_key(k)
-        if _k is None:
-            return False
-            
-        return True
+
+        _os = self.list(k, limit=1)
+        return len(_os) > 0
+
+    def remove(self, key):
+        from . import config
+
+        _ps = {'Bucket': self._t, 'Key': key}
+        if config.getboolean('aws', 's3_requester_pay', False):
+            _ps['RequestPayer'] = 'requester'
+
+        return self._s3.delete_object(**_ps)
 
     def get(self, k, lock=None):
         if k is None:
@@ -350,16 +360,22 @@ class s3():
                 with open(_t, 'w') as _fo:
                     _fo.write('')
 
-                _kkk = self.get_key(k)
-                if _kkk is None:
-                    logging.warning('no key was found: s3://%s/%s' % (self._t, k))
-                    return None
-                    
-                with open(_t, 'wb') as _fo:
-                    _kkk.download_fileobj(_fo)
+                from . import config
+                _ps = {'Bucket': self._t, 'Key': k}
+                if config.getboolean('aws', 's3_requester_pay', False):
+                    _ps['RequestPayer'] = 'requester'
 
-                if not os.path.exists(_t) or os.path.getsize(_t) < _kkk.content_length:
-                    logging.warning('received partial file from S3 (%s, %s)' % (os.path.getsize(_f), _kkk.size))
+                _rs = self._s3.get_object(**_ps)
+                _bd = _rs['Body']
+
+                _sz = 0
+                with open(_f, 'wb') as _fo:
+                    for _bs in _bd.iter_chunks():
+                        _fo.write(_bs)
+                        _sz += len(_bs)
+
+                if not os.path.exists(_t) or _sz < _rs['ContentLength']:
+                    logging.warning('received partial file from S3 (%s, %s)' % (_sz, _rs['ContentLength']))
                     continue
 
                 if lock is None:
@@ -378,42 +394,19 @@ class s3():
 
         raise Exception('failed to load S3 file s3://%s/%s' % (self._t, _key))
 
-    def get_key(self, k):
-        if not k:
-            return None
-            
-        _k = self._s3.Object(self._t, k) if isinstance(k, str) or isinstance(k, unicode) else k
-        
-        if _k is None:
-            return None
-        
-        from botocore.exceptions import ClientError        
-        try:
-            _k.content_length
-        except ClientError:
-            return None
-
-        return _k
-
-    # def new_key(self, k):
-    #     _kk = self.bucket.new_key(k) if isinstance(k, str) or isinstance(k, unicode) else k
-    #     return _kk
-
     def put(self, k, f, update=True, lock=None):
-        _kk = self.get_key(k)
-        if _kk is not None:
-            if update == False:
-                logging.info('skip existing file %s: %s' % (_kk.bucket, _kk.name))
-                return
+        if (not update) and self.exists(k):
+            logging.info('skip existing file %s: %s' % (self._t, k))
+            return
 
-        _b, _p = self._t, k
-        logging.info('upload file %s: %s' % (_b, _p))
+        logging.info('upload file %s: %s' % (self._t, k))
+        with open(f, 'rb') as _fi:
+            from . import config
+            _ps = {'Bucket': self._t, 'Key': k, 'Body': _fi}
+            if config.getboolean('aws', 's3_requester_pay', False):
+                _ps['RequestPayer'] = 'requester'
 
-        if lock is None:
-            self.bucket.upload_file(f, _p)
-        else:
-            with lock:
-                self.bucket.upload_file(f, _p)
+            _rs = self._s3.put_object(**_ps)
 
 def parse_s3(f):
     import re
