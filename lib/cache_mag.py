@@ -279,11 +279,21 @@ class s3():
 
         if self._zip_inner and self._zip:
             self._zip.clean()
+            
+    def _list_by_resource(self, k, limit=-1):
+        import boto3
+        
+        _ss = boto3.resource('s3').Bucket(self._t)
+        if limit >= 0:
+            return list(_ss.objects.filter(Prefix=k).limit(limit))
 
-    def list(self, k, limit=1000):
+        _ls = list(_ss.objects.filter(Prefix=k))
+        return _ls
+
+    def list_by_client(self, k, limit=-1):
         from . import config
-
-        _ps = {'Bucket': self._t, 'Prefix': k, 'MaxKeys': limit}
+        
+        _ps = {'Bucket': self._t, 'Prefix': k, 'MaxKeys': limit if limit >= 0 else 1000}
         if config.getboolean('aws', 's3_requester_pay', False):
             _ps['RequestPayer'] = 'requester'
 
@@ -293,6 +303,14 @@ class s3():
 
         return _ts['Contents']
 
+    def list(self, k, limit=-1):
+        from . import config
+        
+        if config.getboolean('aws', 's3_requester_pay', False):
+            return self._list_by_client(k, limit)
+            
+        return [{'Key': _s.key} for _s in self._list_by_resource(k, limit)]
+        
     def exists(self, k):
         if not k:
             return False
