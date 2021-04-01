@@ -377,25 +377,26 @@ class s3():
                 # write an empty file to prevent other process to use the same file name
                 with open(_t, 'w') as _fo:
                     _fo.write('')
-
+    
                 from . import config
                 _ps = {'Bucket': self._t, 'Key': k}
                 if config.getboolean('aws', 's3_requester_pay', False):
                     _ps['RequestPayer'] = 'requester'
-
+    
                 _rs = self._s3.get_object(**_ps)
                 _bd = _rs['Body']
-
+    
                 _sz = 0
-                with open(_f, 'wb') as _fo:
+                with open(_t, 'wb') as _fo:
                     for _bs in _bd.iter_chunks():
                         _fo.write(_bs)
                         _sz += len(_bs)
-
+                        
                 if not os.path.exists(_t) or _sz < _rs['ContentLength']:
                     logging.warning('received partial file from S3 (%s, %s)' % (_sz, _rs['ContentLength']))
+                    os.remove(_t)
                     continue
-
+    
                 if lock is None:
                     if os.path.exists(_f) == False:
                         shutil.move(_t, _f)
@@ -403,7 +404,7 @@ class s3():
                     with lock:
                         if os.path.exists(_f) == False:
                             shutil.move(_t, _f)
-
+    
                 return _f
 
             finally:
