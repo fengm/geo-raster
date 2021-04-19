@@ -75,7 +75,7 @@ def _task(tile, t, f_inp, d_out, ps):
             if config.getboolean('conf', 'geo_tile', False) \
             else ('h%03d' % tile.col, 'v%03d' % tile.row)
         
-    _tag = '%s_%s' % (_col, _row)
+    _tag = '%s%s' % (_col, _row)
     
     _d_out = os.path.join(d_out, _col, _row, _tag)
     _f_out = os.path.join(_d_out, '%s_%s.tif' % (_tag, t))
@@ -105,6 +105,8 @@ def main(opts):
     from gio import config
 
     _d_out = opts.output
+    if not _d_out:
+        return
 
     _f_mak = file_mag.get(os.path.join(_d_out, 'tasks.txt'))
     _f_shp = file_mag.get(os.path.join(_d_out, 'tasks.shp'))
@@ -181,7 +183,7 @@ def usage():
     _p.add_argument('--geo-tile', dest='geo_tile', type='bool')
     _p.add_argument('--geo-tile-decimals', dest='geo_tile_decimals', type=int, default=0)
     _p.add_argument('--color-table', dest='color_table')
-    _p.add_argument('-o', '--output', dest='output')
+    _p.add_argument('-o', '--output', dest='output', required=True)
     _p.add_argument('--test-tile', dest='test_tile')
 
     return _p

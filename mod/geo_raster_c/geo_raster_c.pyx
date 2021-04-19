@@ -124,7 +124,7 @@ class geo_raster_info:
         _pt2 = (_geo[0] + self.width * _geo[1] + self.height * _geo[2], \
                 _geo[3] + self.width * _geo[4] + self.height * _geo[5])
 
-        import geo_base as gb
+        from . import geo_base as gb
         return gb.geo_extent(_pt1[0], _pt2[1], _pt2[0], _pt1[1], self.proj)
 
     def cell_extent(self, col, row):
@@ -135,7 +135,7 @@ class geo_raster_info:
 
         _pt0 = self.to_location(col, row)
 
-        import geo_base as gb
+        from . import geo_base as gb
         return gb.geo_extent(_pt0[0] - _cell_x, _pt0[1] - _cell_y,
                 _pt0[0] + _cell_x, _pt0[1] + _cell_y, self.proj)
 
@@ -195,7 +195,7 @@ class geo_raster_info:
 
         _dat = grid
 
-        import geo_base as gb
+        from . import geo_base as gb
         return geo_band_cache(_dat, list(self.geo_transform), self.proj, _nodata, gb.from_dtype(grid.dtype))
 
 class geo_band_info(geo_raster_info):
@@ -445,7 +445,7 @@ class geo_band_cache(geo_band_info):
         _dat = numpy.empty((_rows, _cols), dtype=self.data.dtype)
         _dat.fill(_fill)
 
-        import geo_base as gb
+        from . import geo_base as gb
         _ext = gb.geo_extent.from_raster(self).intersect(ext)
 
         if roundup:
@@ -487,7 +487,7 @@ class geo_band_cache(geo_band_info):
                 assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
             return _bnd
 
-        import geo_base
+        from . import geo_base
 
         _prj = geo_base.projection_transform.from_band(bnd, self.proj)
 
@@ -886,7 +886,7 @@ class geo_band(geo_band_info):
             return None
 
         import numpy
-        import geo_base as gb
+        from . import geo_base as gb
         
         _dat = numpy.empty((_rows, _cols), dtype=gb.to_dtype(self.pixel_type))
         _dat.fill(_fill)
@@ -952,7 +952,7 @@ class geo_band(geo_band_info):
                 assert(_bnd.width == bnd.width and _bnd.height == bnd.height)
                 return _bnd
 
-        import geo_base
+        from . import geo_base
 
         _prj = geo_base.projection_transform.from_band(bnd, self.proj)
 
