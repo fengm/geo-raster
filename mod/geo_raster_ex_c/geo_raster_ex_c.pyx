@@ -488,7 +488,8 @@ class projection_transform:
 
     @classmethod
     def from_band(cls, bnd_info, proj, interval=100):
-        import math, geo_raster
+        import math
+        from . import geo_raster
 
         # make sure there are at least 10 points for each axis
         _scale = min((bnd_info.width / 10.0, bnd_info.height / 10.0, float(interval)))
@@ -648,7 +649,7 @@ class band_file:
         self.cache = cache
 
     def get_band(self):
-        import geo_raster
+        from . import geo_raster
 
         logging.debug('loading %s' % self.file)
         if self.band:
@@ -758,7 +759,7 @@ class geo_band_stack_zip:
     @staticmethod
     def from_list(f_list, band_idx=1, dataset_name=None, \
             file_unzip=None, check_layers=False, nodata=None, cache=None):
-        import geo_base as gb
+        from . import geo_base as gb
 
         _bnds = []
         _proj = None
@@ -794,12 +795,12 @@ class geo_band_stack_zip:
     def from_shapefile(f_list, band_idx=1, dataset_name=None, \
             file_unzip=None, check_layers=False, nodata=None, cache=None, extent=None):
         from osgeo import ogr
-        import geo_base as gb
+        from . import geo_base as gb
         import os
 
         logging.debug('loading from %s' % f_list)
         
-        import file_mag
+        from . import file_mag
         if isinstance(f_list, file_mag.obj_mag):
             _finp = f_list.get()
         elif f_list.startswith('s3://'):
@@ -980,7 +981,7 @@ class geo_band_stack_zip:
         return _ls
 
     def _read_band(self, bnd, bnd_info, nodata, pol_t1, dat_out, min_val=None, max_val=None):
-        import geo_base as gb
+        from . import geo_base as gb
         _buffer_dist = 1.0E-15
 
         _bnd_info = bnd_info
@@ -1107,7 +1108,7 @@ class geo_band_stack_zip:
             self.proj.ExportToProj4(),
             bnd.proj.ExportToProj4()))
 
-        import geo_base as gb
+        from . import geo_base as gb
         # _pol_t1 = gb.geo_polygon.from_raster(bnd, div=100).buffer(0.0)
         _pol_t1 = gb.geo_polygon.from_raster(bnd, div=100)
         if _pol_t1 is None or _pol_t1.poly is None:
@@ -1130,7 +1131,7 @@ class geo_band_stack_zip:
             self._read_band(bnd, _bnd_info, _nodata, _pol_t1, _dat_out, min_val, max_val)
             _bnd_info.clean()
 
-        import geo_raster
+        from . import geo_raster
         return geo_raster.geo_band_cache(_dat_out, bnd.geo_transform, bnd.proj, _nodata, \
                 self.pixel_type, self.color_table)
 
@@ -1141,7 +1142,7 @@ class geo_band_reader:
         self.band = band
         self.raster = band.raster
 
-        import geo_base as gb
+        from . import geo_base as gb
         self.poly = gb.geo_polygon.from_raster(self.raster)
 
     def read(self, float x, float y, cache=False):
@@ -1208,7 +1209,7 @@ def collect_samples(bnd_landsat, proj, interval=3000):
     _img_landsat = bnd_landsat.raster
     _read_landsat = geo_band_reader(bnd_landsat)
 
-    import geo_base as gb
+    from . import geo_base as gb
     _poly_union = gb.geo_polygon.from_raster(_img_landsat).project_to(proj)
     _ext_union = _poly_union.extent()
 
