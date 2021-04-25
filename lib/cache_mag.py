@@ -289,19 +289,30 @@ class s3():
 
         _ls = list(_ss.objects.filter(Prefix=k))
         return _ls
-
-    def _list_by_client(self, k, limit=-1):
-        from . import config
         
-        _ps = {'Bucket': self._t, 'Prefix': k, 'MaxKeys': limit if limit >= 0 else 1000}
+    def _list_by_client(self, k, limit=-1):
+        _paginator = self._s3.get_paginator("list_objects_v2")
+        
+        _ps = {'Bucket': self._t, 'Prefix': k}
+        
+        from . import config
         if config.getboolean('aws', 's3_requester_pay', False):
             _ps['RequestPayer'] = 'requester'
+            
+        if limit >= 0:
+            _ps['MaxKeys'] = limit
+            
+        _ts = []
+        for _page in _paginator.paginate(**_ps):
+            try:
+                _cs = _page["Contents"]
+            except KeyError:
+                break
 
-        _ts = self._s3.list_objects(**_ps)
-        if 'Contents' not in _ts:
-            return []
-
-        return _ts['Contents']
+            for _k in _cs:
+                _ts.append(_k)
+                
+        return _ts
 
     def list(self, k, limit=-1):
         from . import config
