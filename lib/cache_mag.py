@@ -290,7 +290,7 @@ class s3():
         _ls = list(_ss.objects.filter(Prefix=k))
         return _ls
 
-    def list_by_client(self, k, limit=-1):
+    def _list_by_client(self, k, limit=-1):
         from . import config
         
         _ps = {'Bucket': self._t, 'Prefix': k, 'MaxKeys': limit if limit >= 0 else 1000}
