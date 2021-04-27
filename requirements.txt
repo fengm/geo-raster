@@ -5,3 +5,4 @@ cython
 numpy
 pandas
 psycopg2
+pillow

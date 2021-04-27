@@ -895,8 +895,8 @@ def proj_from_proj4(txt):
 
     _proj = osr.SpatialReference()
     _proj.ImportFromProj4(str(txt))
-
-    return _proj
+    
+    return fix_geog_axis(_proj)
 
 def proj_from_epsg(code=4326):
     from osgeo import osr
@@ -904,12 +904,16 @@ def proj_from_epsg(code=4326):
     _proj = osr.SpatialReference()
     _proj.ImportFromEPSG(code)
 
-    if code == 4326:
-        import osgeo
-        if int(osgeo.__version__[0]) >= 3:
-            _proj.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
-
-    return _proj
+    return fix_geog_axis(_proj)
+    
+def fix_geog_axis(proj):
+    if not proj:
+        return proj
+        
+    import osgeo
+    if int(osgeo.__version__[0]) >= 3:
+        proj.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
+    return proj
 
 def output_geometries(geos, proj, geo_type, f_shp):
     from osgeo import ogr, gdal
