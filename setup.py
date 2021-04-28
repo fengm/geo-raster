@@ -36,7 +36,7 @@ setuptools.setup(name='geo-raster', version='2.1.0', description='', \
 		packages=['gio'],
 		package_dir={'gio': 'lib'},
 		include_package_data=True,
-		install_requires=['cython'],
+		install_requires=['cython', 'boto3'],
 		cmdclass = {"build_ext": build_ext},
 		ext_modules=_ms,
 		scripts=_ss
