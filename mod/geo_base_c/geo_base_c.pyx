@@ -315,7 +315,7 @@ class geo_extent:
         self.miny = min(y1, y2)
         self.maxy = max(y1, y2)
 
-        self.proj = proj
+        self.proj = fix_geog_axis(proj)
 
     def __str__(self):
         return '%f, %f, %f, %f' % (self.minx, self.miny, self.maxx, self.maxy)
@@ -367,7 +367,7 @@ class geo_polygon:
 
     def __init__(self, poly):
         self.poly = poly
-        self.proj = poly.GetSpatialReference() if poly is not None else None
+        self.proj = fix_geog_axis(poly.GetSpatialReference()) if poly is not None else None
 
     @classmethod
     def from_raster(cls, img, div=10):
@@ -425,7 +425,7 @@ class geo_polygon:
         if len(pts) <= 2:
             raise Exception('need at least 3 points (%s) to create a polygon' % len(pts))
 
-        _proj = proj
+        _proj = fix_geog_axis(proj)
         _ring = ogr.Geometry(ogr.wkbLinearRing)
         for _pt in pts:
             _ring.AddPoint(_pt.x, _pt.y)
@@ -450,7 +450,7 @@ class geo_polygon:
         if len(pts) <= 2:
             raise Exception('need at least 3 points (%s) to create a polygon' % len(pts))
 
-        _proj = proj
+        _proj = fix_geog_axis(proj)
         _ring = ogr.Geometry(ogr.wkbLinearRing)
         for _pt in pts:
             _ring.AddPoint(_pt[0], _pt[1])
@@ -475,7 +475,7 @@ class geo_polygon:
             return self._project_poly(proj)
 
         _poly = self.poly.Clone()
-        _err = _poly.TransformTo(proj)
+        _err = _poly.TransformTo(fix_geog_axis(proj))
         if _err != 0:
             logging.error('failed to project polygon to (%s)' % (proj.ExportToProj4(), ))
             return None
@@ -491,9 +491,9 @@ class geo_polygon:
             _pt = ring.GetPoint_2D(_i)
 
             _pp.SetPoint_2D(0, _pt[0], _pt[1])
-            _pp.AssignSpatialReference(proj_src)
+            _pp.AssignSpatialReference(fix_geog_axis(proj_src))
 
-            if _pp.TransformTo(proj) != 0:
+            if _pp.TransformTo(fix_geog_axis(proj)) != 0:
                 continue
 
             _pt = _pp.GetPoint_2D()
@@ -506,9 +506,9 @@ class geo_polygon:
         from osgeo import ogr
 
         _poly = ogr.Geometry(ogr.wkbPolygon)
-        _poly.AssignSpatialReference(proj)
+        _poly.AssignSpatialReference(fix_geog_axis(proj))
 
-        _proj = self.proj
+        _proj = fix_geog_axis(self.proj)
         _pppp = self
 
         # if '+proj=sinu ' in _proj.ExportToProj4() and proj.IsGeographic():
@@ -516,16 +516,16 @@ class geo_polygon:
             # cut the polygon to avoid exceeding geographic extent
             _pppp = self.intersect( \
                     geo_polygon.from_xys([(-179.999, -89.999), (-179.999, 89.999), (179.999, 89.999), (179.999, -89.999)], \
-                    proj).segment_ratio(300).project_to(self.proj))
+                    fix_geog_axis(proj)).segment_ratio(300).project_to(self.proj))
 
         for _r in xrange(_pppp.poly.GetGeometryCount()):
-            _poly.AddGeometry(self._project_ring(_pppp.poly.GetGeometryRef(_r), _proj, proj))
+            _poly.AddGeometry(self._project_ring(_pppp.poly.GetGeometryRef(_r), _proj, fix_geog_axis(proj)))
 
         return geo_polygon(_poly)
 
     def set_proj(self, proj):
-        self.poly.AssignSpatialReference(proj)
-        self.proj = proj
+        self.poly.AssignSpatialReference(fix_geog_axis(proj))
+        self.proj = fix_geog_axis(proj)
 
     def union(self, poly):
         return geo_polygon(self.poly.Union(poly.poly))
@@ -667,7 +667,7 @@ class geo_polygon:
             for _p in _g.GetPoints():
                 _pt = geo_point(_p[0], _p[1], self.proj)
                 if proj is not None:
-                    _pt = _pt.project_to(proj)
+                    _pt = _pt.project_to(fix_geog_axis(proj))
 
                 if _pt is None:
                     continue
@@ -684,7 +684,7 @@ class geo_point:
 
     def __init__(self, x, y, proj=None):
         self.put_pt(x, y)
-        self.proj = proj
+        self.proj = fix_geog_axis(proj)
 
     def put_pt(self, x, y):
         self.x = x
@@ -695,17 +695,18 @@ class geo_point:
         return self.x, self.y
 
     def project_to(self, proj):
-        if self.proj is None or self.proj.IsSame(proj):
+        _proj = fix_geog_axis(proj)
+        if self.proj is None or self.proj.IsSame(_proj):
             return self
 
         _pt = self.to_geometry()
-        _err = _pt.TransformTo(proj)
+        _err = _pt.TransformTo(_proj)
         if _err != 0:
-            logging.error('failed to project pt (%s, %s) to (%s)' % (self.x, self.y, proj.ExportToProj4()))
+            logging.error('failed to project pt (%s, %s) to (%s)' % (self.x, self.y, _proj.ExportToProj4()))
             return None
 
         _pt = _pt.GetPoint_2D()
-        return geo_point(_pt[0], _pt[1], proj=proj)
+        return geo_point(_pt[0], _pt[1], proj=_proj)
 
     def to_geometry(self):
         if self.geom is None:
@@ -736,7 +737,8 @@ class projection_transform:
 
     @classmethod
     def from_band(cls, bnd_info, proj, interval=100, f_pts0=None, f_pts1=None, delay_reproj=True):
-        import math, geo_raster
+        import math
+        from . import geo_raster
 
         # make sure there are at least 1 points for each axis
         _scale = min((bnd_info.width / 1.0, bnd_info.height / 1.0, float(interval)))
@@ -822,8 +824,9 @@ class projection_transform:
     def __init__(self, mat, scale, proj_src=None, proj_tar=None):
         self.mat = mat
         self.scale = float(scale)
-        self.proj_src = proj_src
-        self.proj_tar = proj_tar
+        
+        self.proj_src = fix_geog_axis(proj_src)
+        self.proj_tar = fix_geog_axis(proj_tar)
 
     def _update_cc(self, row, col):
         _vs = self.mat[row][col]
@@ -885,7 +888,7 @@ class projection_transform:
         return _x, _y
 
 def modis_projection():
-    return proj_from_proj4('+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs')
+    return fix_geog_axis(proj_from_proj4('+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs'))
 
 def proj_from_proj4(txt):
     if not txt:
@@ -971,13 +974,12 @@ def load_shp(f, ext=None, layer_name=None):
     if ext:
         _lyr.SetSpatialFilter(ext.project_to(_lyr.GetSpatialRef()).poly)
 
-    from gio import geo_base as gb
     for _r in _lyr:
         _g = _r.geometry()
         if _g is None:
             continue
 
-        _p = gb.geo_polygon(_g.Clone())
+        _p = geo_polygon(_g.Clone())
         _s = _r.items()
         yield _p, _s
 
