@@ -328,15 +328,28 @@ class s3():
 
         _os = self.list(k, limit=1)
         return len(_os) > 0
-
+        
     def remove(self, key):
-        from . import config
+        import boto3
+        
+        _ss = boto3.resource('s3')
+        _bk = _ss.Bucket(self._t)
+        
+        _nu = 0
+        for _o in _bk.objects.filter(Prefix=key):
+            _ss.Object(self._t, _o.key).delete()
+            _nu += 1
 
-        _ps = {'Bucket': self._t, 'Key': key}
-        if config.getboolean('aws', 's3_requester_pay', False):
-            _ps['RequestPayer'] = 'requester'
+        return _nu
 
-        return self._s3.delete_object(**_ps)
+    # def remove(self, key):
+    #     from . import config
+
+    #     _ps = {'Bucket': self._t, 'Key': key}
+    #     if config.getboolean('aws', 's3_requester_pay', False):
+    #         _ps['RequestPayer'] = 'requester'
+
+    #     return self._s3.delete_object(**_ps)
 
     def get(self, k, lock=None):
         if k is None:
