@@ -41,7 +41,7 @@ def _task(tile, u, image_check=False):
     # if tile.row != 970:
     #     return
 
-    _f = u % {'h': 'h%03d' % tile.col, 'v': 'v%03d' % tile.row}
+    _f = u % {'col': tile.h, 'row': tile.v}
     _o = file_mag.get(_f)
 
     if _o.exists():
