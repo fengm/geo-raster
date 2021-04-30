@@ -64,8 +64,8 @@ def _format_url(inp, f):
         import os
         _f = os.path.join(inp, 'data/h001/v001/h001v001/h001v001_%s' % (_t))
 
-    _f = re.sub('h\d\d\d+', '%(h)s', _f)
-    _f = re.sub('v\d\d\d+', '%(v)s', _f)
+    _f = re.sub('h\d\d\d+', '%(col)s', _f)
+    _f = re.sub('v\d\d\d+', '%(row)s', _f)
 
     return _f
 
