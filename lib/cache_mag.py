@@ -407,7 +407,12 @@ class s3():
                 if config.getboolean('aws', 's3_requester_pay', False):
                     _ps['RequestPayer'] = 'requester'
     
-                _rs = self._s3.get_object(**_ps)
+                try:
+                    _rs = self._s3.get_object(**_ps)
+                except Exception:
+                    logging.warning('failed to load key s3://%s/%s' % (self._t, k))
+                    return None
+                    
                 _bd = _rs['Body']
     
                 _sz = 0
