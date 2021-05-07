@@ -61,9 +61,20 @@ def init(tag, version=1.0, requires=[], author='Min Feng', email='mfeng.geo@gmai
     _ds = {}
     _ps = []
 
-    if os.path.exists('lib'):
-        _ps.append(_package)
-        _ds[_package] = 'lib'
+    _d_lib = 'lib'
+    if os.path.exists(_d_lib):
+        # _ps.append(_package)
+        # _ds[_package] = _d_lib
+        
+        for _root, _dirs, _files in os.walk('lib'):
+            for _file in _files:
+                if _file != '__init__.py':
+                    continue
+                
+                _name = '%s%s' % (_package, _root[len(_d_lib):].replace(os.path.sep, '.'))
+                
+                _ps.append(_name)
+                _ds[_name] = _root
 
     setuptools.setup(name=_package, version=version, description='', \
             author=author, author_email=email, \
