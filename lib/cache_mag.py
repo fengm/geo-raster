@@ -17,8 +17,8 @@ class file_obj():
         self._t = os.path.getatime(f)
         self._z = os.path.getsize(f)
 
-    def __cmp__(self, f):
-        return cmp(self._t, f._t)
+    def __eq__(self, f):
+        return self._t == f._t
 
 _w_lock = {}
 _w_nums = {}
@@ -260,10 +260,6 @@ class s3():
         self._path = _p
         self._c = cache_mag(bucket, _p)
 
-        import boto3
-        # self._s3 = boto3.resource('s3')
-
-        self._s3 = boto3.client('s3')
         self.bucket = self._t
 
     def __enter__(self):
@@ -271,6 +267,10 @@ class s3():
 
     def __exit__(self, type, value, traceback):
         self.clean()
+        
+    def _get_s3_client(self):
+        import boto3
+        return boto3.client('s3')
 
     def clean(self):
         if (not self._enable_cache) and (self._path):
@@ -291,7 +291,7 @@ class s3():
         return _ls
         
     def _list_by_client(self, k, limit=-1):
-        _paginator = self._s3.get_paginator("list_objects_v2")
+        _paginator = self._get_s3_client().get_paginator("list_objects_v2")
         
         _ps = {'Bucket': self._t, 'Prefix': k}
         
@@ -349,7 +349,7 @@ class s3():
     #     if config.getboolean('aws', 's3_requester_pay', False):
     #         _ps['RequestPayer'] = 'requester'
 
-    #     return self._s3.delete_object(**_ps)
+    #     return self._get_s3_client().delete_object(**_ps)
 
     def get(self, k, lock=None):
         if k is None:
@@ -408,9 +408,18 @@ class s3():
                     _ps['RequestPayer'] = 'requester'
     
                 try:
-                    _rs = self._s3.get_object(**_ps)
-                except Exception:
-                    logging.warning('failed to load key s3://%s/%s' % (self._t, k))
+                    _rs = self._get_s3_client().get_object(**_ps)
+                except Exception as _err:
+                    import traceback
+                    logging.error(traceback.format_exc())
+                    logging.error(str(_err))
+                    print('\n\n* Error:', _err)
+                    
+                    # import time
+                    # time.sleep(1)
+                
+                    # logging.warning('failed to load key s3://%s/%s' % (self._t, k))
+                    # continue
                     return None
                     
                 _bd = _rs['Body']
@@ -454,7 +463,7 @@ class s3():
             if config.getboolean('aws', 's3_requester_pay', False):
                 _ps['RequestPayer'] = 'requester'
 
-            _rs = self._s3.put_object(**_ps)
+            _rs = self._get_s3_client().put_object(**_ps)
 
 def parse_s3(f):
     import re

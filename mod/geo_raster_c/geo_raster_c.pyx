@@ -1086,22 +1086,29 @@ class geo_raster(geo_raster_info):
         if _m is None:
             raise Exception('failed to parse S3 file %s' % f)
 
-        _bucket = _m.group(1)
-        _path = _m.group(2)
-
         from gio import config
         _cache = config.getboolean('conf', 'cache_s3_image', True)
         
         if not _cache:
+            _bucket = _m.group(1)
+            _path = _m.group(2)
+
             _f = '/vsis3/%s/%s' % (_bucket, _path)
             logging.debug('convert s3 file path to vsis3 path %s' % _f)
-            return None, _f
+            return _f
 
-        from gio import cache_mag
-        _s3 = cache_mag.s3(_bucket)
+        from gio import file_mag
+        _f = file_mag.get(f)
+        
+        if not _f:
+            return None
+        return _f.get()
+        
+        # from gio import cache_mag
+        # _s3 = cache_mag.s3(_bucket)
 
-        logging.debug('loading image from %s at %s' % (_bucket, _path))
-        return _s3, _s3.get(_path)
+        # logging.debug('loading image from %s at %s' % (_bucket, _path))
+        # return _s3, _s3.get(_path)
 
     @staticmethod
     def open(f, update=False, check_exist=True):
@@ -1114,7 +1121,7 @@ class geo_raster(geo_raster_info):
         _f = f
         
         if _f.startswith('s3://'):
-            _s3, _sf = geo_raster._load_s3_file(_f)
+            _sf = geo_raster._load_s3_file(_f)
             if _sf is None:
                 logging.warning('invalid file name provided (%s)' % _f)
                 return None
