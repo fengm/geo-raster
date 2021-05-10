@@ -132,7 +132,7 @@ def clean(bnd, float dis, int min_num, vs=None):
                 continue
 
             if vs is not None:
-                if _v not in vs:
+                if _vo not in vs:
                     continue
 
             _n1, _v1 = _stat(_dat, _col, _row, dis, min_num, _nodata)
