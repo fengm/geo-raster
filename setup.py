@@ -31,9 +31,10 @@ for _root, _dirs, _files in os.walk('util'):
 
 _exts = []
 if _ms:
-    from Cython.Build import cythonize
+    _exts = _ms
+    # from Cython.Build import cythonize
     # _exts = cythonize(_ms, compiler_directives={'language_level': 3})
-    _exts = cythonize(_ms, compiler_directives={'language_level': 3, 'boundscheck': False, 'wraparound': False})
+    # _exts = cythonize(_ms, compiler_directives={'language_level': 3, 'boundscheck': False, 'wraparound': False})
         
 setuptools.setup(name='geo-raster', version='2.1.0', description='', \
         author='Min Feng', author_email='mfeng.geo@gmail.com', \
