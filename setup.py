@@ -7,38 +7,44 @@ import numpy
 
 _ms = []
 for _root, _dirs, _files in os.walk('mod'):
-	for _file in _files:
-		if _file.endswith('.pyx'):
-			_f, _e = os.path.splitext(_file)
+    for _file in _files:
+        if _file.endswith('.pyx'):
+            _f, _e = os.path.splitext(_file)
 
-			_n = _f
-			if _n.endswith('_c'):
-				_n = _n[:-2]
+            _n = _f
+            if _n.endswith('_c'):
+                _n = _n[:-2]
 
-			_ms.append(setuptools.Extension("gio.%s" % _n, [os.path.join(_root, _file)],
-				#extra_compile_args=["-O3", "-ffast-math","-funroll-loops"],
-				define_macros=[("NPY_NO_DEPRECATED_API", None)], 
-				include_dirs=[numpy.get_include()]))
+            _ms.append(setuptools.Extension("gio.%s" % _n, [os.path.join(_root, _file)],
+                #extra_compile_args=["-O3", "-ffast-math","-funroll-loops"],
+                define_macros=[("NPY_NO_DEPRECATED_API", None)], 
+                include_dirs=[numpy.get_include()]))
 
 _ss = []
 for _root, _dirs, _files in os.walk('util'):
-	for _file in _files:
-		if not _file.endswith('.py'):
-			continue
+    for _file in _files:
+        if not _file.endswith('.py'):
+            continue
 
-		_f = os.path.join(_root, _file)
-		_ss.append(_f)
+        _f = os.path.join(_root, _file)
+        _ss.append(_f)
 
+_exts = []
+if _ms:
+    from Cython.Build import cythonize
+    # _exts = cythonize(_ms, compiler_directives={'language_level': 3})
+    _exts = cythonize(_ms, compiler_directives={'language_level': 3, 'boundscheck': False, 'wraparound': False})
+        
 setuptools.setup(name='geo-raster', version='2.1.0', description='', \
-		author='Min Feng', author_email='mfeng.geo@gmail.com', \
-		# packages=['gio', 'gio/data/landsat'],
-		# package_dir={'gio': 'lib', 'gio/data/landsat': 'lib/data/landsat'},
-		packages=['gio'],
-		package_dir={'gio': 'lib'},
-		include_package_data=True,
-		install_requires=['cython', 'boto3'],
-		cmdclass = {"build_ext": build_ext},
-		ext_modules=_ms,
-		scripts=_ss
-		)
+        author='Min Feng', author_email='mfeng.geo@gmail.com', \
+        # packages=['gio', 'gio/data/landsat'],
+        # package_dir={'gio': 'lib', 'gio/data/landsat': 'lib/data/landsat'},
+        packages=['gio'],
+        package_dir={'gio': 'lib'},
+        include_package_data=True,
+        install_requires=['cython', 'boto3'],
+        cmdclass = {"build_ext": build_ext},
+        ext_modules=_exts,
+        scripts=_ss
+        )
 

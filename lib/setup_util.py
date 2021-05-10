@@ -76,6 +76,12 @@ def init(tag, version=1.0, requires=[], author='Min Feng', email='mfeng.geo@gmai
                 _ps.append(_name)
                 _ds[_name] = _root
 
+    _exts = []
+    if _ms:
+        from Cython.Build import cythonize
+        # _exts = cythonize(_ms, compiler_directives={'language_level': 3})
+        _exts = cythonize(_ms, compiler_directives={'language_level': 3, 'boundscheck': False, 'wraparound': False})
+
     setuptools.setup(name=_package, version=version, description='', \
             author=author, author_email=email, \
             packages=_ps,
@@ -84,7 +90,7 @@ def init(tag, version=1.0, requires=[], author='Min Feng', email='mfeng.geo@gmai
             # include_package_data=True,
             cmdclass = {"build_ext": build_ext},
     		install_requires=requires,
-            ext_modules=_ms,
+            ext_modules=_exts,
             scripts=_ss,
             )
 
