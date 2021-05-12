@@ -6,7 +6,7 @@ cimport cython
 @cython.wraparound(False)
 
 def stat(bnd):
-    import geo_raster as ge
+    from . import geo_raster as ge
 
     if bnd.pixel_type == ge.pixel_type():
         return stat_uint8(bnd)
