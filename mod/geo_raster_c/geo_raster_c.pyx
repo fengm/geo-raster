@@ -1123,7 +1123,7 @@ class geo_raster(geo_raster_info):
         if _f.startswith('s3://'):
             _sf = geo_raster._load_s3_file(_f)
             if _sf is None:
-                logging.warning('invalid file name provided (%s)' % _f)
+                # logging.warning('invalid file name provided (%s)' % _f)
                 return None
             _f = _sf
 

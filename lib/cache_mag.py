@@ -410,15 +410,15 @@ class s3():
                 try:
                     _rs = self._get_s3_client().get_object(**_ps)
                 except Exception as _err:
-                    import traceback
-                    logging.error(traceback.format_exc())
-                    logging.error(str(_err))
-                    print('\n\n* Error:', _err)
+                    # import traceback
+                    # logging.debug(traceback.format_exc())
+                    logging.debug(str(_err))
+                    # print('\n\n* Error:', _err)
                     
                     # import time
                     # time.sleep(1)
                 
-                    # logging.warning('failed to load key s3://%s/%s' % (self._t, k))
+                    logging.debug('failed to load key s3://%s/%s' % (self._t, k))
                     # continue
                     return None
                     
