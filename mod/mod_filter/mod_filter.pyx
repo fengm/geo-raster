@@ -111,7 +111,7 @@ cdef _median(np.ndarray[np.uint8_t, ndim=2] dat, int col, int row, float dis, in
     if len(_vs) == 0:
         return nodata
 
-    _v = sorted(_vs)[len(_vs) / 2]
+    _v = sorted(_vs)[int(len(_vs) / 2)]
     rep[row, col] = _v
 
     return _v

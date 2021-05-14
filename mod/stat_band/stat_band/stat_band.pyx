@@ -6,7 +6,7 @@ cimport cython
 @cython.wraparound(False)
 
 def stat(bnd):
-    from . import geo_raster as ge
+    from gio import geo_raster as ge
 
     if bnd.pixel_type == ge.pixel_type():
         return stat_uint8(bnd)
@@ -58,7 +58,7 @@ def stat_uint16(bnd):
     return _stat
 
 def get_lat(x, y, proj_s, proj_t):
-    from . import geo_base as gb
+    from gio import geo_base as gb
     
     _pt = gb.geo_point(x, y, proj_s)
     return _pt.project_to(proj_t).y
@@ -74,7 +74,7 @@ def sum_change_lats(bnd, stat):
     if _num <= 0:
         return False
 
-    from . import geo_base as gb
+    from gio import geo_base as gb
     _proj_geo = gb.proj_from_epsg()
     
     for _row in range(bnd.height):
