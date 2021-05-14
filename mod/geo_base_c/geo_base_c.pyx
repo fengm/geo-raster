@@ -6,19 +6,22 @@ Create: 2013-03-26 18:01:16
 Description: Provide the basic geometry objects, retrieved from geo_raster_ex
 '''
 
-import numpy as np
 import sys
 _inf = sys.float_info.max
+
+import osgeo
+from osgeo import osr
+from osgeo import ogr, gdal
+import os
 
 cimport numpy as np
 cimport cython
 import logging
+import numpy
 
 @cython.boundscheck(False)
 
 def to_dtype(pixel_type):
-    import numpy
-
     if pixel_type == 1:
         return numpy.uint8
     if pixel_type == 2:
@@ -37,8 +40,6 @@ def to_dtype(pixel_type):
     raise Exception('unknown pixel type ' + pixel_type)
 
 def from_dtype(dtype):
-    import numpy
-
     if dtype == numpy.uint8:
         return 1
     if dtype == numpy.uint16:
@@ -894,16 +895,12 @@ def proj_from_proj4(txt):
     if not txt:
         return None
 
-    from osgeo import osr
-
     _proj = osr.SpatialReference()
     _proj.ImportFromProj4(str(txt))
     
     return fix_geog_axis(_proj)
 
 def proj_from_epsg(code=4326):
-    from osgeo import osr
-
     _proj = osr.SpatialReference()
     _proj.ImportFromEPSG(code)
 
@@ -913,15 +910,11 @@ def fix_geog_axis(proj):
     if not proj:
         return proj
         
-    import osgeo
     if int(osgeo.__version__[0]) >= 3:
         proj.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
     return proj
 
 def output_geometries(geos, proj, geo_type, f_shp):
-    from osgeo import ogr, gdal
-    import os
-
     _drv_type = 'ESRI Shapefile'
     if f_shp.lower().endswith('.kml'):
         _drv_type = 'KML'

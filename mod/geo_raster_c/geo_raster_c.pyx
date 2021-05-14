@@ -13,9 +13,10 @@ Note: add support to geo_band_cache
 
 from osgeo import gdal, ogr, osr
 import re
+import os
 import logging
 
-import numpy as np
+import numpy
 cimport numpy as np
 cimport cython
 import math
@@ -74,11 +75,9 @@ cdef int within_extent(int col, int row, int width, int height, int row_start, i
     return 1
 
 cdef align_min(val, ref, div):
-    import math
     return math.floor((val - ref) / div) * div + ref
 
 cdef align_max(val, ref, div):
-    import math
     return math.ceil((val - ref) / div) * div + ref
     
 
@@ -331,7 +330,7 @@ class geo_band_cache(geo_band_info):
     def data_ma(self):
         if None == self.nodata:
             raise Exception('nodata is required')
-        return np.ma.masked_equal(self.data, self.nodata)
+        return numpy.ma.masked_equal(self.data, self.nodata)
 
     def read_location(self, float x, float y):
         '''Read a cell at given coordinate'''
@@ -351,19 +350,19 @@ class geo_band_cache(geo_band_info):
         if _s == 0:
             return None
 
-        if self.data.dtype == np.int8:
+        if self.data.dtype == numpy.int8:
             return read_pixel_byte(self.data, row, col)
-        elif self.data.dtype == np.uint8:
+        elif self.data.dtype == numpy.uint8:
             return read_pixel_ubyte(self.data, row, col)
-        elif self.data.dtype == np.uint16:
+        elif self.data.dtype == numpy.uint16:
             return read_pixel_uint16(self.data, row, col)
-        elif self.data.dtype == np.int16:
+        elif self.data.dtype == numpy.int16:
             return read_pixel_int16(self.data, row, col)
-        elif self.data.dtype == np.uint32:
+        elif self.data.dtype == numpy.uint32:
             return read_pixel_uint32(self.data, row, col)
-        elif self.data.dtype == np.int32:
+        elif self.data.dtype == numpy.int32:
             return read_pixel_int32(self.data, row, col)
-        elif self.data.dtype == np.float32:
+        elif self.data.dtype == numpy.float32:
             return read_pixel_float32(self.data, row, col)
         else:
             return self.data[row][col]
@@ -396,7 +395,6 @@ class geo_band_cache(geo_band_info):
         '''write the raster to file'''
         _pixel_type = self.pixel_type
         if _pixel_type is None:
-            from osgeo import gdal
             _pixel_type = gdal.GDT_Byte
         write_raster(f, self.geo_transform, self.proj.ExportToWkt(),
                 self.data, nodata=self.nodata, pixel_type=_pixel_type, opts=opts)
@@ -405,7 +403,6 @@ class geo_band_cache(geo_band_info):
         '''write the raster to file'''
         _pixel_type = self.pixel_type
         if _pixel_type is None:
-            from osgeo import gdal
             _pixel_type = gdal.GDT_Byte
             
         _color_table = color_table if color_table else self.color_table
@@ -433,7 +430,6 @@ class geo_band_cache(geo_band_info):
         _cell = _geo1[1]
         _fill = self.get_nodata()
 
-        import math
         if roundup:
             _cols = int(round((ext.width() / _cell)))
             _rows = int(round((ext.height() / _cell)))
@@ -441,7 +437,6 @@ class geo_band_cache(geo_band_info):
             _cols = int(math.ceil((ext.width() / _cell)))
             _rows = int(math.ceil((ext.height() / _cell)))
 
-        import numpy
         _dat = numpy.empty((_rows, _cols), dtype=self.data.dtype)
         _dat.fill(_fill)
 
@@ -461,7 +456,6 @@ class geo_band_cache(geo_band_info):
             _off_x2 = int((_ext.minx - ext.minx) / _cell)
             _off_y2 = int((ext.maxy - _ext.maxy) / _cell)
 
-        import math
         _w = min(_cols, int(math.ceil((_ext.width() / _cell))))
         _h = min(_rows, int(math.ceil((_ext.height() / _cell))))
 
@@ -535,7 +529,7 @@ class geo_band_cache(geo_band_info):
                 _col_t_e, _row_t_e)
 
         _nodata = self.get_nodata()
-        _dat_out = np.empty([bnd.height, bnd.width],
+        _dat_out = numpy.empty([bnd.height, bnd.width],
                 dtype=geo_base.to_dtype(self.pixel_type))
         _dat_out.fill(_nodata)
 
@@ -572,16 +566,13 @@ class geo_band_cache(geo_band_info):
         with file_unzip.zip() as _zip:
             _f_out = _zip.generate_file('', '.tif')
             
-            import numpy as np
-            
             bnd = self
             
-            _dat = np.zeros((bnd.height, bnd.width), dtype=np.uint8)
+            _dat = numpy.zeros((bnd.height, bnd.width), dtype=numpy.uint8)
             _bnd = bnd.from_grid(_dat)
             _bnd.pixel_type = pixel_type()
             _bnd.save(_f_out)
             
-            from osgeo import ogr
             from . import run_commands
             from . import file_mag
         
@@ -604,7 +595,7 @@ class geo_band_cache(geo_band_info):
             bnd.data[_bbb.data != 1] = bnd.nodata
             
     def colorize_byte(self, f=None, interpolate=False):
-        cdef np.ndarray[np.uint8_t, ndim=2] _dat = np.empty((self.height, self.width), dtype=np.uint8)
+        cdef np.ndarray[np.uint8_t, ndim=2] _dat = numpy.empty((self.height, self.width), dtype=numpy.uint8)
         _dat.fill(255)
         
         from gio import color_table
@@ -623,7 +614,7 @@ class geo_band_cache(geo_band_info):
         return _out
         
     def colorize_rgba(self, f=None, interpolate=False):
-        _dat = np.empty((4, self.height, self.width), dtype=np.uint8)
+        _dat = numpy.empty((4, self.height, self.width), dtype=numpy.uint8)
         _dat.fill(0)
         
         from gio import color_table
@@ -648,7 +639,7 @@ class geo_band_cache(geo_band_info):
             raise Exception('only support 3 dementions array')
             
         from PIL import Image
-        _dat = np.transpose(self.data, [1, 2, 0])
+        _dat = numpy.transpose(self.data, [1, 2, 0])
         return Image.fromarray(_dat, 'RGBA')
         
 class geo_band(geo_band_info):
@@ -753,7 +744,7 @@ class geo_band(geo_band_info):
 
         cdef int _row = row - self.buf_row_start
         if self.pixel_type == 1:
-            if self.data.dtype == np.int8:
+            if self.data.dtype == numpy.int8:
                 return read_pixel_byte(self.data, _row, col)
             else:
                 return read_pixel_ubyte(self.data, _row, col)
@@ -873,8 +864,6 @@ class geo_band(geo_band_info):
         _cell = _geo1[1]
         _fill = self.get_nodata()
 
-        import math
-
         if roundup:
             _cols = int(round((ext.width() / _cell)))
             _rows = int(round((ext.height() / _cell)))
@@ -885,7 +874,6 @@ class geo_band(geo_band_info):
         if _cols == 0 or _rows == 0:
             return None
 
-        import numpy
         from . import geo_base as gb
         
         _dat = numpy.empty((_rows, _cols), dtype=gb.to_dtype(self.pixel_type))
@@ -906,7 +894,6 @@ class geo_band(geo_band_info):
             _off_x2 = int((_ext.minx - ext.minx) / _cell)
             _off_y2 = int((ext.maxy - _ext.maxy) / _cell)
 
-        import math
         _w = int(math.ceil((_ext.width() / _cell)))
         _h = int(math.ceil((_ext.height() / _cell)))
         _w = min(_w, self.width - _off_x1, _cols)
@@ -1007,7 +994,7 @@ class geo_band(geo_band_info):
                 _col_t_e, _row_t_e)
 
         _nodata = self.get_nodata()
-        _dat_out = np.empty([bnd.height, bnd.width],
+        _dat_out = numpy.empty([bnd.height, bnd.width],
                 dtype=geo_base.to_dtype(self.pixel_type))
         _dat_out.fill(_nodata)
 
@@ -1080,8 +1067,6 @@ class geo_raster(geo_raster_info):
 
     @staticmethod
     def _load_s3_file(f):
-        import re
-        
         _m = re.match('s3://([^/]+)/(.+)', f)
         if _m is None:
             raise Exception('failed to parse S3 file %s' % f)
@@ -1116,8 +1101,6 @@ class geo_raster(geo_raster_info):
             logging.warning('requested for empty path')
             return None
             
-        import re
-
         _f = f
         
         if _f.startswith('s3://'):
@@ -1126,8 +1109,6 @@ class geo_raster(geo_raster_info):
                 # logging.warning('invalid file name provided (%s)' % _f)
                 return None
             _f = _sf
-
-        import os
 
         if not _f.startswith('/vsi') and (check_exist and (not os.path.exists(_f))):
             logging.warning('failed to find the image %s' % f)

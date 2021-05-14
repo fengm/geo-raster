@@ -1,15 +1,18 @@
 
 
+from osgeo import gdal, ogr, osr
+import os
+import re
+import math
 import numpy as np
 cimport numpy as np
 cimport cython
 import logging
+import numpy
 
 @cython.boundscheck(False)
 
 def to_dtype(pixel_type):
-    import numpy
-
     if pixel_type == 1:
         return numpy.uint8
     if pixel_type == 2:
@@ -412,8 +415,6 @@ class geo_polygon:
 
     @classmethod
     def from_pts(cls, pts, proj=None):
-        from osgeo import ogr
-
         _proj = proj
         _ring = ogr.Geometry(ogr.wkbLinearRing)
         for _pt in pts:
@@ -477,7 +478,6 @@ class geo_polygon:
     def is_contain(self, pt):
         _loc = pt.project_to(self.proj)
 
-        from osgeo import ogr
         _pt = ogr.Geometry(ogr.wkbPoint)
         _pt.SetPoint_2D(0, _loc.x, _loc.y)
 
@@ -488,7 +488,6 @@ class projection_transform:
 
     @classmethod
     def from_band(cls, bnd_info, proj, interval=100):
-        import math
         from . import geo_raster
 
         # make sure there are at least 10 points for each axis
@@ -523,8 +522,6 @@ class projection_transform:
 
     @classmethod
     def from_extent(cls, ext, proj, dist=1000.0):
-        import math
-
         # make sure there are at least 10 points for each axis
         _scale = min((ext.width() / 10.0, ext.height() / 10.0, float(dist)))
         assert(_scale > 0)
@@ -616,7 +613,6 @@ class geo_point:
 
     def to_geometry(self):
         if self.geom is None:
-            from osgeo import ogr
             self.geom = ogr.Geometry(ogr.wkbPoint)
 
         self.geom.SetPoint_2D(0, self.x, self.y)
@@ -709,10 +705,7 @@ class geo_band_obj:
             return self.band
 
         _bnd = self.band_file.get_band()
-
-        import os
         self.band = geo_band_reader(_bnd, os.path.basename(self.band_file.file))
-
         return self.band
 
     def clean(self):
@@ -794,9 +787,7 @@ class geo_band_stack_zip:
     @staticmethod
     def from_shapefile(f_list, band_idx=1, dataset_name=None, \
             file_unzip=None, check_layers=False, nodata=None, cache=None, extent=None):
-        from osgeo import ogr
         from . import geo_base as gb
-        import os
 
         logging.debug('loading from %s' % f_list)
         
@@ -836,7 +827,6 @@ class geo_band_stack_zip:
                 
             _lyr.SetSpatialFilter(_ext.poly)
 
-        import os
         _d_shp = os.path.dirname(_finp)
 
         _file_columns = [_col.name for _col in _lyr.schema if _col.name.lower() == 'file']
@@ -1232,8 +1222,6 @@ def collect_samples(bnd_landsat, proj, interval=3000):
     return _vs
 
 def modis_projection():
-    from osgeo import osr
-
     _modis_proj = osr.SpatialReference()
     _modis_proj.ImportFromProj4('+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs')
 
