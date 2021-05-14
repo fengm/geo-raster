@@ -10,6 +10,10 @@ cimport cython
 import logging
 import numpy
 
+from . import geo_raster as ge
+from . import geo_base as gb
+from . import file_mag
+
 @cython.boundscheck(False)
 
 def to_dtype(pixel_type):
@@ -488,8 +492,6 @@ class projection_transform:
 
     @classmethod
     def from_band(cls, bnd_info, proj, interval=100):
-        from . import geo_raster
-
         # make sure there are at least 10 points for each axis
         _scale = min((bnd_info.width / 10.0, bnd_info.height / 10.0, float(interval)))
         assert(_scale > 0)
@@ -505,7 +507,7 @@ class projection_transform:
         for _row in xrange(_img_h):
             _mm = []
             for _col in xrange(_img_w):
-                _pt0 = geo_raster.to_location(bnd_info.geo_transform, _col * _scale, _row * _scale)
+                _pt0 = ge.to_location(bnd_info.geo_transform, _col * _scale, _row * _scale)
                 _pt0 = geo_point(_pt0[0], _pt0[1], bnd_info.proj)
                 _pt1 = _pt0.project_to(proj)
                 _mm.append([_pt0.x, _pt0.y, _pt1.x, _pt1.y])
@@ -645,8 +647,6 @@ class band_file:
         self.cache = cache
 
     def get_band(self):
-        from . import geo_raster
-
         logging.debug('loading %s' % self.file)
         if self.band:
             return self.band
@@ -674,7 +674,7 @@ class band_file:
             _pat = _inp
 
         assert(_pat)
-        _img = geo_raster.open(_pat)
+        _img = ge.open(_pat)
 
         if _img is None:
             raise Exception('Failed to open image ' + self.file)
@@ -752,8 +752,6 @@ class geo_band_stack_zip:
     @staticmethod
     def from_list(f_list, band_idx=1, dataset_name=None, \
             file_unzip=None, check_layers=False, nodata=None, cache=None):
-        from . import geo_base as gb
-
         _bnds = []
         _proj = None
         for _f in f_list:
@@ -787,11 +785,8 @@ class geo_band_stack_zip:
     @staticmethod
     def from_shapefile(f_list, band_idx=1, dataset_name=None, \
             file_unzip=None, check_layers=False, nodata=None, cache=None, extent=None):
-        from . import geo_base as gb
-
         logging.debug('loading from %s' % f_list)
         
-        from . import file_mag
         if isinstance(f_list, file_mag.obj_mag):
             _finp = f_list.get()
         elif f_list.startswith('s3://'):
@@ -815,8 +810,6 @@ class geo_band_stack_zip:
         _lyr = _shp.GetLayer()
 
         if extent:
-            from gio import geo_raster as ge
-
             _ext = extent
             if isinstance(_ext, ge.geo_raster_info):
                 _ext = extent.extent().to_polygon().segment_ratio(10)
@@ -971,7 +964,6 @@ class geo_band_stack_zip:
         return _ls
 
     def _read_band(self, bnd, bnd_info, nodata, pol_t1, dat_out, min_val=None, max_val=None):
-        from . import geo_base as gb
         _buffer_dist = 1.0E-15
 
         _bnd_info = bnd_info
@@ -1098,7 +1090,6 @@ class geo_band_stack_zip:
             self.proj.ExportToProj4(),
             bnd.proj.ExportToProj4()))
 
-        from . import geo_base as gb
         # _pol_t1 = gb.geo_polygon.from_raster(bnd, div=100).buffer(0.0)
         _pol_t1 = gb.geo_polygon.from_raster(bnd, div=100)
         if _pol_t1 is None or _pol_t1.poly is None:
@@ -1121,8 +1112,7 @@ class geo_band_stack_zip:
             self._read_band(bnd, _bnd_info, _nodata, _pol_t1, _dat_out, min_val, max_val)
             _bnd_info.clean()
 
-        from . import geo_raster
-        return geo_raster.geo_band_cache(_dat_out, bnd.geo_transform, bnd.proj, _nodata, \
+        return ge.geo_band_cache(_dat_out, bnd.geo_transform, bnd.proj, _nodata, \
                 self.pixel_type, self.color_table)
 
 class geo_band_reader:
@@ -1132,7 +1122,6 @@ class geo_band_reader:
         self.band = band
         self.raster = band.raster
 
-        from . import geo_base as gb
         self.poly = gb.geo_polygon.from_raster(self.raster)
 
     def read(self, float x, float y, cache=False):
@@ -1199,7 +1188,6 @@ def collect_samples(bnd_landsat, proj, interval=3000):
     _img_landsat = bnd_landsat.raster
     _read_landsat = geo_band_reader(bnd_landsat)
 
-    from . import geo_base as gb
     _poly_union = gb.geo_polygon.from_raster(_img_landsat).project_to(proj)
     _ext_union = _poly_union.extent()
 
@@ -1245,7 +1233,6 @@ def load(f, bnd=None):
         _shp = geo_band_stack_zip.from_shapefile(f, extent=bnd)
         return _shp
 
-    from . import geo_raster as ge
     _img = ge.open(f)
     if _img is None:
         return None
