@@ -308,6 +308,51 @@ def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, floa
 
             dat_out[_row, _col] = _v
 
+def read_block_float64(np.ndarray[np.float64_t, ndim=2] dat, ext, prj, geo, float nodata,
+        int row_start, np.ndarray[np.float64_t, ndim=2] dat_out, min_val=None, max_val=None):
+    cdef int _row, _col
+    cdef float _x, _y
+    cdef int _c, _r
+
+    cdef int _rows_in = dat.shape[0]
+    cdef int _cols_in = dat.shape[1]
+
+    cdef int _rows_ot = dat_out.shape[0]
+    cdef int _cols_ot = dat_out.shape[1]
+
+    cdef float _v, _o
+
+    cdef int _col_min = max(0, ext.minx)
+    cdef int _col_max = min(_cols_ot, ext.maxx + 1)
+    cdef int _row_min = max(0, ext.miny)
+    cdef int _row_max = min(_rows_ot, ext.maxy + 1)
+
+    for _row in xrange(_row_min, _row_max):
+        for _col in xrange(_col_min, _col_max):
+            _o = dat_out[_row, _col]
+            if (not numpy.isnan(_o)) and _o != nodata:
+                if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
+                    continue
+
+            _x, _y = prj.project(_col, _row)
+
+            _c, _r = to_cell(geo, _x, _y)
+            _r -= row_start
+
+            if not (0 <= _c < _cols_in and 0 <= _r < _rows_in):
+                continue
+
+            _v = dat[_r, _c]
+            if numpy.isnan(_v) or _v == nodata:
+                continue
+
+            # if (min_val is not None and _v < min_val):
+            #     continue
+            # if (max_val is not None and _v > max_val):
+            #     continue
+
+            dat_out[_row, _col] = _v
+    
 class geo_extent:
 
     @classmethod
@@ -1068,12 +1113,15 @@ class geo_band_stack_zip:
         elif self.pixel_type == 6:
             read_block_float32(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
                     _nodata, _row_s_s, _dat_out, min_val, max_val)
+        elif self.pixel_type == 7:
+            read_block_float64(_dat, _ext_t_cs, _prj, _bnd.geo_transform,
+                    _nodata, _row_s_s, _dat_out, min_val, max_val)
         else:
             raise Exception('The pixel type is not supported ' + \
                     str(self.pixel_type))
 
     def read_block(self, bnd, use_pts=False, min_val=None, max_val=None):
-        _default_nodata = {1: 255, 2: 65535, 3: -9999, 4: (2 ** 32) - 1, 5: -9999, 6: -9999}
+        _default_nodata = {1: 255, 2: 65535, 3: -9999, 4: (2 ** 32) - 1, 5: -9999, 6: -9999, 7: numpy.nan}
         if self.pixel_type not in _default_nodata.keys():
             raise Exception('Unsupport data type %s' % self.pixel_type)
 

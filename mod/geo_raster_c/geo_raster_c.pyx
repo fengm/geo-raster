@@ -609,18 +609,23 @@ class geo_band_cache(geo_band_info):
         
         return _out
         
-    def colorize_rgba(self, f=None, interpolate=False):
+    def colorize_rgba(self, f=None, interpolate=True):
         _dat = numpy.empty((4, self.height, self.width), dtype=numpy.uint8)
         _dat.fill(0)
         
         _ms = color_table.color_mapping(color_table.color_table(self.color_table if f is None else f), interpolate=interpolate)
         _ks = sorted(_ms._values.keys())
         
-        _idx = self.data != (self.nodata if self.nodata is not None else -9999)
+        if numpy.isnan(self.nodata):
+            _idx = numpy.logical_not(numpy.isnan(self.data))
+        else:
+            _idx = (self.data != (self.nodata if self.nodata is not None else -9999))
+        # _idx = numpy.logical_not(numpy.isnan(self.data)) & (self.data != (self.nodata if self.nodata is not None else -9999))
+
         for _k in _ks:
             _c = _ms.get_color(_k)
             
-            _i = _idx & (self.data >= _k)
+            _i = numpy.greater_equal(self.data, _k, where=_idx) & _idx
             for _b in range(4):
                 _dat[_b, :, :][_i] = _c[_b]
                 
