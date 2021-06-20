@@ -296,7 +296,7 @@ class s3():
         _ps = {'Bucket': self._t, 'Prefix': k}
         
         from . import config
-        if config.getboolean('aws', 's3_requester_pay', False):
+        if config.getboolean('aws', 's3_requester_pay', True):
             _ps['RequestPayer'] = 'requester'
             
         if limit >= 0:
@@ -308,16 +308,17 @@ class s3():
                 _cs = _page["Contents"]
             except KeyError:
                 break
-
+            
             for _k in _cs:
-                _ts.append(_k)
+                if _k['Key'] != k:
+                    _ts.append(_k)
                 
         return _ts
 
     def list(self, k, limit=-1):
         from . import config
         
-        if config.getboolean('aws', 's3_requester_pay', False):
+        if config.getboolean('aws', 's3_requester_pay', True):
             return self._list_by_client(k, limit)
             
         return [{'Key': _s.key} for _s in self._list_by_resource(k, limit)]
@@ -346,7 +347,7 @@ class s3():
     #     from . import config
 
     #     _ps = {'Bucket': self._t, 'Key': key}
-    #     if config.getboolean('aws', 's3_requester_pay', False):
+    #     if config.getboolean('aws', 's3_requester_pay', True):
     #         _ps['RequestPayer'] = 'requester'
 
     #     return self._get_s3_client().delete_object(**_ps)
@@ -404,7 +405,7 @@ class s3():
     
                 from . import config
                 _ps = {'Bucket': self._t, 'Key': k}
-                if config.getboolean('aws', 's3_requester_pay', False):
+                if config.getboolean('aws', 's3_requester_pay', True):
                     _ps['RequestPayer'] = 'requester'
     
                 try:
@@ -460,7 +461,7 @@ class s3():
         with open(f, 'rb') as _fi:
             from . import config
             _ps = {'Bucket': self._t, 'Key': k, 'Body': _fi}
-            if config.getboolean('aws', 's3_requester_pay', False):
+            if config.getboolean('aws', 's3_requester_pay', True):
                 _ps['RequestPayer'] = 'requester'
 
             _rs = self._get_s3_client().put_object(**_ps)
