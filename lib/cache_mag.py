@@ -310,8 +310,10 @@ class s3():
                 break
             
             for _k in _cs:
-                if _k['Key'] != k:
-                    _ts.append(_k)
+                if k.endswith('/') and _k['Key'] == k:
+                    # skip folders
+                    continue
+                _ts.append(_k)
                 
         return _ts
 
