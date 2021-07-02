@@ -968,10 +968,13 @@ def load_shp(f, ext=None, layer_name=None):
     from . import file_mag
 
     if isinstance(ext, (str, file_mag.obj_mag)):
+        ext = [_g for _g, _ in load_shp(ext)]
+
+    if isinstance(ext, (list, tuple)):
         _ids = []
 
-        for _g, _ in load_shp(ext):
-            for _g, _s in load_shp(f, _g, layer_name):
+        for _q in ext:
+            for _g, _s in load_shp(f, _q, layer_name):
                 _id = _s['FID']
 
                 if _id in _ids:
@@ -979,7 +982,6 @@ def load_shp(f, ext=None, layer_name=None):
 
                 _ids.append(_id)
                 yield _g, _s
-
         return
 
     _shp = ogr.Open(file_mag.get(f).get())
