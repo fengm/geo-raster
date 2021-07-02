@@ -967,7 +967,7 @@ def load_shp(f, ext=None, layer_name=None):
     from osgeo import ogr
     from . import file_mag
 
-    if not isinstance(ext, geo_object):
+    if isinstance(ext, (str, file_mag.obj_mag)):
         _ids = []
 
         for _g, _ in load_shp(ext):
