@@ -34,11 +34,12 @@ def proj_from_epsg(code=4326):
 	return _proj
 
 def load_landsat_tile(f_shp, tile_col='PATHROW'):
+	from gio import file_mag
 	from osgeo import ogr
 	import os
 
 	_drv = ogr.GetDriverByName("ESRI Shapefile")
-	_shp = _drv.Open(f_shp)
+	_shp = _drv.Open(file_mag.get(f_shp).get())
 	_lyr = _shp.GetLayer(os.path.basename(f_shp)[:-4])
 
 	_vs = {}
@@ -108,24 +109,24 @@ def main(opts):
 			_f_ref = os.environ['D_DATA_WRS1']
 		else:
 			raise Exception('unsupported tiling system tag (%s)' % opts.tile_tag)
-			
+
 	from gio import file_mag
 	from gio import file_unzip
 	import os
-	
+
 	with file_unzip.file_unzip() as _zip:
 		_d_out = _zip.generate_file()
 		os.makedirs(_d_out)
-		
+
 		f_out = opts.output
-		
+
 		_f_out = os.path.join(_d_out, os.path.basename(f_out))
 		csv2shapefile(file_mag.get(opts.input).get(), _f_out, opts.column, _f_ref)
-		
+
 		_d_ttt = os.path.dirname(f_out)
 		if not _d_ttt:
 			_d_ttt = os.path.dirname(os.path.abspath(f_out))
-			
+
 		print('write to\n>', f_out)
 		file_unzip.compress_folder(_d_out, _d_ttt, [])
 

@@ -299,7 +299,12 @@ def read_block_float64(np.ndarray[np.float64_t, ndim=2] dat, ext, prj, geo, floa
 
             dat_out[_row, _col] = _v
 
-class geo_extent:
+class geo_object:
+
+    def __init__(self):
+        pass
+
+class geo_extent (geo_object):
 
     @classmethod
     def from_raster(cls, img):
@@ -364,7 +369,7 @@ class geo_extent:
                 ]
         return geo_polygon.from_pts(_pts, self.proj)
 
-class geo_polygon:
+class geo_polygon (geo_object):
 
     def __init__(self, poly):
         self.poly = poly
@@ -677,7 +682,7 @@ class geo_polygon:
 
         return _ps
 
-class geo_point:
+class geo_point (geo_object):
     @classmethod
     def from_raster(cls, raster, col, row):
         _x, _y = raster.to_location(col, row)
@@ -825,7 +830,7 @@ class projection_transform:
     def __init__(self, mat, scale, proj_src=None, proj_tar=None):
         self.mat = mat
         self.scale = float(scale)
-        
+
         self.proj_src = fix_geog_axis(proj_src)
         self.proj_tar = fix_geog_axis(proj_tar)
 
@@ -897,7 +902,7 @@ def proj_from_proj4(txt):
 
     _proj = osr.SpatialReference()
     _proj.ImportFromProj4(str(txt))
-    
+
     return fix_geog_axis(_proj)
 
 def proj_from_epsg(code=4326):
@@ -905,11 +910,11 @@ def proj_from_epsg(code=4326):
     _proj.ImportFromEPSG(code)
 
     return fix_geog_axis(_proj)
-    
+
 def fix_geog_axis(proj):
     if not proj:
         return proj
-        
+
     if int(osgeo.__version__[0]) >= 3:
         proj.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
     return proj
@@ -960,8 +965,24 @@ def output_polygons(polys, f_shp):
 
 def load_shp(f, ext=None, layer_name=None):
     from osgeo import ogr
+    from . import file_mag
 
-    _shp = ogr.Open(f)
+    if not isinstance(ext, geo_object):
+        _ids = []
+
+        for _g, _ in load_shp(ext):
+            for _g, _s in load_shp(f, _g, layer_name):
+                _id = _s['FID']
+
+                if _id in _ids:
+                    continue
+
+                _ids.append(_id)
+                yield _g, _s
+
+        return
+
+    _shp = ogr.Open(file_mag.get(f).get())
     _lyr = _shp.GetLayer(layer_name) if layer_name else _shp.GetLayer()
 
     if ext:
@@ -974,6 +995,8 @@ def load_shp(f, ext=None, layer_name=None):
 
         _p = geo_polygon(_g.Clone())
         _s = _r.items()
+        _s['FID'] = _r.GetFID()
+
         yield _p, _s
 
     del _lyr, _shp
