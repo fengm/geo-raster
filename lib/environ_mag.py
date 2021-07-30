@@ -134,35 +134,36 @@ def run(func, opts):
     _parse_env(opts[0], log=True)
 
     os.environ['PATH'] = '.' + os.pathsep + sys.argv[0] + os.pathsep + os.environ['PATH']
-    with file_unzip.file_unzip() as _zip:
-        _tmp = file_unzip.default_dir(None)
 
-        # _tmp = _zip.generate_file()
-        # config.set('conf', 'temp', _tmp)
+    # _tmp = _zip.generate_file()
+    # config.set('conf', 'temp', _tmp)
 
-        # _cache = config.get('conf', 'cache', None)
-        # if not _cache:
-        #     config.set('conf', 'cache', os.path.join(_tmp, 'cache'))
+    # _cache = config.get('conf', 'cache', None)
+    # if not _cache:
+    #     config.set('conf', 'cache', os.path.join(_tmp, 'cache'))
 
-        if config.getint('conf', 'task_type') is not None:
-            from . import multi_task
-            multi_task.init(opts[0])
+    if config.getint('conf', 'task_type') is not None:
+        from . import multi_task
+        multi_task.init(opts[0])
 
-        logging_util.info('options: ' + _opts_to_str(opts))
-        try:
-            if config.getboolean('conf', 'debug', True):
+    logging_util.info('options: ' + _opts_to_str(opts))
+
+    try:
+        if config.getboolean('conf', 'debug', True):
+            return func(*opts)
+        else:
+            try:
                 return func(*opts)
-            else:
-                try:
-                    return func(*opts)
-                except KeyboardInterrupt:
-                    print('\n\n* User stopped the program')
-                except Exception as err:
-                    import traceback
+            except KeyboardInterrupt:
+                print('\n\n* User stopped the program')
+            except Exception as err:
+                import traceback
 
-                    logging_util.error(traceback.format_exc())
-                    logging_util.error(str(err))
-        finally:
+                logging_util.error(traceback.format_exc())
+                logging_util.error(str(err))
+    finally:
+        _tmp = file_unzip.default_dir(None)
+        if _tmp:
             file_unzip.clean(_tmp, True)
 
     import sys

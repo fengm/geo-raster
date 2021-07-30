@@ -255,7 +255,7 @@ def clean(fd_out, remove_root=True):
     from . import config
 
     if config.getboolean('conf', 'keep_temp', False):
-        logging.warning('keeping temp at %s' % fd_out)
+        logging.warning('keep temp at %s' % fd_out)
         return
 
     try:
@@ -298,9 +298,9 @@ class file_unzip:
         from . import config
         self._keep = keep | config.getboolean('conf', 'keep_temp', False)
 
-        logging.debug('temp: %s' % self.fd_out)
-        if self._keep:
-            print('temp:', self.fd_out)
+        # logging.debug('temp: %s' % self.fd_out)
+        # if self._keep:
+        #     print('temp:', self.fd_out)
 
     # support with statement
     def __enter__(self):
@@ -350,7 +350,7 @@ class file_unzip:
     def _clean(self):
         from . import config
         if config.getboolean('conf', 'keep_temp', False):
-            logging.warning('keeping temp at %s' % self.fd_out)
+            logging.warning('keep temp at %s' % self.fd_out)
             return
 
         import shutil, os
@@ -370,7 +370,7 @@ class file_unzip:
 
     def clean(self):
         if self._keep:
-            logging.warning('keep the temporary files')
+            logging.warning('keep temp files %s' % self.fd_out)
         else:
             self._clean()
 
