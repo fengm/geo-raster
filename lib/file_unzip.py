@@ -214,44 +214,58 @@ def _file_name():
 
     raise Exception('failed to detect file name')
 
-def default_dir(fd_out):
+def default_tmp_root(fd_out):
     import os, sys
 
     # use 'tmp' folder at the root of the code when no folder specified
     if fd_out:
         return fd_out
-        
+
     from . import config
-    
+
     _d_tmp = config.get('conf', 'temp', os.environ.get('G_TMP', os.path.join(sys.path[0], 'tmp')))
-    
+
     # if config.cfg.has_option('conf', 'temp'):
     #     _d_tmp = config.
     #     return os.path.join(config.cfg.get('conf', 'temp'), _file_name())
 
     # if 'G_TMP' in os.environ:
     #     return os.path.join(os.environ['G_TMP'], _file_name())
-    
+
     if not _d_tmp:
         raise Exception('failed to find temp path')
-        
+
+    return _d_tmp
+
+def default_dir(fd_out):
+    import os
+    from . import config
+
+    _d_tmp = os.path.join(default_tmp_root(fd_out), _file_name())
+
     if config.getboolean('conf', 'use_process_temp', False):
         import os
         _d_tmp = os.path.join(_d_tmp, 'p%d' % os.getpid())
         logging.debug('use process temp: %s' % _d_tmp)
 
-    return os.path.join(_d_tmp, _file_name())
+    return _d_tmp
 
 def clean(fd_out, remove_root=True):
     '''force to clean the folder'''
+    from . import config
+
+    if config.getboolean('conf', 'keep_temp', False):
+        logging.warning('keeping temp at %s' % fd_out)
+        return
+
     try:
         import shutil, os
-        
+
         logging.debug('clean folder: %s (%s)' % (fd_out, remove_root))
         if remove_root:
             shutil.rmtree(fd_out, True)
             return
-    
+
         for _root, _dirs, _files in os.walk(fd_out):
             for _file in _files:
                 try:
@@ -264,7 +278,7 @@ def clean(fd_out, remove_root=True):
 
     except Exception:
         pass
-        
+
 class file_unzip:
     def __init__(self, fd_out='', exclusive=True, keep=False):
         import os
@@ -334,8 +348,13 @@ class file_unzip:
         return _f_out
 
     def _clean(self):
+        from . import config
+        if config.getboolean('conf', 'keep_temp', False):
+            logging.warning('keeping temp at %s' % self.fd_out)
+            return
+
         import shutil, os
-        
+
         if self.exclusive:
             # shutil.rmtree(self.fd_out if self.existed else self.pfolder, True)
             # forbidden the code for removing the parent dir because it may cause
@@ -354,23 +373,23 @@ class file_unzip:
             logging.warning('keep the temporary files')
         else:
             self._clean()
-            
+
     def copy(self, fd_in, fd_ot, exclude_exts=None, include_exts=None):
         return compress_folder(fd_in, fd_ot, compress_exts=[], \
             exclude_exts=exclude_exts, include_exts=include_exts)
-            
+
     def save(self, o, f_out):
         import os
-        
+
         if o is None:
             logging.warning('skip saving none object to %s' % f_out)
             return
-        
+
         _d_tmp = self.generate_file()
         os.makedirs(_d_tmp)
-        
+
         _f_tmp = os.path.join(_d_tmp, os.path.basename(f_out))
-        
+
         if isinstance(o, str):
             with open(_f_tmp, 'w') as _fo:
                 _fo.write(o)
@@ -378,14 +397,14 @@ class file_unzip:
             from . import geo_raster as ge
             if isinstance(o, ge.geo_band_cache):
                 o.save(_f_tmp)
-        
+
         if os.path.exists(_f_tmp) == False:
             raise Exception('failed to save the object')
-            
+
         _d_out = os.path.dirname(f_out)
         if not _d_out:
             _d_out = '.'
-            
+
         self.copy(_d_tmp, _d_out)
 
 zip = file_unzip
@@ -393,8 +412,7 @@ zip = file_unzip
 def save(o, f_out):
     with zip() as _zip:
         return _zip.save(o, f_out)
-        
+
 def copy(self, fd_in, fd_ot, exclude_exts=None, include_exts=None):
     with zip() as _zip:
         return _zip.copy(fd_in, fd_ot, exclude_exts, include_exts)
-        

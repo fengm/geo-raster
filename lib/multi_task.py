@@ -11,7 +11,7 @@ import logging
 
 def _default_task_pos():
     import os
-    
+
     _c = 'AWS_BATCH_JOB_ARRAY_INDEX'
     if _c in os.environ:
         return int(os.environ[_c])
@@ -21,7 +21,7 @@ def _default_task_pos():
 def init(opts):
     from . import config
     _tt = config.getint('conf', 'task_type')
-    
+
     if _tt == 0:
         return True
 
@@ -64,10 +64,10 @@ def load_from_list(f_ls, opts):
 
 def _list_sub_list(ls, opts):
     logging.debug('load sub list with type %s' % opts.task_order)
-    
+
     _ls = ls
     _to = opts.task_order
-    
+
     if _to < 0:
         _ls = list(reversed(_ls))
         _to = _to * -1
@@ -129,7 +129,7 @@ def text(t):
     import sys
     sys.stdout.write(t)
     sys.stdout.flush()
-    
+
 def create_lock():
     return multiprocessing.Lock()
 
@@ -189,12 +189,11 @@ def work_function(obj, job_queue, vs, mag, res, t_lock, pos):
 
             _rs = None
 
+            from gio import file_unzip
+            from gio import config
+
             try:
-                from gio import file_unzip
-                from gio import config
-                
                 _rs = obj.func(*_ps)
-                
             except KeyboardInterrupt as _err:
                 raise _err
             except Exception as _err:
@@ -210,8 +209,8 @@ def work_function(obj, job_queue, vs, mag, res, t_lock, pos):
                     raise _err
 
             if config.getboolean('conf', 'use_process_temp', False):
-                file_unzip.clean(file_unzip.default_dir(None))
-                    
+                file_unzip.clean(file_unzip.default_dir(None), True)
+
             if mag['stop']:
                 return
 

@@ -267,7 +267,7 @@ class s3():
 
     def __exit__(self, type, value, traceback):
         self.clean()
-        
+
     def _get_s3_client(self):
         import boto3
         return boto3.client('s3')
@@ -279,65 +279,65 @@ class s3():
 
         if self._zip_inner and self._zip:
             self._zip.clean()
-            
+
     def _list_by_resource(self, k, limit=-1):
         import boto3
-        
+
         _ss = boto3.resource('s3').Bucket(self._t)
         if limit >= 0:
             return list(_ss.objects.filter(Prefix=k).limit(limit))
 
         _ls = list(_ss.objects.filter(Prefix=k))
         return _ls
-        
+
     def _list_by_client(self, k, limit=-1):
         _paginator = self._get_s3_client().get_paginator("list_objects_v2")
-        
+
         _ps = {'Bucket': self._t, 'Prefix': k}
-        
+
         from . import config
         if config.getboolean('aws', 's3_requester_pay', True):
             _ps['RequestPayer'] = 'requester'
-            
+
         if limit >= 0:
             _ps['MaxKeys'] = limit
-            
+
         _ts = []
         for _page in _paginator.paginate(**_ps):
             try:
                 _cs = _page["Contents"]
             except KeyError:
                 break
-            
+
             for _k in _cs:
                 if k.endswith('/') and _k['Key'] == k:
                     # skip folders
                     continue
                 _ts.append(_k)
-                
+
         return _ts
 
     def list(self, k, limit=-1):
         from . import config
-        
+
         if config.getboolean('aws', 's3_requester_pay', True):
             return self._list_by_client(k, limit)
-            
+
         return [{'Key': _s.key} for _s in self._list_by_resource(k, limit)]
-        
+
     def exists(self, k):
         if not k:
             return False
 
         _os = self.list(k, limit=1)
         return len(_os) > 0
-        
+
     def remove(self, key):
         import boto3
-        
+
         _ss = boto3.resource('s3')
         _bk = _ss.Bucket(self._t)
-        
+
         _nu = 0
         for _o in _bk.objects.filter(Prefix=key):
             _ss.Object(self._t, _o.key).delete()
@@ -404,12 +404,12 @@ class s3():
                 # write an empty file to prevent other process to use the same file name
                 with open(_t, 'w') as _fo:
                     _fo.write('')
-    
+
                 from . import config
                 _ps = {'Bucket': self._t, 'Key': k}
                 if config.getboolean('aws', 's3_requester_pay', True):
                     _ps['RequestPayer'] = 'requester'
-    
+
                 try:
                     _rs = self._get_s3_client().get_object(**_ps)
                 except Exception as _err:
@@ -417,27 +417,28 @@ class s3():
                     # logging.debug(traceback.format_exc())
                     logging.debug(str(_err))
                     # print('\n\n* Error:', _err)
-                    
+
                     # import time
                     # time.sleep(1)
-                
+
                     logging.debug('failed to load key s3://%s/%s' % (self._t, k))
                     # continue
                     return None
-                    
+
                 _bd = _rs['Body']
-    
-                _sz = 0
+
+                _sz = 0.0
                 with open(_t, 'wb') as _fo:
                     for _bs in _bd.iter_chunks():
                         _fo.write(_bs)
-                        _sz += len(_bs)
-                        
+                        _sz += float(len(_bs))
+                        del _bs
+
                 if not os.path.exists(_t) or _sz < _rs['ContentLength']:
                     logging.warning('received partial file from S3 (%s, %s)' % (_sz, _rs['ContentLength']))
                     os.remove(_t)
                     continue
-    
+
                 if lock is None:
                     if os.path.exists(_f) == False:
                         shutil.move(_t, _f)
@@ -445,7 +446,7 @@ class s3():
                     with lock:
                         if os.path.exists(_f) == False:
                             shutil.move(_t, _f)
-    
+
                 return _f
 
             finally:

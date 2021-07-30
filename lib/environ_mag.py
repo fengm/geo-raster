@@ -61,42 +61,46 @@ def config(p, enable_multi_processing=True):
     logging_util.init(_opts.logging, enable_multi_processing)
 
     from gio import file_unzip as fz
-    # if config.getboolean('conf', 'no_clean', False) == False:
+
     if config.getboolean('conf', 'clean_temp', False) == True:
         import logging
         logging.info('force clean the temporary folder')
-        
-        fz.clean(fz.default_dir(_opts.temp))
+
+        _d_tmp = fz.default_dir(_opts.temp)
+        if config.getboolean('conf', 'use_process_temp', False):
+            import os
+            _d_tmp = os.path.dirname(_d_tmp)
+        fz.clean(_d_tmp)
 
     return _opts
-    
+
 def _opts_to_str(opts):
     _vs = []
 
     for _opts in opts:
         for _k, _v in list({key: value for key, value in list(_opts.__dict__.items()) if not key.startswith("__")}.items()):
             _vs.append('%s=%s' % (_k, _v))
-    
+
     return '; '.join(_vs)
 
 def _parse_env(opts, log=False):
     from gio import config
     import logging
     import re
-    
+
     if not opts.env or len(opts.env) <= 0:
         return
-    
+
     _env = None
     for _e in opts.env:
         if _env is None:
             _env = _e
         else:
             _env.extend(_e)
-    
+
     if not _env:
         return
-    
+
     for _e in _env:
         _es = re.split('\s*\=\s*', _e.strip())
         if len(_es) != 2:
@@ -105,19 +109,19 @@ def _parse_env(opts, log=False):
         _ns = re.split('[\/\.]', _es[0])
         if len(_ns) > 2:
             raise Exception('failed to parse environment name (%s)' % _es[0])
-            
+
         if len(_ns) == 1:
             _n0 = 'conf'
             _n1 = _ns[0]
         else:
             _n0 = _ns[0]
             _n1 = _ns[1]
-        
+
         if log:
             logging.info('env %s.%s=%s' % (_n0, _n1, _es[1]))
         else:
             config.set(_n0, _n1, _es[1])
-            
+
 def run(func, opts):
     import logging
     from . import config
@@ -128,11 +132,13 @@ def run(func, opts):
 
     logging_util.info(('CMD (%s): ' % os.getcwd()) + ' '.join(['"%s"' % x if ' ' in x else x for x in sys.argv]))
     _parse_env(opts[0], log=True)
-    
+
     os.environ['PATH'] = '.' + os.pathsep + sys.argv[0] + os.pathsep + os.environ['PATH']
     with file_unzip.file_unzip() as _zip:
-        _tmp = _zip.generate_file()
-        config.set('conf', 'temp', _tmp)
+        _tmp = file_unzip.default_dir(None)
+
+        # _tmp = _zip.generate_file()
+        # config.set('conf', 'temp', _tmp)
 
         # _cache = config.get('conf', 'cache', None)
         # if not _cache:
@@ -141,28 +147,23 @@ def run(func, opts):
         if config.getint('conf', 'task_type') is not None:
             from . import multi_task
             multi_task.init(opts[0])
-            
+
         logging_util.info('options: ' + _opts_to_str(opts))
-
-        if config.getboolean('conf', 'debug', True):
-            return func(*opts)
-        else:
-            try:
+        try:
+            if config.getboolean('conf', 'debug', True):
                 return func(*opts)
-            except KeyboardInterrupt:
-                print('\n\n* User stopped the program')
-            except Exception as err:
-                import traceback
+            else:
+                try:
+                    return func(*opts)
+                except KeyboardInterrupt:
+                    print('\n\n* User stopped the program')
+                except Exception as err:
+                    import traceback
 
-                logging_util.error(traceback.format_exc())
-                logging_util.error(str(err))
-
-        if os.path.exists(_tmp):
-            try:
-                import shutil
-                shutil.rmtree(_tmp, True)
-            except Exception as err:
-                pass
+                    logging_util.error(traceback.format_exc())
+                    logging_util.error(str(err))
+        finally:
+            file_unzip.clean(_tmp, True)
 
     import sys
     sys.exit(1)
