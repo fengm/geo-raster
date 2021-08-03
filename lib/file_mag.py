@@ -129,7 +129,7 @@ class s3_mag(obj_mag):
         return self._s3.exists(self._path)
 
     def get(self):
-        if not self._path:
+        if not self.exists():
             return None
 
         _o = self._s3.get(self._path)

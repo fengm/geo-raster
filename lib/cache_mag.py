@@ -7,6 +7,7 @@ Description: manage Landsat cache files
 '''
 
 import logging
+from . import config
 
 class file_obj():
 
@@ -27,8 +28,6 @@ def _get_cache_dir(d=None):
     if d:
         return d
 
-    from . import config
-
     _d_tmp = config.get('conf', 'cache')
     if _d_tmp:
         return _d_tmp
@@ -42,8 +41,6 @@ class cache_mag():
     """manage Landsat cache files"""
 
     def __init__(self, tag, cache=None, max_file=-1, max_size=-1):
-        from . import config
-
         self._t = tag
         self._d = _get_cache_dir(cache)
 
@@ -232,8 +229,6 @@ class s3():
     """manage Landsat cache files"""
 
     def __init__(self, bucket, fzip=None):
-        from gio import config
-
         self._t = bucket
         _zip = fzip
 
@@ -295,7 +290,6 @@ class s3():
 
         _ps = {'Bucket': self._t, 'Prefix': k}
 
-        from . import config
         if config.getboolean('aws', 's3_requester_pay', True):
             _ps['RequestPayer'] = 'requester'
 
@@ -318,8 +312,6 @@ class s3():
         return _ts
 
     def list(self, k, limit=-1):
-        from . import config
-
         if config.getboolean('aws', 's3_requester_pay', True):
             return self._list_by_client(k, limit)
 
@@ -358,7 +350,6 @@ class s3():
         if k is None:
             return None
 
-        from gio import config
         _enable_lock = config.getboolean('conf', 'enable_cache_lock', True)
 
         if _enable_lock:
@@ -378,6 +369,13 @@ class s3():
             return self._get(k, lock)
 
     def _get(self, k, lock=None):
+        if config.getboolean('conf', 's3_get_with_cli', False):
+            return self._get_cli(k, lock)
+
+        return self._get_boto(k, lock)
+
+    # download file using boto3 function
+    def _get_boto(self, k, lock=None):
         if k is None:
             return None
 
@@ -405,7 +403,6 @@ class s3():
                 with open(_t, 'w') as _fo:
                     _fo.write('')
 
-                from . import config
                 _ps = {'Bucket': self._t, 'Key': k}
                 if config.getboolean('aws', 's3_requester_pay', True):
                     _ps['RequestPayer'] = 'requester'
@@ -455,6 +452,63 @@ class s3():
 
         raise Exception('failed to load S3 file s3://%s/%s' % (self._t, _key))
 
+    # download file usign awscli command to test the issue that likely related to boto3
+    def _get_cli(self, k, lock=None):
+        if k is None:
+            return None
+
+        _key = k if isinstance(k, str) or isinstance(k, str) else k.key
+        _f = self._c.path(_key)
+
+        if self._c.cached(_key):
+            logging.debug('found cached file %s' % _f)
+            return _f
+
+        import os
+        try:
+            (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
+        except Exception:
+            pass
+
+        import shutil
+        from . import file_unzip
+
+        for _i in range(1):
+            _t = file_unzip.generate_file(os.path.dirname(_f), '', '.bak')
+
+            try:
+                # write an empty file to prevent other process to use the same file name
+                with open(_t, 'w') as _fo:
+                    _fo.write('')
+
+                _cmd = 'aws s3 cp s3://%s/%s %s' % (self._t, k, _t)
+                if config.getboolean('aws', 's3_requester_pay', True):
+                    _cmd = _cmd + ' --request-pay requester'
+
+                from . import run_commands as run
+                run.run(_cmd)
+
+                if os.path.getsize(_t) <= 1:
+                    logging.warning('failed to receive file from S3 (%s://%s)' % (self._t, k))
+                    os.remove(_t)
+                    continue
+
+                if lock is None:
+                    if os.path.exists(_f) == False:
+                        shutil.move(_t, _f)
+                else:
+                    with lock:
+                        if os.path.exists(_f) == False:
+                            shutil.move(_t, _f)
+
+                return _f
+
+            finally:
+                if os.path.exists(_t):
+                    os.remove(_t)
+
+        raise Exception('failed to load S3 file s3://%s/%s' % (self._t, _key))
+
     def put(self, k, f, update=True, lock=None):
         if (not update) and self.exists(k):
             logging.info('skip existing file %s: %s' % (self._t, k))
@@ -462,7 +516,6 @@ class s3():
 
         logging.info('upload file %s: %s' % (self._t, k))
         with open(f, 'rb') as _fi:
-            from . import config
             _ps = {'Bucket': self._t, 'Key': k, 'Body': _fi}
             if config.getboolean('aws', 's3_requester_pay', True):
                 _ps['RequestPayer'] = 'requester'
