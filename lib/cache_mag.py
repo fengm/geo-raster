@@ -461,7 +461,7 @@ class s3():
         _f = self._c.path(_key)
 
         if self._c.cached(_key):
-            logging.debug('found cached file %s' % _f)
+            # logging.debug('found cached file %s' % _f)
             return _f
 
         import os
