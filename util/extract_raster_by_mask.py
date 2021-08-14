@@ -67,6 +67,12 @@ def main(opts):
 
     if opts.input.endswith('.shp'):
         _bnd = gx.geo_band_stack_zip.from_shapefile(opts.input)
+    elif opts.input.endswith('.txt'):
+        with open(opts.input) as _fi:
+            _fs = _fi.read().strip().splitlines()
+            if not _fs:
+                return
+            _bnd = gx.geo_band_stack_zip.from_list(_fs)
     else:
         _bnd = ge.open(opts.input).get_band()
 

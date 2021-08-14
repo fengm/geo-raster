@@ -432,6 +432,16 @@ class geo_band_obj:
             self.band_file.clean()
             self.band = None
 
+def _band_extent(f):
+    _img = ge.open(f)
+    if not _img:
+        return None
+
+    _bnd = _img.get_band()
+    assert(_bnd is not None)
+
+    return _bnd.proj, gb.geo_polygon.from_raster(_bnd)
+
 class geo_band_stack_zip:
 
     def __init__(self, bands, proj=None, check_layers=False, nodata=None):
@@ -484,15 +494,12 @@ class geo_band_stack_zip:
                 _file = _ns[0]
                 _name = _ns[1]
 
-            _bnd = band_file(_file, band_idx, _name, file_unzip, cache)
-            _bbb = _bnd.get_band()
-            assert(_bbb is not None)
-
+            _prj, _ext = _band_extent(_file)
             if _proj is None:
-                _proj = _bbb.proj
+                _proj = _prj
 
-            _poly = gb.geo_polygon.from_raster(_bbb)
-            _bnds.append(geo_band_obj(_poly, _bnd))
+            _bnd = band_file(_file, band_idx, _name, file_unzip, cache)
+            _bnds.append(geo_band_obj(_ext, _bnd))
 
         if len(_bnds) == 0:
             logging.debug('No images found')
