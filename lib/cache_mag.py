@@ -429,7 +429,7 @@ class s3():
                     for _bs in _bd.iter_chunks():
                         _fo.write(_bs)
                         _sz += float(len(_bs))
-                        del _bs
+                        # del _bs
 
                 if not os.path.exists(_t) or _sz < _rs['ContentLength']:
                     logging.warning('received partial file from S3 (%s, %s)' % (_sz, _rs['ContentLength']))
