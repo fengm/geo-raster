@@ -65,16 +65,21 @@ def main(opts):
     _clr = None if not opts.color else ge.load_colortable(opts.color)
     _bnd = None
 
-    if opts.input.endswith('.shp'):
-        _bnd = gx.geo_band_stack_zip.from_shapefile(opts.input)
-    elif opts.input.endswith('.txt'):
-        with open(opts.input) as _fi:
-            _fs = _fi.read().strip().splitlines()
-            if not _fs:
-                return
-            _bnd = gx.geo_band_stack_zip.from_list(_fs)
+    _inp = opts.input
+    if len(_inp) > 1:
+        _bnd = gx.geo_band_stack_zip.from_list(_inp)
+        print(_bnd, len(_inp))
     else:
-        _bnd = ge.open(opts.input).get_band()
+        if _inp[0].endswith('.shp'):
+            _bnd = gx.geo_band_stack_zip.from_shapefile(_inp[0])
+        elif _inp[0].endswith('.txt'):
+            with open(_inp[0]) as _fi:
+                _fs = _fi.read().strip().splitlines()
+                if not _fs:
+                    return
+                _bnd = gx.geo_band_stack_zip.from_list(_fs)
+        else:
+            _bnd = ge.open(_inp[0]).get_band()
 
     _mak = ge.open(opts.mask).get_band().cache()
     _bnd = _bnd.read_block(_mak)
@@ -101,7 +106,7 @@ def main(opts):
 def usage():
     _p = environ_mag.usage(False)
 
-    _p.add_argument('-i', '--input', dest='input', required=True)
+    _p.add_argument('-i', '--input', dest='input', required=True, nargs='+')
     _p.add_argument('-m', '--mask', dest='mask', required=True)
     _p.add_argument('-k', '--keep-pixels', dest='keep_pixels', type='bool', default=False)
     _p.add_argument('-c', '--color', dest='color')
