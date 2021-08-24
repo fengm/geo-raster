@@ -138,6 +138,31 @@ def check_prefix(f, exts):
 
     return False
 
+def copy_file(f_inp, f_out, compress_exts=None, exclude_exts=None, include_exts=None):
+    if exclude_exts and check_prefix(f_inp, exclude_exts):
+        return
+
+    if include_exts and not check_prefix(f_inp, include_exts):
+        return
+
+    if check_prefix(f_inp, compress_exts):
+        _f_ot = f_out + '.gz'
+        logging.debug('zipping %s to %s' %(f_inp, _f_ot))
+
+        return compress_file(f_inp, _f_ot)
+
+    logging.debug('copying %s to %s' %(f_inp, f_out))
+    if f_out.startswith('s3://'):
+        return send_to_s3(f_inp, f_out)
+
+    import os
+    import shutil
+
+    _d_out = os.path.dirname(f_out)
+    os.path.exists(_d_out) or os.makedirs(_d_out)
+
+    shutil.copy(f_inp, f_out)
+
 def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include_exts=None):
     '''compress files in the folder to the target folder'''
     import shutil
@@ -160,24 +185,7 @@ def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include
         _f_in = _ff
         _f_ot = os.path.join(fd_ot, _file)
 
-        if exclude_exts and check_prefix(_file, exclude_exts):
-            continue
-
-        if include_exts and not check_prefix(_file, include_exts):
-            continue
-
-        if check_prefix(_file, compress_exts):
-            _f_ot = _f_ot + '.gz'
-            logging.debug('zipping %s to %s' %(_f_in, _f_ot))
-
-            compress_file(_f_in, _f_ot)
-        else:
-            logging.debug('copying %s to %s' %(_f_in, _f_ot))
-            if _f_ot.startswith('s3://'):
-                send_to_s3(_f_in, _f_ot)
-            else:
-                os.path.exists(fd_ot) or os.makedirs(fd_ot)
-                shutil.copy(_f_in, _f_ot)
+        copy_file(_f_in, _f_ot, compress_exts, exclude_exts, include_exts)
 
 def generate_id(fd_out, prefix='', subfix=''):
     import random, os
@@ -374,8 +382,13 @@ class file_unzip:
         else:
             self._clean()
 
-    def copy(self, fd_in, fd_ot, exclude_exts=None, include_exts=None):
-        return compress_folder(fd_in, fd_ot, compress_exts=[], \
+    def copy(self, fd_in, fd_ot, compress_exts=[], exclude_exts=None, include_exts=None):
+        import os
+
+        if not fd_in.startswith('s3://') and os.path.isfile(fd_in):
+            return copy_file(fd_in, fd_ot, compress_exts, exclude_exts, include_exts)
+
+        return compress_folder(fd_in, fd_ot, compress_exts=compress_exts, \
             exclude_exts=exclude_exts, include_exts=include_exts)
 
     def save(self, o, f_out):
