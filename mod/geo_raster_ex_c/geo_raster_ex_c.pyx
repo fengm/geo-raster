@@ -1,9 +1,7 @@
 
 
-from osgeo import gdal, ogr, osr
+from osgeo import ogr
 import os
-import re
-import math
 import numpy as np
 cimport numpy as np
 cimport cython
@@ -11,9 +9,8 @@ import logging
 import numpy
 
 from . import geo_raster as ge
-from . import geo_base as gb
-from . import file_mag
-from gio.geo_base import geo_point, geo_polygon, geo_extent, projection_transform
+
+# from gio.geo_base import geo_point, geo_polygon, geo_extent, projection_transform
 
 @cython.boundscheck(False)
 
@@ -354,6 +351,336 @@ def read_block_float64(np.ndarray[np.float64_t, ndim=2] dat, ext, prj, geo, floa
 
             dat_out[_row, _col] = _v
 
+class geo_extent:
+
+    @classmethod
+    def from_raster(cls, img):
+        _geo = img.geo_transform
+
+        _pt1 = (_geo[0], _geo[3])
+        _pt2 = (_geo[0] + img.width * _geo[1] + img.height * _geo[2], _geo[3] + img.width * _geo[4] + img.height * _geo[5])
+
+        return cls(_pt1[0], _pt2[1], _pt2[0], _pt1[1], img.proj)
+
+    def __init__(self, x1=-180, y1=-90, x2=180, y2=90, proj=None):
+        self.minx = min(x1, x2)
+        self.maxx = max(x1, x2)
+        self.miny = min(y1, y2)
+        self.maxy = max(y1, y2)
+
+        self.proj = proj
+
+    def __str__(self):
+        return '%f, %f, %f, %f' % (self.minx, self.miny, self.maxx, self.maxy)
+
+    def width(self):
+        return self.maxx - self.minx
+
+    def height(self):
+        return self.maxy - self.miny
+
+    def is_intersect(self, extent):
+        if extent.maxx < self.minx or \
+                extent.minx > self.maxx or \
+                extent.maxy < self.miny or \
+                extent.miny > self.maxy:
+            return False
+        return True
+
+    def intersect(self, extent):
+        return geo_extent(max(self.minx, extent.minx), max(self.miny, extent.miny), min(self.maxx, extent.maxx), min(self.maxy, extent.maxy), self.proj)
+
+    def union(self, extent):
+        return geo_extent(min(self.minx, extent.minx), min(self.miny, extent.miny), max(self.maxx, extent.maxx), max(self.maxy, extent.maxy), self.proj)
+
+    def get_center(self):
+        return geo_point(self.minx + self.width() / 2, self.miny + self.height() / 2, self.proj)
+
+    def to_polygon(self):
+        _pts = [
+                geo_point(self.minx, self.miny),
+                geo_point(self.minx, self.maxy),
+                geo_point(self.maxx, self.maxy),
+                geo_point(self.maxx, self.miny),
+                ]
+        return geo_polygon.from_pts(_pts, self.proj)
+
+class geo_polygon:
+
+    def __init__(self, poly):
+        self.poly = poly
+        self.proj = poly.GetSpatialReference() if poly is not None else None
+
+    @classmethod
+    def from_raster(cls, img, div=10):
+        _ext = geo_extent.from_raster(img)
+
+        _dis_x = _ext.width()
+        _dis_y = _ext.height()
+
+        _cel_x = _dis_x / float(div)
+        _cel_y = _dis_y / float(div)
+
+        _pts = [geo_point(_ext.minx, _ext.maxy)]
+
+        for _c in xrange(div):
+            _pts.append(geo_point(_ext.minx + _cel_x * (_c+1), _ext.maxy))
+
+        for _c in xrange(div):
+            _pts.append(geo_point(_ext.maxx, _ext.maxy - _cel_y * (_c+1)))
+
+        for _c in xrange(div):
+            _pts.append(geo_point(_ext.maxx - _cel_x * (_c+1), _ext.miny))
+
+        for _c in xrange(div):
+            _pts.append(geo_point(_ext.minx, _ext.miny + _cel_y * (_c+1)))
+
+        return cls.from_pts(_pts, img.proj)
+
+    @classmethod
+    def from_raster_location(cls, img, pt):
+        _pt = pt.project_to(img.proj)
+        _cell = img.to_cell(_pt.x, _pt.y)
+        return cls.from_raster_cell(img, _cell[0], _cell[1])
+
+    @classmethod
+    def from_raster_cell(cls, img, col, row):
+        _trans = img.geo_transform
+        _cell_x = _trans[1] / 2
+        _cell_y = _trans[5] / 2
+
+        _pt0 = img.to_location(col, row)
+        _pts = [
+                geo_point(_pt0[0] - _cell_x, _pt0[1] - _cell_y),
+                geo_point(_pt0[0] - _cell_x, _pt0[1] + _cell_y),
+                geo_point(_pt0[0] + _cell_x, _pt0[1] + _cell_y),
+                geo_point(_pt0[0] + _cell_x, _pt0[1] - _cell_y)
+                ]
+
+        # return cls.from_pts(_pts, img.proj)
+        return cls.from_pts(_pts, img.proj)
+
+    @classmethod
+    def from_pts(cls, pts, proj=None):
+        _proj = proj
+        _ring = ogr.Geometry(ogr.wkbLinearRing)
+        for _pt in pts:
+            _ring.AddPoint(_pt.x, _pt.y)
+            if _proj is not None and _pt.proj is not None:
+                _proj = _pt.proj
+        _ring.CloseRings()
+
+        _poly = ogr.Geometry(ogr.wkbPolygon)
+        _poly.AddGeometry(_ring)
+        _proj and _poly.AssignSpatialReference(_proj)
+
+        return cls(_poly)
+
+    def project_to(self, proj):
+        if self.proj is None or self.proj.IsSame(proj):
+            return self
+
+        _poly = self.poly.Clone()
+        _err = _poly.TransformTo(proj)
+
+        if _err != 0:
+            logging.error('failed to project polygon to (%s)' % (proj.ExportToProj4(), ))
+            return None
+
+        return geo_polygon(_poly)
+
+    def set_proj(self, proj):
+        self.poly.AssignSpatialReference(proj)
+        self.proj = proj
+
+    def union(self, poly):
+        return geo_polygon(self.poly.Union(poly.poly))
+
+    def intersect(self, poly):
+        return geo_polygon(self.poly.Intersection(poly.poly))
+
+    def center(self):
+        _pt = self.poly.Centroid().GetPoint_2D()
+        return geo_point(_pt[0], _pt[1], self.poly.GetSpatialReference())
+
+    def extent(self):
+        _ext = self.poly.GetEnvelope()
+        return geo_extent(_ext[0], _ext[2], _ext[1], _ext[3], self.poly.GetSpatialReference())
+
+    def area(self):
+        return self.poly.GetArea()
+
+    def is_intersect(self, poly):
+        _poly1 = self.poly
+        _poly2 = poly.poly
+
+        return _poly1.Intersect(_poly2)
+
+    def buffer(self, dis):
+        _poly = geo_polygon(self.poly.Buffer(dis))
+        if self.proj is not None:
+            _poly.set_proj(self.proj)
+        return _poly
+
+    def is_contain(self, pt):
+        _loc = pt.project_to(self.proj)
+
+        _pt = ogr.Geometry(ogr.wkbPoint)
+        _pt.SetPoint_2D(0, _loc.x, _loc.y)
+
+        return self.poly.Contains(_pt)
+
+class projection_transform:
+    ''' Build a grid for transforming raster pixels'''
+
+    @classmethod
+    def from_band(cls, bnd_info, proj, interval=100):
+        # make sure there are at least 10 points for each axis
+        _scale = min((bnd_info.width / 10.0, bnd_info.height / 10.0, float(interval)))
+        assert(_scale > 0)
+
+        import math
+        _img_w = int(math.ceil(bnd_info.width / _scale)) + 1
+        _img_h = int(math.ceil(bnd_info.height / _scale)) + 1
+
+        _ms = []
+
+        # output the points for debugging
+        # _pts0 = []
+        # _pts1 = []
+        for _row in xrange(_img_h):
+            _mm = []
+            for _col in xrange(_img_w):
+                _pt0 = ge.to_location(bnd_info.geo_transform, _col * _scale, _row * _scale)
+                _pt0 = geo_point(_pt0[0], _pt0[1], bnd_info.proj)
+                _pt1 = _pt0.project_to(proj)
+                _mm.append([_pt0.x, _pt0.y, _pt1.x, _pt1.y])
+
+                # _pts0.append(_pt0)
+                # _pts1.append(_pt1)
+            _ms.append(_mm)
+
+        # the function has been moved to geo_base module
+        # output_points(_pts0, 'point0.shp')
+        # output_points(_pts1, 'point1.shp')
+
+        return cls(_ms, _scale)
+
+    @classmethod
+    def from_extent(cls, ext, proj, dist=1000.0):
+        # make sure there are at least 10 points for each axis
+        _scale = min((ext.width() / 10.0, ext.height() / 10.0, float(dist)))
+        assert(_scale > 0)
+
+        import math
+        _img_w = int(math.ceil(ext.width() / _scale)) + 1
+        _img_h = int(math.ceil(ext.height() / _scale)) + 1
+
+        _ms = []
+        _y = ext.miny
+        for _row in xrange(_img_h):
+            _mm = []
+            _x = ext.minx
+            for _col in xrange(_img_w):
+                _pt0 = geo_point(_x, _y, ext.proj)
+                _pt1 = _pt0.project_to(proj)
+                _mm.append([_pt0.x, _pt0.y, _pt1.x, _pt1.y])
+
+                _x += dist
+
+            _ms.append(_mm)
+            _y += dist
+
+        return cls(_ms, _scale)
+
+    def __init__(self, mat, scale):
+        self.mat = mat
+        self.scale = float(scale)
+
+    def project(self, int col, int row):
+        cdef float _scale = self.scale
+        cdef int _col0 = int(col / _scale)
+        cdef int _row0 = int(row / _scale)
+
+        cdef int _row1 = _row0 + 1
+        cdef int _col1 = _col0 + 1
+
+        cdef float _del_x = col / _scale - _col0
+        cdef float _del_y = row / _scale - _row0
+
+        cdef list _mat = self.mat
+        # print col, row, _col0, _row0, self.mat.shape
+        cdef float _mat_00x = _mat[_row0][_col0][2]
+        cdef float _mat_01x = _mat[_row0][_col1][2]
+        cdef float _mat_10x = _mat[_row1][_col0][2]
+        cdef float _mat_11x = _mat[_row1][_col1][2]
+
+        cdef float _pos_x0 = _mat_00x + _del_x * (_mat_01x - _mat_00x)
+        cdef float _pos_x1 = _mat_10x + _del_x * (_mat_11x - _mat_10x)
+        cdef float _x = _pos_x0 + (_pos_x1 - _pos_x0) * _del_y
+
+        cdef float _mat_00y = _mat[_row0][_col0][3]
+        cdef float _mat_01y = _mat[_row0][_col1][3]
+        cdef float _mat_10y = _mat[_row1][_col0][3]
+        cdef float _mat_11y = _mat[_row1][_col1][3]
+
+        cdef float _pos_y0 = _mat_00y + _del_y * (_mat_10y - _mat_00y)
+        cdef float _pos_y1 = _mat_01y + _del_y * (_mat_11y - _mat_01y)
+        cdef float _y = _pos_y0 + (_pos_y1 - _pos_y0) * _del_x
+
+        return _x, _y
+
+class geo_point:
+    @classmethod
+    def from_raster(cls, raster, col, row):
+        _x, _y = raster.to_location(col, row)
+        return cls(_x, _y, raster.proj)
+
+    def __init__(self, x, y, proj=None):
+        self.put_pt(x, y)
+        self.proj = proj
+
+    def put_pt(self, x, y):
+        self.x = x
+        self.y = y
+        self.geom = None
+
+    def get_pt(self):
+        return self.x, self.y
+
+    def project_to(self, proj):
+        if self.proj is None or self.proj.IsSame(proj):
+            return self
+
+        _pt = self.to_geometry()
+        _pt.TransformTo(proj)
+        _pt = _pt.GetPoint_2D()
+
+        return geo_point(_pt[0], _pt[1], proj=proj)
+
+    def to_geometry(self):
+        if self.geom is None:
+            self.geom = ogr.Geometry(ogr.wkbPoint)
+
+        self.geom.SetPoint_2D(0, self.x, self.y)
+        if self.proj is not None:
+            self.geom.AssignSpatialReference(self.proj)
+
+        return self.geom
+
+    def distance_to(self, pt):
+        _pt = pt.project_to(self.proj)
+        return ((self.x - _pt.x) ** 2 + (self.y - _pt.y) ** 2) ** 0.5
+
+    def __str__(self):
+        return '%f, %f' % (self.x, self.y)
+
+    def __eq__(self, pt):
+        if pt is None:
+            return False
+
+        return (self.x == pt.x and self.y == pt.y and (self.proj is None or self.proj.IsSame(pt.proj) == 1))
+
 class band_file:
 
     def __init__(self, f, band_idx=1, dataset_name=None, file_unzip=None, cache=None):
@@ -440,7 +767,7 @@ def _band_extent(f):
     _bnd = _img.get_band()
     assert(_bnd is not None)
 
-    return _bnd.proj, gb.geo_polygon.from_raster(_bnd)
+    return _bnd.proj, geo_polygon.from_raster(_bnd)
 
 class geo_band_stack_zip:
 
@@ -511,7 +838,8 @@ class geo_band_stack_zip:
     def from_shapefile(f_list, band_idx=1, dataset_name=None, \
             file_unzip=None, check_layers=False, nodata=None, cache=None, extent=None):
         logging.debug('loading from %s' % f_list)
-
+        from . import file_mag
+        
         if isinstance(f_list, file_mag.obj_mag):
             _finp = f_list.get()
         elif f_list.startswith('s3://'):
@@ -543,6 +871,7 @@ class geo_band_stack_zip:
             if _ext is None:
                 return None
 
+            from . import geo_base as gb
             if isinstance(_ext, gb.geo_point):
                 _lyr.SetSpatialFilter(_ext.to_geometry())
             else:
@@ -560,7 +889,7 @@ class geo_band_stack_zip:
             if _geo is None:
                 continue
 
-            _poly = gb.geo_polygon(_geo.Clone())
+            _poly = geo_polygon(_geo.Clone())
             _file = _f.items()[_file_columns[0]]
             _file = _file.strip() if _file else None
 
@@ -585,7 +914,7 @@ class geo_band_stack_zip:
             logging.debug('No images loaded')
             return None
 
-        logging.debug('loaded %s tiles' % len(_bnds))
+        # logging.debug('loaded %s tiles' % len(_bnds))
         return geo_band_stack_zip(_bnds, _lyr.GetSpatialRef(), check_layers, nodata)
 
     def clean(self):
@@ -705,7 +1034,7 @@ class geo_band_stack_zip:
 
         _bnd = _bnd_info.get_band().band
         logging.debug('loading file %s' % _bnd_info.band_file.file)
-        _pol_s = gb.geo_polygon.from_raster(_bnd, div=100)
+        _pol_s = geo_polygon.from_raster(_bnd, div=100)
 
         if _pol_s is None:
             logging.debug('skip file #1 %s' % _bnd_info.band_file.file)
@@ -821,8 +1150,8 @@ class geo_band_stack_zip:
             self.proj.ExportToProj4(),
             bnd.proj.ExportToProj4()))
 
-        # _pol_t1 = gb.geo_polygon.from_raster(bnd, div=100).buffer(0.0)
-        _pol_t1 = gb.geo_polygon.from_raster(bnd, div=100)
+        # _pol_t1 = geo_polygon.from_raster(bnd, div=100).buffer(0.0)
+        _pol_t1 = geo_polygon.from_raster(bnd, div=100)
         if _pol_t1 is None or _pol_t1.poly is None:
             return None
 
@@ -853,7 +1182,7 @@ class geo_band_reader:
         self.band = band
         self.raster = band.raster
 
-        self.poly = gb.geo_polygon.from_raster(self.raster)
+        self.poly = geo_polygon.from_raster(self.raster)
 
     def read(self, float x, float y, cache=False):
         _val = self.band.read_location_cache(x, y) if cache else self.band.read_location(x, y)
@@ -919,7 +1248,7 @@ def collect_samples(bnd_landsat, proj, interval=3000):
     _img_landsat = bnd_landsat.raster
     _read_landsat = geo_band_reader(bnd_landsat)
 
-    _poly_union = gb.geo_polygon.from_raster(_img_landsat).project_to(proj)
+    _poly_union = geo_polygon.from_raster(_img_landsat).project_to(proj)
     _ext_union = _poly_union.extent()
 
     _vs = []
@@ -941,6 +1270,8 @@ def collect_samples(bnd_landsat, proj, interval=3000):
     return _vs
 
 def modis_projection():
+    from osgeo import osr
+    
     _modis_proj = osr.SpatialReference()
     _modis_proj.ImportFromProj4('+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs')
 

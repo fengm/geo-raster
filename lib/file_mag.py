@@ -129,9 +129,9 @@ class s3_mag(obj_mag):
         return self._s3.exists(self._path)
 
     def get(self):
-        if not self.exists():
+        if not self._path:
             return None
-
+            
         _o = self._s3.get(self._path)
         if _o:
             if self._path.endswith('.shp'):

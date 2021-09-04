@@ -369,8 +369,8 @@ class s3():
             return self._get(k, lock)
 
     def _get(self, k, lock=None):
-        if config.getboolean('conf', 's3_get_with_cli', False):
-            return self._get_cli(k, lock)
+        # if config.getboolean('conf', 's3_get_with_cli', False):
+        #     return self._get_cli(k, lock)
 
         return self._get_boto(k, lock)
 
@@ -429,7 +429,7 @@ class s3():
                     for _bs in _bd.iter_chunks():
                         _fo.write(_bs)
                         _sz += float(len(_bs))
-                        # del _bs
+                        del _bs
 
                 if not os.path.exists(_t) or _sz < _rs['ContentLength']:
                     logging.warning('received partial file from S3 (%s, %s)' % (_sz, _rs['ContentLength']))
