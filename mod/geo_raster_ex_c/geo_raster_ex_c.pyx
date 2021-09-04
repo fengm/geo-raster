@@ -1,14 +1,16 @@
 
-from osgeo import ogr
-from . import geo_raster as ge
+from osgeo import ogr, osr
 import os
-import logging
+import math
 import numpy as np
 cimport numpy as np
 cimport cython
+import logging
 import numpy
 
-# from gio.geo_base import geo_point, geo_polygon, geo_extent, projection_transform
+from . import geo_raster as ge
+from . import geo_base as gb
+from . import file_mag
 
 @cython.boundscheck(False)
 
@@ -349,6 +351,7 @@ def read_block_float64(np.ndarray[np.float64_t, ndim=2] dat, ext, prj, geo, floa
 
             dat_out[_row, _col] = _v
 
+
 class geo_extent:
 
     @classmethod
@@ -537,7 +540,6 @@ class projection_transform:
         _scale = min((bnd_info.width / 10.0, bnd_info.height / 10.0, float(interval)))
         assert(_scale > 0)
 
-        import math
         _img_w = int(math.ceil(bnd_info.width / _scale)) + 1
         _img_h = int(math.ceil(bnd_info.height / _scale)) + 1
 
@@ -570,7 +572,6 @@ class projection_transform:
         _scale = min((ext.width() / 10.0, ext.height() / 10.0, float(dist)))
         assert(_scale > 0)
 
-        import math
         _img_w = int(math.ceil(ext.width() / _scale)) + 1
         _img_h = int(math.ceil(ext.height() / _scale)) + 1
 
@@ -765,7 +766,7 @@ def _band_extent(f):
     _bnd = _img.get_band()
     assert(_bnd is not None)
 
-    return _bnd.proj, geo_polygon.from_raster(_bnd)
+    return _bnd.proj, gb.geo_polygon.from_raster(_bnd)
 
 class geo_band_stack_zip:
 
@@ -836,8 +837,7 @@ class geo_band_stack_zip:
     def from_shapefile(f_list, band_idx=1, dataset_name=None, \
             file_unzip=None, check_layers=False, nodata=None, cache=None, extent=None):
         logging.debug('loading from %s' % f_list)
-        from . import file_mag
-        
+
         if isinstance(f_list, file_mag.obj_mag):
             _finp = f_list.get()
         elif f_list.startswith('s3://'):
@@ -869,7 +869,6 @@ class geo_band_stack_zip:
             if _ext is None:
                 return None
 
-            from . import geo_base as gb
             if isinstance(_ext, gb.geo_point):
                 _lyr.SetSpatialFilter(_ext.to_geometry())
             else:
@@ -887,7 +886,7 @@ class geo_band_stack_zip:
             if _geo is None:
                 continue
 
-            _poly = geo_polygon(_geo.Clone())
+            _poly = gb.geo_polygon(_geo.Clone())
             _file = _f.items()[_file_columns[0]]
             _file = _file.strip() if _file else None
 
@@ -912,7 +911,7 @@ class geo_band_stack_zip:
             logging.debug('No images loaded')
             return None
 
-        # logging.debug('loaded %s tiles' % len(_bnds))
+        logging.debug('loaded %s tiles' % len(_bnds))
         return geo_band_stack_zip(_bnds, _lyr.GetSpatialRef(), check_layers, nodata)
 
     def clean(self):
@@ -1032,7 +1031,7 @@ class geo_band_stack_zip:
 
         _bnd = _bnd_info.get_band().band
         logging.debug('loading file %s' % _bnd_info.band_file.file)
-        _pol_s = geo_polygon.from_raster(_bnd, div=100)
+        _pol_s = gb.geo_polygon.from_raster(_bnd, div=100)
 
         if _pol_s is None:
             logging.debug('skip file #1 %s' % _bnd_info.band_file.file)
@@ -1148,8 +1147,8 @@ class geo_band_stack_zip:
             self.proj.ExportToProj4(),
             bnd.proj.ExportToProj4()))
 
-        # _pol_t1 = geo_polygon.from_raster(bnd, div=100).buffer(0.0)
-        _pol_t1 = geo_polygon.from_raster(bnd, div=100)
+        # _pol_t1 = gb.geo_polygon.from_raster(bnd, div=100).buffer(0.0)
+        _pol_t1 = gb.geo_polygon.from_raster(bnd, div=100)
         if _pol_t1 is None or _pol_t1.poly is None:
             return None
 
@@ -1180,7 +1179,7 @@ class geo_band_reader:
         self.band = band
         self.raster = band.raster
 
-        self.poly = geo_polygon.from_raster(self.raster)
+        self.poly = gb.geo_polygon.from_raster(self.raster)
 
     def read(self, float x, float y, cache=False):
         _val = self.band.read_location_cache(x, y) if cache else self.band.read_location(x, y)
@@ -1246,7 +1245,7 @@ def collect_samples(bnd_landsat, proj, interval=3000):
     _img_landsat = bnd_landsat.raster
     _read_landsat = geo_band_reader(bnd_landsat)
 
-    _poly_union = geo_polygon.from_raster(_img_landsat).project_to(proj)
+    _poly_union = gb.geo_polygon.from_raster(_img_landsat).project_to(proj)
     _ext_union = _poly_union.extent()
 
     _vs = []
@@ -1268,8 +1267,6 @@ def collect_samples(bnd_landsat, proj, interval=3000):
     return _vs
 
 def modis_projection():
-    from osgeo import osr
-    
     _modis_proj = osr.SpatialReference()
     _modis_proj.ImportFromProj4('+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs')
 
