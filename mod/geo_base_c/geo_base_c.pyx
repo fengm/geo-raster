@@ -12,11 +12,10 @@ _inf = sys.float_info.max
 import osgeo
 from osgeo import osr
 from osgeo import ogr, gdal
-import os
+import logging
 
 cimport numpy as np
 cimport cython
-import logging
 import numpy
 
 @cython.boundscheck(False)
@@ -756,7 +755,7 @@ class projection_transform:
         _img_w = int(math.ceil(bnd_info.width / _scale)) + 1
         _img_h = int(math.ceil(bnd_info.height / _scale)) + 1
 
-        logging.debug('scale: %s, size: %s, %s' % (_scale, _img_w, _img_h))
+        # logging.debug('scale: %s, size: %s, %s' % (_scale, _img_w, _img_h))
 
         _ms = []
 
@@ -782,7 +781,7 @@ class projection_transform:
 
             _ms.append(_mm)
 
-        logging.debug('points number: %s' % len(_pts0))
+        # logging.debug('points number: %s' % len(_pts0))
 
         f_pts0 and output_points(_pts0, f_pts0)
         f_pts1 and output_points(_pts1, f_pts1)
@@ -920,6 +919,8 @@ def fix_geog_axis(proj):
     return proj
 
 def output_geometries(geos, proj, geo_type, f_shp):
+    import os
+    
     _drv_type = 'ESRI Shapefile'
     if f_shp.lower().endswith('.kml'):
         _drv_type = 'KML'

@@ -1,14 +1,12 @@
 
-
 from osgeo import ogr
+from . import geo_raster as ge
 import os
+import logging
 import numpy as np
 cimport numpy as np
 cimport cython
-import logging
 import numpy
-
-from . import geo_raster as ge
 
 # from gio.geo_base import geo_point, geo_polygon, geo_extent, projection_transform
 
