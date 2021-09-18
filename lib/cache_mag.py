@@ -275,20 +275,27 @@ class s3():
         if self._zip_inner and self._zip:
             self._zip.clean()
 
-    def _list_by_resource(self, k, limit=-1):
+    def _list_by_resource(self, k, recursive=True, limit=-1):
         import boto3
 
+        _ps = {'Prefix': k}
+        if not recursive:
+            _ps['Delimiter'] = '/'
+            
         _ss = boto3.resource('s3').Bucket(self._t)
         if limit >= 0:
-            return list(_ss.objects.filter(Prefix=k).limit(limit))
+            return list(_ss.objects.filter(**_ps).limit(limit))
 
-        _ls = list(_ss.objects.filter(Prefix=k))
+        _ls = list(_ss.objects.filter(**_ps))
         return _ls
 
-    def _list_by_client(self, k, limit=-1):
+    def _list_by_client(self, k, recursive=True, limit=-1):
         _paginator = self._get_s3_client().get_paginator("list_objects_v2")
 
         _ps = {'Bucket': self._t, 'Prefix': k}
+        
+        if not recursive:
+            _ps['Delimiter'] = '/'
 
         if config.getboolean('aws', 's3_requester_pay', True):
             _ps['RequestPayer'] = 'requester'
@@ -298,24 +305,25 @@ class s3():
 
         _ts = []
         for _page in _paginator.paginate(**_ps):
-            try:
-                _cs = _page["Contents"]
-            except KeyError:
-                break
-
-            for _k in _cs:
-                if k.endswith('/') and _k['Key'] == k:
+            # list files
+            for _k in _page.get('Contents', []):
+                if k.endswith('/') and _k.get('Key') == k:
                     # skip folders
                     continue
                 _ts.append(_k)
+            
+            # include subfolders
+            if not recursive:
+                for _k in _page.get('CommonPrefixes', []):
+                    _ts.append(_k)
 
         return _ts
 
-    def list(self, k, limit=-1):
+    def list(self, k, recursive=True, limit=-1):
         if config.getboolean('aws', 's3_requester_pay', True):
-            return self._list_by_client(k, limit)
+            return self._list_by_client(k, recursive, limit)
 
-        return [{'Key': _s.key} for _s in self._list_by_resource(k, limit)]
+        return [{'Key': _s.key} for _s in self._list_by_resource(k, recursive, limit)]
 
     def exists(self, k):
         if not k:

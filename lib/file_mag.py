@@ -147,14 +147,15 @@ class s3_mag(obj_mag):
         else:
             fs.append(d)
 
-    def list(self, recursive=False):
-        if recursive:
-            _fs = []
-            self._list(self, _fs)
-            return _fs
+    def list(self, recursive=True):
+        # if recursive:
+        #     _fs = []
+        #     self._list(self, _fs)
+        #     return _fs
 
         # return [s3_mag('s3://%s/%s' % (self._bucket, _f.key), s3=self._s3) for _f in list(self._s3.bucket.list(self._path))]
-        return [s3_mag('s3://%s/%s' % (self._bucket, _f['Key']), s3=self._s3) for _f in self._s3.list(self._path)]
+        return [s3_mag('s3://%s/%s' % (self._bucket, _f['Key'] if 'Key' in _f else _f['Prefix']), s3=self._s3) \
+                    for _f in self._s3.list(self._path, recursive=recursive)]
 
     def put(self, f, update=True):
         self._s3.put(self._path, f, update=update)
