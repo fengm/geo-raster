@@ -11,8 +11,9 @@ band_gain_high = [[-6.2, 191.6], [-6.4, 196.5], [-5.0, 152.9], [-5.1, 157.4], [-
 
 class landsat_info:
 
-    def __init__(self, sensor, tile, ac_date, full_name=None, note=None, mission=None):
+    def __init__(self, sensor, tile, ac_date, full_name=None, note=None, mission=None, level=None):
         self.sensor = sensor.upper() if sensor else None
+        self.level = level
         self.tile = tile
         self.ac_date = ac_date
         self.full_name = full_name
@@ -98,7 +99,9 @@ def parse(code, file_only=False):
 def _parse_item(code):
     _vs = parseLandsatId(code)
     if _vs is not None:
-        return landsat_info(_vs[0], _vs[1], _vs[2], code, mission=_vs[3])
+        if len(_vs) < 5:
+            _vs = list(_vs) + [None]
+        return landsat_info(_vs[0], _vs[1], _vs[2], code, mission=_vs[3], level=_vs[4])
 
     _vs = parseHLSId(code)
     if _vs is not None:
@@ -133,6 +136,10 @@ def parseLandsatId(id):
     if _m:
         return _m.group(1) + _m.group(3), _m.group(4), _m.group(5), int(_m.group(2))
 
+    _m = re.search('(L\w)(\d+)_L(\d)[^_]+_(\d{3})(\d{3})_(\d{8})', id)
+    if _m:
+        return _m.group(1), 'p%sr%s' % (_m.group(4), _m.group(5)), _m.group(6), int(_m.group(2)), int(_m.group(3))
+        
     _m = re.search('(L\w)(\d+)_L[^_]+_(\d{3})(\d{3})_(\d{8})', id)
     if _m:
         return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _m.group(5), int(_m.group(2))
