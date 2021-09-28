@@ -275,6 +275,8 @@ class sr_dir(sr):
             _ms['SolarZenith'] = 90 - float(_ms['SUN_ELEVATION'])
             
         assert(_ms['SolarZenith'] >= 0)
+        _ms['SolarElevation'] = 90 - float(_ms['SolarZenith'])
+        
         # print('sun params: %s, %s, %s' % (_ms['SolarAzimuth'], _ms['SolarZenith'], _ms['SUN_ELEVATION']))
 
         # if 'SolarAzimuth' not in _ms:
