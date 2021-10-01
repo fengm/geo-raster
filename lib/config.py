@@ -133,8 +133,9 @@ def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_
     _df = {'root': sys.path[0]}
 
     if len(_fs) > 0:
-        _df['config_path'] = os.path.dirname(_fs[0])
+        _df['config_path'] = os.environ['G_INI']
         _df['config_file'] = os.path.basename(_fs[0])
+        _df['ini_path'] = os.path.dirname(_fs[0])
 
         if len(_fs) > 1:
             logging.warning('config file %s is used for config_path and config_file parameters' % _fs[0])
