@@ -369,7 +369,7 @@ def filter_tiles(ts, f, f_shp=None, column=None):
 
     return _ps
 
-def copy(d_inp, d_out, f_reg=None):
+def copy(d_inp, d_out, f_reg=None, params=None):
     from gio import file_mag
     import os
 
@@ -379,15 +379,20 @@ def copy(d_inp, d_out, f_reg=None):
         logging.info('copy tasks from %s to %s' % (d_inp, d_out))
 
         _f_mak = file_mag.get(os.path.join(d_inp, 'tasks.txt'))
-        _ps = loads(_f_mak)
-        _ts = _ps['tiles']
+        _rs = loads(_f_mak)
+        _ts = _rs['tiles']
+        _ps = _rs['params']
+        
+        if params:
+            for _k, _v in params.items():
+                _ps[_k] = _v
 
         if f_reg:
             logging.info('filter tasks with region %s' % f_reg)
             _f_shp = file_mag.get(os.path.join(d_out, 'tasks.shp'))
             _ts = filter_tiles(_ts, f_reg, _f_shp)
 
-        save(_ts, _f_tsk, _ps['params'])
+        save(_ts, _f_tsk, _ps)
         return True
 
     return False
