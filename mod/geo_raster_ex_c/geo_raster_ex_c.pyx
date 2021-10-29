@@ -1285,10 +1285,24 @@ def load(f, bnd=None):
         return None
 
     _f = str(f)
+    
     if _f.endswith('.shp') or _f.startswith('PG:'):
         logging.debug('loading geo_band_stack %s' % _f)
         _shp = geo_band_stack_zip.from_shapefile(f, extent=bnd)
         return _shp
+        
+    if _f.endswith('.txt'):
+        logging.debug('loading geo_band_stack %s' % _f)
+        from gio import file_mag
+        
+        _ff = file_mag.get(f).get()
+        if not _ff:
+            return None
+            
+        with open(_ff) as _fi:
+            _ls = _fi.read().strip().splitlines()
+            _shp = geo_band_stack_zip.from_list(_ls)
+            return _shp
 
     _img = ge.open(f)
     if _img is None:
