@@ -10,10 +10,34 @@ import logging
 
 def _load(fs, bnd):
     from gio import geo_raster_ex as gx
+    from gio import config
+    
+    _inp = bnd
+    _cel = config.getfloat('conf', 'data_cell_size', 0)
+    
+    if _cel > 0:
+        _inp = _inp.scale(cell_size=_cel)
     
     for _f in fs:
-        _bnd = gx.read_block(_f, bnd)
+        _bnd = gx.read_block(_f, _inp)
         if _bnd:
+            if _cel > 0:
+                from gio import agg_band
+                
+                _agg = config.get('conf', 'data_agg', 'median')
+                if _agg == 'median':
+                    _out = agg_band.median(_bnd, bnd)
+                elif _agg == 'mean':
+                    _out = agg_band.mean(_bnd, bnd)
+                else:
+                    raise Exception('unsupported aggregation method %s' % _agg)
+                
+                if not _out:
+                    return None
+                    
+                _out.color_table = _bnd.color_table
+                _bnd = _out
+                    
             return _bnd
             
     return None
@@ -180,6 +204,10 @@ def usage():
     _p.add_argument('-c', '--cell-size', dest='cell_size', default=30.0, type=float)
     _p.add_argument('-e', '--edge', dest='edge', type=int, default=0)
     _p.add_argument('-m', '--mask', dest='mask')
+    
+    _p.add_argument('--data-cell-size', dest='data_cell_size', type=float)
+    _p.add_argument('--data-agg', dest='data_agg', default='median')
+    
     _p.add_argument('--geo-tile', dest='geo_tile', type='bool')
     _p.add_argument('--geo-tile-decimals', dest='geo_tile_decimals', type=int, default=0)
     _p.add_argument('--color-table', dest='color_table')
