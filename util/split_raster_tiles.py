@@ -74,7 +74,8 @@ def _to_geo_tile(tile, decimals=0):
     from gio import geo_base as gb
     
     _ex = tile.extent().extent()
-    _pt = gb.geo_point(_ex.minx, _ex.maxy, _ex.proj).project_to(gb.proj_from_epsg())
+    _pt = gb.geo_point((_ex.minx * 2 + _ex.maxx) / 3, (_ex.maxy * 2 + _ex.miny) / 3, 
+                        _ex.proj).project_to(gb.proj_from_epsg())
     
     _lat = _to_coordinate(_pt.y, decimals, 2, 'N', 'S')
     _lon = _to_coordinate(_pt.x, decimals, 3, 'E', 'W')
@@ -105,8 +106,10 @@ def _task(tile, t, f_inp, d_out, ps):
     _f_out = os.path.join(_d_out, '%s_%s.tif' % (_tag, t))
 
     if file_mag.get(_f_out).exists():
+        print('weskdfjskdfjk', _f_out)
         logging.debug('skip existing result for %s' % _tag)
         return
+    print('ewerwer2')
 
     with file_unzip.zip() as _zip:
         _bnd = _load(f_inp, tile.extent())
@@ -183,8 +186,11 @@ def main(opts):
     _ms = _gs['params']
     _ts = _gs['tiles']
 
-    _tt = _ms.get('t', opts.tag) if opts.tag is None else opts.tag
+    _tt = opts.test_tile
+    if _tt:
+        _ts = [_t for _t in _ts if _t.tag in _tt]
 
+    _tt = _ms.get('t', opts.tag) if opts.tag is None else opts.tag
     _d_out = opts.output
 
     from gio import multi_task
