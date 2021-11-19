@@ -74,7 +74,8 @@ def _to_geo_tile(tile, decimals=0):
     from gio import geo_base as gb
     
     _ex = tile.extent().extent()
-    _pt = gb.geo_point(_ex.minx, _ex.maxy, _ex.proj).project_to(gb.proj_from_epsg())
+    _pt = gb.geo_point((_ex.minx + _ex.maxx) / 2, (_ex.maxy + _ex.miny) / 2, 
+                        _ex.proj).project_to(gb.proj_from_epsg())
     
     _lat = _to_coordinate(_pt.y, decimals, 2, 'N', 'S')
     _lon = _to_coordinate(_pt.x, decimals, 3, 'E', 'W')
