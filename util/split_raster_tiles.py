@@ -106,10 +106,8 @@ def _task(tile, t, f_inp, d_out, ps):
     _f_out = os.path.join(_d_out, '%s_%s.tif' % (_tag, t))
 
     if file_mag.get(_f_out).exists():
-        print('weskdfjskdfjk', _f_out)
         logging.debug('skip existing result for %s' % _tag)
         return
-    print('ewerwer2')
 
     with file_unzip.zip() as _zip:
         _bnd = _load(f_inp, tile.extent())
