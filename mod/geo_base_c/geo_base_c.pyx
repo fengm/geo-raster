@@ -899,6 +899,11 @@ def proj_from_proj4(txt):
     if not txt:
         return None
 
+    import re
+    _m = re.match('EPSG:(\d+)', txt.upper())
+    if _m:
+        return proj_from_epsg(int(_m.group(1)))
+
     _proj = osr.SpatialReference()
     _proj.ImportFromProj4(str(txt))
 
