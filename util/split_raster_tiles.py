@@ -159,7 +159,7 @@ def main(opts):
         if _proj:
             _proj = gb.proj_from_proj4(_proj)
 
-        if opts.geog == True:
+        if not _proj and opts.geog == True:
             _proj = gb.proj_from_epsg()
             _cell_size = _cell_size / 120000.0
             
