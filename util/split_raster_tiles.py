@@ -159,7 +159,7 @@ def main(opts):
         if _proj:
             _proj = gb.proj_from_proj4(_proj)
 
-        if not _proj and opts.geog == True:
+        if _proj.IsGeographic() and opts.geog == True:
             _proj = gb.proj_from_epsg()
             _cell_size = _cell_size / 120000.0
             
@@ -201,9 +201,10 @@ def usage():
     _p.add_argument('-i', '--input', dest='input', nargs='+')
     _p.add_argument('-r', '--region', dest='region')
     _p.add_argument('-t', '--tag', dest='tag')
+    
     _p.add_argument('--geog', dest='geog', type='bool', default=True)
-    _p.add_argument('-p', '--proj', dest='proj', \
-        default='+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs')
+    _p.add_argument('-p', '--proj', dest='proj', default='EPSG:4326')
+    
     _p.add_argument('-s', '--image-size', dest='image_size', default=3000, type=int)
     _p.add_argument('-c', '--cell-size', dest='cell_size', default=30.0, type=float)
     _p.add_argument('-e', '--edge', dest='edge', type=int, default=0)
