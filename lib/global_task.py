@@ -91,8 +91,9 @@ class tiles:
         self.edge = edge
 
         self.proj = proj if proj else gb.modis_projection()
+        self.is_geog = self.proj.IsGeographic()
 
-        if self.proj.IsGeographic():
+        if self.is_geog:
             self.p = 180.0
         else:
             self.p = self.b * math.pi
@@ -101,6 +102,8 @@ class tiles:
         from gio import geo_base as gb
 
         _rows = int(2 * self.p / (self.s * self.c))
+        if self.is_geog:
+            _rows = int(_rows / 2)
         _cols = int(2 * self.p / (self.s * self.c))
 
         _y = self.p / 2
