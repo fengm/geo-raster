@@ -22,8 +22,8 @@ def load_shp(f, column=None, ext=None, proj=None, ignore_ext=False):
     if ext:
         _lyr.SetSpatialFilter(ext.project_to(_lyr.GetSpatialRef()).poly)
 
-    if _lyr.GetGeomType() != 3:
-        raise Exception('the input boundary file needs to be polygon type (%s)' % _lyr.GetGeomType())
+    # if _lyr.GetGeomType() != 3:
+    #     raise Exception('the input boundary file needs to be polygon type (%s)' % _lyr.GetGeomType())
 
     _objs = []
     _area = None

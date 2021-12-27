@@ -2,31 +2,37 @@
 # encoding: utf-8
 
 import logging
+import re
+import os
 
 def retrieve_tile(l):
-	import re
-
 	_file = l.replace(',', '_')
 
 	_m = re.search('p\d{3}r\d{3}', l)
 	if _m:
 		return _m.group(), _file
-	else:
-		import gio.landsat
-		_cs = gio.landsat.parse(l)
-		if _cs == None:
-			return None, _file
 
+	import gio.landsat
+	_cs = gio.landsat.parse(l)
+	if _cs is not None:
 		return _cs.tile, _file
+		
+	_m = re.search('_T(\d{2}\w{3})', os.path.basename(l))
+	if _m:
+		return _m.group(1), _file
+	
+	return None, _file
 
 def output_tiles(f_in, f_out, col, duplicate):
 	_ts = {}
 	_nu = 0
-	for _l in open(f_in).read().splitlines():
+	_ds = []
+	for _l in open(f_in).read().strip().splitlines():
 		_nu += 1
 
 		_tile, _file = retrieve_tile(_l)
 		if _tile == None:
+			_ds.append(_file)
 			continue
 
 		if (_tile not in _ts):
@@ -55,6 +61,11 @@ def output_tiles(f_in, f_out, col, duplicate):
 
 	with open(f_out, 'w') as _fo:
 		_fo.write('\n'.join(_ls))
+	
+	if len(_ds):	
+		print('failed to parse %s lines' % len(_ds))
+		for _i in range(min(10, len(_ds))):
+			print(_ds[_i])
 
 def retrieve_landsat_tiles(f_in, f_out, col, exclude):
 	print('column:', col)
