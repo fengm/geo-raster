@@ -104,6 +104,7 @@ class tiles:
         _rows = int(2 * self.p / (self.s * self.c))
         if self.is_geog:
             _rows = int(_rows / 2)
+
         _cols = int(2 * self.p / (self.s * self.c))
 
         _y = self.p / 2
