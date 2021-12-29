@@ -54,7 +54,11 @@ def csv2shapefile(f_csv, f_out, col, f_landsat):
 	import gio.csv_util
 	import os
 
-	_tiles, _landsat_schema, _landsat_proj, _landsat_geom = load_landsat_tile(f_landsat)
+	_output_geom = 3
+	_tiles, _landsat_schema, _landsat_proj, _landsat_geom = load_landsat_tile(f_landsat, col)
+	if _landsat_geom != _output_geom:
+		raise Exception('support support single geometry shapefile')
+		
 	_cols, _typs, _vals = gio.csv_util.read(f_csv)
 
 	print('columns')
@@ -69,7 +73,7 @@ def csv2shapefile(f_csv, f_out, col, f_landsat):
 	os.path.exists(f_out) and _drv.DeleteDataSource(f_out)
 
 	_shp = _drv.CreateDataSource(f_out)
-	_lyr = _shp.CreateLayer(os.path.basename(f_out)[:-4], _landsat_proj, _landsat_geom)
+	_lyr = _shp.CreateLayer(os.path.basename(f_out)[:-4], _landsat_proj, _output_geom)
 
 	for i in range(len(_landsat_schema)):
 		_lyr.CreateField(_landsat_schema[i])
@@ -82,7 +86,7 @@ def csv2shapefile(f_csv, f_out, col, f_landsat):
 		for i in range(len(_cols)):
 			_feat.SetField(_cols[i].upper(), gio.csv_util.parse_val(_typs[i], _vs[i]))
 
-		_tile = _vs[_cols.index(col)]
+		_tile = _vs[_cols.index('tile')]
 		if _tile not in _tiles:
 			logging.warning('tile %s not found' % _tile)
 			continue
@@ -134,7 +138,7 @@ def usage():
 	_p = environ_mag.usage()
 
 	_p.add_argument('-i', '--input-csv', dest='input', required=True)
-	_p.add_argument('--tile-column', dest='column', default='tile')
+	_p.add_argument('--tile-column', dest='column', default='PATHROW')
 	_p.add_argument('--tile-file', dest='tile_file')
 	_p.add_argument('--tiling', dest='tile_tag', default='wrs2')
 	_p.add_argument('-o', '--output-shp', dest='output', required=False)
