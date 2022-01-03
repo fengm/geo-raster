@@ -207,6 +207,7 @@ def usage():
     _p.add_argument('-w', '--over-write', '--over-write', dest='over_write', type='bool')
     _p.add_argument('-e', '--ext', dest='ext', required=True)
     _p.add_argument('-o', '--output', dest='output', required=True)
+    _p.add_argument('-g', '--geo-tile', dest='geo_tile', type='bool')
 
     return _p
 

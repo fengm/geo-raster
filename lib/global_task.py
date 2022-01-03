@@ -134,7 +134,7 @@ class tiles:
 
     def files(self, bnd, objs):
         return files(bnd, objs)
-
+        
 class tile:
 
     def __init__(self, image_size, cell_size, col, row, fs, ps=None, edge=1, proj=None):
@@ -143,13 +143,9 @@ class tile:
 
         self.col = col
         self.row = row
-        self.h = 'h%03d' % col
-        self.v = 'v%03d' % row
 
-        self.row = row
         self.files = len(fs) if isinstance(fs, list) else fs
         self.params = ps
-        self.tag = 'h%03dv%03d' % (col, row)
         self.edge = edge
         self.proj = None
 
@@ -158,10 +154,18 @@ class tile:
                 self.proj = proj
             else:
                 self.proj = proj.ExportToProj4()
-
+        
     def proj_obj(self):
         from gio import geo_base as gb
-        return gb.proj_from_proj4(self.proj)
+        return gb.proj_from_proj4(self.proj) if self.proj else None
+        
+    def is_geog(self):
+        _proj = self.proj_obj()
+        
+        if _proj is None:
+            return False
+        
+        return _proj.IsGeographic()
 
     def extent(self):
         return tiles(self.image_size, self.cell_size, self.edge, self.proj_obj()).extent(self.col, self.row)
@@ -192,6 +196,49 @@ class tile:
             return []
 
         return files(_ext, _objs)
+
+    def _to_coordinate(self, v, decimals=0, len=3, sign_p='E', sign_n='W'):
+        _n = len if decimals == 0 else (len + 1 + decimals)
+        _v = ('%%0%d.%df' % (_n, decimals)) % abs(v)
+        return _v + (sign_p if v >= 0 else sign_n)
+
+    @property
+    def h(self):
+        _col, _row = self.tile
+        return _col
+
+    @property
+    def v(self):
+        _col, _row = self.tile
+        return _row
+
+    @property
+    def tile(self):
+        from gio import config
+        return self._to_geo_tile(config.getint('conf', 'geo_tile_decimals', 0)) \
+                if self.is_geog and config.getboolean('conf', 'geo_tile', False) \
+                else ('h%03d' % tile.col, 'v%03d' % tile.row)
+                
+    def tag(self):
+        return self.h + self.v
+        
+    def _to_geo_tile(self, decimals=0):
+        from gio import geo_base as gb
+        
+        _ex = self.extent().extent()
+        _pt = gb.geo_point(_ex.minx, _ex.maxy, _ex.proj).project_to(gb.proj_from_epsg())
+        
+        _lat = self._to_coordinate(_pt.y, decimals, 2, 'N', 'S')
+        _lon = self._to_coordinate(_pt.x, decimals, 3, 'E', 'W')
+        
+        return _lon, _lat
+
+    def file(self, t):
+        _tag = '%s%s' % (self.h, self.v)
+        
+        import os
+        _d_out = os.path.join(d_out, self.h, self.v, _tag)
+        _f_out = os.path.join(_d_out, '%s_%s.tif' % (_tag, t))
 
     @staticmethod
     def from_obj(obj):
