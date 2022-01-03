@@ -6,7 +6,7 @@ Description: operate bands
 
 import logging
 
-def burn_band(bnd, clr_bnd, ref, clr_ref, offset=250):
+def burn_band(bnd, clr_bnd, ref, clr_ref, offset=250, alpha_only=False):
     '''burn another band into the source band to create RGB image'''
     
     from gio import geo_raster as ge
@@ -36,17 +36,18 @@ def burn_band(bnd, clr_bnd, ref, clr_ref, offset=250):
         _ref = _ref.colorize_rgba(clr_ref) 
     
     _d = np.zeros((4, _bnd.height, _bnd.width), dtype=np.int16)
-    for _n in range(3):
-        _o = _bnd.data[_n, :, :].astype(np.int16)
-        _x = _ref.data[_n, :, :]
-        
-        _o += _x
-        _o -= offset
-        
-        _o[_o < 0] = 0
-        _o[_o > 255] = 255
-        
-        _d[_n, :, :] = _o.astype(np.uint8)
+    if not alpha_only:
+        for _n in range(3):
+            _o = _bnd.data[_n, :, :].astype(np.int16)
+            _x = _ref.data[_n, :, :]
+            
+            _o += _x
+            _o -= offset
+            
+            _o[_o < 0] = 0
+            _o[_o > 255] = 255
+            
+            _d[_n, :, :] = _o.astype(np.uint8)
         
     _a = _bnd.data[3, :, :]
     _a[_ref.data[3, :, :] == 0] = 0
