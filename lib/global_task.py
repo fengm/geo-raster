@@ -217,8 +217,9 @@ class tile:
         from gio import config
         return self._to_geo_tile(config.getint('conf', 'geo_tile_decimals', 0)) \
                 if self.is_geog and config.getboolean('conf', 'geo_tile', False) \
-                else ('h%03d' % tile.col, 'v%03d' % tile.row)
+                else ('h%03d' % self.col, 'v%03d' % self.row)
                 
+    @property
     def tag(self):
         return self.h + self.v
         
