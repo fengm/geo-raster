@@ -126,7 +126,7 @@ def generate_shp(rs, ts, f_out):
 
         _ftr = ogr.Feature(_lyr.GetLayerDefn())
         _ftr.SetField('file', _f)
-        _ftr.SetField('tag', _get_tag(_f))
+        _ftr.SetField('tag', _t.tag)
         _fs.append(_f)
 
         _ftr.SetGeometry(_t.extent().extent().to_polygon().poly)

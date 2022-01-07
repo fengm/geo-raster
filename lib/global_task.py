@@ -7,6 +7,7 @@ Description: prepare and run the processes to process global data
 '''
 
 import logging
+from gio import config
 
 def load_shp(f, column=None, ext=None, proj=None, ignore_ext=False):
     from osgeo import ogr
@@ -137,7 +138,7 @@ class tiles:
         
 class tile:
 
-    def __init__(self, image_size, cell_size, col, row, fs, ps=None, edge=1, proj=None):
+    def __init__(self, image_size, cell_size, col, row, fs, ps=None, edge=1, proj=None, geo_tile=False, geo_tile_decimals=0):
         self.image_size = image_size
         self.cell_size = cell_size
 
@@ -148,6 +149,9 @@ class tile:
         self.params = ps
         self.edge = edge
         self.proj = None
+        
+        self.geo_tile = self.is_geog and geo_tile
+        self.geo_tile_decimals = geo_tile_decimals
 
         if proj is not None:
             if isinstance(proj, str):
@@ -180,7 +184,9 @@ class tile:
                 'params': self.params,
                 'tag': self.tag,
                 'edge': self.edge,
-                'proj': self.proj
+                'proj': self.proj,
+                'geo_tile': self.geo_tile,
+                'geo_tile_decimals': self.geo_tile_decimals
                 }
 
     def filter_files(self, f, column='file', quick_search=True):
@@ -214,9 +220,11 @@ class tile:
 
     @property
     def tile(self):
-        from gio import config
-        return self._to_geo_tile(config.getint('conf', 'geo_tile_decimals', 0)) \
-                if self.is_geog and config.getboolean('conf', 'geo_tile', False) \
+        return self._tile(self.geo_tile)
+
+    def _tile(self, geo_tile):
+        return self._to_geo_tile(self.geo_tile_decimals) \
+                if geo_tile \
                 else ('h%03d' % self.col, 'v%03d' % self.row)
                 
     @property
@@ -234,12 +242,15 @@ class tile:
         
         return _lon, _lat
 
-    def file(self, t):
-        _tag = '%s%s' % (self.h, self.v)
+    def file(self, d_out, t, geo_tile=None):
+        _col, _row = self._tile(geo_tile if geo_tile is not None else self.geo_tile)
+        _tag = '%s%s' % (_col, _row)
         
         import os
-        _d_out = os.path.join(d_out, self.h, self.v, _tag)
-        _f_out = os.path.join(_d_out, '%s_%s.tif' % (_tag, t))
+        _d_out = os.path.join(d_out, _col, _row, _tag)
+        _f_out = os.path.join(_d_out, '%s_%s' % (_tag, t))
+        
+        return _f_out
 
     @staticmethod
     def from_obj(obj):
@@ -249,8 +260,13 @@ class tile:
         # from gio import geo_base as gb
         # _proj = gb.proj_from_proj4(str(_t_proj)) if _t_proj else None
 
+        _geo_tile = obj.get('geo_tile', False)
+        _geo_tile_decimals = obj.get('geo_tile_decimals', 0)
+
         return tile(obj['image_size'], obj['cell_size'], obj['col'],
-                obj['row'], obj['files'], obj['params'], _t_edge, str(_t_proj) if _t_proj else _t_proj)
+                obj['row'], obj['files'], obj['params'], _t_edge, 
+                str(_t_proj) if _t_proj else _t_proj,
+                _geo_tile, _geo_tile_decimals)
 
 def _output_geometries(geos, proj, geo_type, f_shp):
     from osgeo import ogr
@@ -324,7 +340,11 @@ def make(f_inp, column=None, image_size=1000, cell_size=30, ps=None, f_shp=None,
             if len(_fs) == 0:
                 continue
 
-        _tile = tile(image_size, cell_size, _col, _row, _fs, ps, edge, _proj)
+        _geo_tile = config.getboolean('conf', 'geo_tile', False)
+        _geo_tile_decimals = config.getint('conf', 'geo_tile_decimals', 0)
+
+        _tile = tile(image_size, cell_size, _col, _row, _fs, ps, edge, _proj, 
+                    _geo_tile, _geo_tile_decimals)
         _ps.append(_tile)
 
         if f_shp:
