@@ -94,6 +94,8 @@ class color_table:
                 _cs = tuple([int(_v) for _v in re.split('\W+', _vs[1])])
                 if len(_cs) < 3:
                     raise Exception('insufficent color values %s' % len(_cs))
+                if len(_cs) > 4:
+                    _cs = tuple(_cs[:4])
                 _colors[float(_vs[0])] = _cs
 
         return _colors
