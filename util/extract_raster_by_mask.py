@@ -143,7 +143,7 @@ def main(opts):
             _zip.save(_bnd, opts.output)
 
 def usage():
-    _p = environ_mag.usage(False)
+    _p = environ_mag.usage(True)
 
     _p.add_argument('-i', '--input', dest='input', required=True, nargs='+')
     _p.add_argument('-r', '-m', '--mask', dest='mask', required=True)
