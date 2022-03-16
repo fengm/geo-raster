@@ -395,11 +395,6 @@ class s3():
             return _f
 
         import os
-        try:
-            (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_f))
-        except Exception:
-            pass
-
         import shutil
         from . import file_unzip
 
@@ -407,6 +402,8 @@ class s3():
             _t = file_unzip.generate_file(os.path.dirname(_f), '', '.bak')
 
             try:
+                (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_t))
+                
                 # write an empty file to prevent other process to use the same file name
                 with open(_t, 'w') as _fo:
                     _fo.write('')
@@ -453,7 +450,9 @@ class s3():
                             shutil.move(_t, _f)
 
                 return _f
-
+                
+            except Exception:
+                pass
             finally:
                 if os.path.exists(_t):
                     os.remove(_t)

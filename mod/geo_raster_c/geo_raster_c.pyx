@@ -1185,14 +1185,13 @@ class geo_raster(geo_raster_info):
     def save(self, fou, opts=[]):
         if fou.lower().endswith('.img'):
             driver = 'HFA'
-            
 
         _bnd = self.get_band(1)
         _driver = gdal.GetDriverByName(driver)
 
         _img = _driver.Create(fou, self.width,
                 self.height, self.band_num, _bnd.pixel_type, opts)
-
+                
         for _b in xrange(self.band_num):
             _bnd_inp = self.get_band(_b + 1)
             _bnd_out = _img.GetRasterBand(_b + 1)

@@ -399,17 +399,17 @@ class file_unzip:
             return
 
         _d_tmp = self.generate_file()
-        os.makedirs(_d_tmp)
-
         _f_tmp = os.path.join(_d_tmp, os.path.basename(f_out))
 
+        os.makedirs(_d_tmp)
         if isinstance(o, str):
             with open(_f_tmp, 'w') as _fo:
                 _fo.write(o)
         else:
-            from . import geo_raster as ge
-            if isinstance(o, ge.geo_band_cache):
-                o.save(_f_tmp)
+            # from . import geo_raster as ge
+            # if isinstance(o, ge.geo_band_cache):
+            
+            o.save(_f_tmp)
 
         if os.path.exists(_f_tmp) == False:
             raise Exception('failed to save the object')
