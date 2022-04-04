@@ -218,6 +218,8 @@ def main(opts):
     from gio import run_commands
     _cmd = 'generate_tiles_extent.py -i {} -e {}.tif -o {}'.format(_d_out, opts.tag, _f_idx)
     run_commands.run(_cmd)
+    
+    print('index file: %s' % _f_idx)
 
 def usage():
     _p = environ_mag.usage(True)
