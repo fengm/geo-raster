@@ -8,7 +8,7 @@ Description:
 
 import logging
 
-def _load(fs, bnd):
+def _load(fs, bnd, opts):
     from gio import geo_raster_ex as gx
     from gio import config
     
@@ -21,6 +21,17 @@ def _load(fs, bnd):
     for _f in fs:
         _bnd = gx.read_block(_f, _inp)
         if _bnd:
+            _bnd.data[_bnd.data == 0] = 255
+            
+            if opts.nodata is not None:
+                _bnd.nodata = opts.nodata
+                
+            if opts.min_value is not None:
+                _bnd.data[_bnd.data < opts.min_value] = _bnd.nodata
+                
+            if opts.max_value is not None:
+                _bnd.data[_bnd.data > opts.max_value] = _bnd.nodata
+                
             if _cel > 0:
                 from gio import agg_band
                 
@@ -37,7 +48,11 @@ def _load(fs, bnd):
                     
                 _out.color_table = _bnd.color_table
                 _bnd = _out
-                    
+                
+            if not opts.keep_empty:
+                if (_bnd.data != _bnd.nodata).sum() == 0:
+                    return None
+                
             return _bnd
             
     return None
@@ -81,7 +96,7 @@ def _to_geo_tile(tile, decimals=0):
     
     return _lon, _lat
 
-def _task(tile, t, f_inp, d_out, ps):
+def _task(tile, t, f_inp, d_out, opts):
     import os
     from gio import file_unzip
     from gio import file_mag
@@ -91,37 +106,37 @@ def _task(tile, t, f_inp, d_out, ps):
 
     _tag = tile.tag
     
-    _ttt = config.get('conf', 'test_tile')
-    if _ttt and tile.tag not in _ttt.replace(' ', '').split(','):
-        return
+    _f_out = tile.file(d_out, '%s.tif' % (t))
+    _f_met = tile.file(d_out, '%s.met' % (t))
     
-    _col, _row = _to_geo_tile(tile, config.getint('conf', 'geo_tile_decimals', 0)) \
-            if config.getboolean('conf', 'geo_tile', False) \
-            else ('h%03d' % tile.col, 'v%03d' % tile.row)
-        
-    _tag = '%s%s' % (_col, _row)
-    
-    _d_out = os.path.join(d_out, _col, _row, _tag)
-    _f_out = os.path.join(_d_out, '%s_%s.tif' % (_tag, t))
-
-    if file_mag.get(_f_out).exists():
+    if file_mag.get(_f_met).exists():
         logging.debug('skip existing result for %s' % _tag)
         return
 
     with file_unzip.zip() as _zip:
-        _bnd = _load(f_inp, tile.extent())
-        if _bnd is None:
-            return
+        from gio import metadata
         
-        _mask_band(_bnd)
-
-        _f_clr = config.get('conf', 'color_table')
-        if _f_clr:
-            from gio import geo_raster as ge
-            _clr = ge.load_colortable(_f_clr)
-            _bnd.color_table = _clr
-
-        _zip.save(_bnd, _f_out)
+        _met = metadata.metadata()
+        try:
+            _met.tile = _tag
+            
+            _bnd = _load(f_inp, tile.extent(), opts)
+            if _bnd is None:
+                logging.info('skip tile %s' % _tag)
+                return
+            
+            _mask_band(_bnd)
+    
+            _f_clr = config.get('conf', 'color_table')
+            if _f_clr:
+                from gio import geo_raster as ge
+                _clr = ge.load_colortable(_f_clr)
+                _bnd.color_table = _clr
+    
+            _zip.save(_bnd, _f_out)
+            
+        finally:
+            _met.save(_f_met)
 
 def main(opts):
     import os
@@ -193,6 +208,16 @@ def main(opts):
     from gio import multi_task
     multi_task.run(_task, [(_r, _tt, opts.input, os.path.join(_d_out, 'data'), opts) \
             for _r in multi_task.load(_ts, opts)], opts)
+            
+    if not opts.build_index:
+        return
+    
+    print('build index file ({}.tif)'.format(opts.tag))
+    _f_idx = os.path.join(_d_out, 'list.shp')
+    
+    from gio import run_commands
+    _cmd = 'generate_tiles_extent.py -i {} -e {}.tif -o {}'.format(_d_out, opts.tag, _f_idx)
+    run_commands.run(_cmd)
 
 def usage():
     _p = environ_mag.usage(True)
@@ -208,6 +233,12 @@ def usage():
     _p.add_argument('-c', '--cell-size', dest='cell_size', default=30.0, type=float)
     _p.add_argument('-e', '--edge', dest='edge', type=int, default=0)
     _p.add_argument('-m', '--mask', dest='mask')
+    
+    _p.add_argument('--nodata', dest='nodata', type=float)
+    _p.add_argument('--min-value', dest='min_value', type=float)
+    _p.add_argument('--max-value', dest='max_value', type=float)
+    _p.add_argument('--keep-empty', dest='keep_empty', type='bool')
+    _p.add_argument('-b', '--build-index', dest='build_index', type='bool', default=True)
     
     _p.add_argument('--data-cell-size', dest='data_cell_size', type=float)
     _p.add_argument('--data-agg', dest='data_agg', default='median')
