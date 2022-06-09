@@ -20,6 +20,69 @@ import numpy
 
 @cython.boundscheck(False)
 
+cdef void update_cc(self, int row, int col):
+    cdef list _mat = self.mat
+    cdef list _vs = _mat[row][col]
+
+    if not (_vs[2] >= _inf or _vs[3] >= _inf):
+        return
+    
+    if self.proj_src is None or self.proj_tar is None:
+        raise Exception('exceeded the projection extent')
+
+    _pt0 = geo_point(_vs[0], _vs[1], self.proj_src)
+    _pt1 = _pt0.project_to(self.proj_tar)
+
+    if _pt1 is None:
+        raise Exception('failed to reproject control point')
+
+    _mat[row][col][2] = _pt1.x
+    _mat[row][col][3] = _pt1.y
+
+cdef (float, float) project(self, int col, int row):
+    cdef float _scale = self.scale
+    cdef int _col0 = int(col / _scale)
+    cdef int _row0 = int(row / _scale)
+
+    cdef int _row1 = _row0 + 1
+    cdef int _col1 = _col0 + 1
+
+    cdef float _del_x = col / _scale - _col0
+    cdef float _del_y = row / _scale - _row0
+
+    update_cc(self, _row0, _col0)
+    update_cc(self, _row0, _col1)
+    update_cc(self, _row1, _col0)
+    update_cc(self, _row1, _col1)
+
+    cdef list _mat = self.mat
+    # print col, row, _col0, _row0, self.mat.shape
+    cdef float _mat_00x = _mat[_row0][_col0][2]
+    cdef float _mat_01x = _mat[_row0][_col1][2]
+    cdef float _mat_10x = _mat[_row1][_col0][2]
+    cdef float _mat_11x = _mat[_row1][_col1][2]
+
+    if _mat_00x >= _inf or _mat_01x >= _inf or _mat_10x >= _inf or _mat_11x >= _inf:
+        # print _inf, _mat_00x, _mat_01x, _mat_10x, _mat_11x
+        # print _mat_00x >= _inf, _mat_01x >= _inf, _mat_10x >= _inf, _mat_11x >= _inf
+
+        raise Exception('exceeded the projection extent')
+
+    cdef float _pos_x0 = _mat_00x + _del_x * (_mat_01x - _mat_00x)
+    cdef float _pos_x1 = _mat_10x + _del_x * (_mat_11x - _mat_10x)
+    cdef float _x = _pos_x0 + (_pos_x1 - _pos_x0) * _del_y
+
+    cdef float _mat_00y = _mat[_row0][_col0][3]
+    cdef float _mat_01y = _mat[_row0][_col1][3]
+    cdef float _mat_10y = _mat[_row1][_col0][3]
+    cdef float _mat_11y = _mat[_row1][_col1][3]
+
+    cdef float _pos_y0 = _mat_00y + _del_y * (_mat_10y - _mat_00y)
+    cdef float _pos_y1 = _mat_01y + _del_y * (_mat_11y - _mat_01y)
+    cdef float _y = _pos_y0 + (_pos_y1 - _pos_y0) * _del_x
+
+    return _x, _y
+
 def to_dtype(pixel_type):
     if pixel_type == 1:
         return numpy.uint8
@@ -62,7 +125,7 @@ def to_cell(g, float x, float y):
 
 def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, unsigned int nodata, int row_start, np.ndarray[np.uint8_t, ndim=2] dat_out):
     cdef int _row, _col
-    cdef float _x, _y
+    cdef float _x=_inf, _y=_inf
     cdef int _c, _r
 
     cdef int _rows_in = dat.shape[0]
@@ -80,7 +143,8 @@ def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, unsigned
 
     for _row in xrange(_row_min, _row_max):
         for _col in xrange(_col_min, _col_max):
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -114,7 +178,8 @@ def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int no
 
     for _row in xrange(_row_min, _row_max):
         for _col in xrange(_col_min, _col_max):
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -148,7 +213,8 @@ def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int noda
 
     for _row in xrange(_row_min, _row_max):
         for _col in xrange(_col_min, _col_max):
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -182,7 +248,8 @@ def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int no
 
     for _row in xrange(_row_min, _row_max):
         for _col in xrange(_col_min, _col_max):
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -216,7 +283,8 @@ def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int noda
 
     for _row in xrange(_row_min, _row_max):
         for _col in xrange(_col_min, _col_max):
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -250,7 +318,8 @@ def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, floa
 
     for _row in xrange(_row_min, _row_max):
         for _col in xrange(_col_min, _col_max):
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -284,7 +353,8 @@ def read_block_float64(np.ndarray[np.float64_t, ndim=2] dat, ext, prj, geo, floa
 
     for _row in xrange(_row_min, _row_max):
         for _col in xrange(_col_min, _col_max):
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -701,6 +771,7 @@ class geo_point (geo_object):
 
     def project_to(self, proj):
         _proj = fix_geog_axis(proj)
+
         if self.proj is None or self.proj.IsSame(_proj):
             return self
 
@@ -741,16 +812,17 @@ class projection_transform:
     ''' Build a grid for transforming raster pixels'''
 
     @classmethod
-    def from_band(cls, bnd_info, proj, interval=100, f_pts0=None, f_pts1=None, delay_reproj=True):
+    def from_band(cls, bnd_info, proj, interval=10, f_pts0=None, f_pts1=None, delay_reproj=True):
         import math
         from . import geo_raster
 
         # make sure there are at least 1 points for each axis
-        _scale = min((bnd_info.width / 1.0, bnd_info.height / 1.0, float(interval)))
+        # _scale = min((bnd_info.width / 1.0, bnd_info.height / 1.0, float(interval)))
+        _scale = min(bnd_info.width / interval, bnd_info.height / interval)
 
         if _scale <= 0:
-            logging.error('using raster that is too small (%s, %s)' % (bnd_info.width / 1.0, bnd_info.height / 1.0))
-            raise Exception('using raster that is too small (%s, %s)' % (bnd_info.width / 1.0, bnd_info.height / 1.0))
+            logging.error('using raster that is too small (%s, %s)' % (bnd_info.width, bnd_info.height))
+            raise Exception('using raster that is too small (%s, %s)' % (bnd_info.width, bnd_info.height))
 
         _img_w = int(math.ceil(bnd_info.width / _scale)) + 1
         _img_h = int(math.ceil(bnd_info.height / _scale)) + 1
@@ -920,7 +992,11 @@ def fix_geog_axis(proj):
         return proj
 
     if int(osgeo.__version__[0]) >= 3:
+        if hasattr(proj, 'fixed_proj') and proj.fixed_proj:
+            return proj
+
         proj.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
+        proj.fixed_proj = True
     return proj
 
 def output_geometries(geos, proj, geo_type, f_shp):
