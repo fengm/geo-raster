@@ -119,7 +119,7 @@ def from_dtype(dtype):
 
     raise Exception('unknown dtype %s' % dtype)
 
-def to_cell(g, float x, float y):
+cdef (int, int) to_cell(tuple g, float x, float y):
     '''Convert coordinate to col and row'''
     return int((x - g[0]) / g[1]), int((y - g[3]) / g[5])
 
