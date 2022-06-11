@@ -1,4 +1,7 @@
 
+import sys
+_inf = sys.float_info.max
+
 from osgeo import ogr, osr
 import os
 import math
@@ -13,6 +16,69 @@ from . import geo_base as gb
 from . import file_mag
 
 @cython.boundscheck(False)
+
+cdef void update_cc(self, int row, int col):
+    cdef list _mat = self.mat
+    cdef list _vs = _mat[row][col]
+
+    if not (_vs[2] >= _inf or _vs[3] >= _inf):
+        return
+    
+    if self.proj_src is None or self.proj_tar is None:
+        raise Exception('exceeded the projection extent')
+
+    _pt0 = geo_point(_vs[0], _vs[1], self.proj_src)
+    _pt1 = _pt0.project_to(self.proj_tar)
+
+    if _pt1 is None:
+        raise Exception('failed to reproject control point')
+
+    _mat[row][col][2] = _pt1.x
+    _mat[row][col][3] = _pt1.y
+
+cdef (float, float) project(self, int col, int row):
+    cdef float _scale = self.scale
+    cdef int _col0 = int(col / _scale)
+    cdef int _row0 = int(row / _scale)
+
+    cdef int _row1 = _row0 + 1
+    cdef int _col1 = _col0 + 1
+
+    cdef float _del_x = col / _scale - _col0
+    cdef float _del_y = row / _scale - _row0
+
+    update_cc(self, _row0, _col0)
+    update_cc(self, _row0, _col1)
+    update_cc(self, _row1, _col0)
+    update_cc(self, _row1, _col1)
+
+    cdef list _mat = self.mat
+    # print col, row, _col0, _row0, self.mat.shape
+    cdef float _mat_00x = _mat[_row0][_col0][2]
+    cdef float _mat_01x = _mat[_row0][_col1][2]
+    cdef float _mat_10x = _mat[_row1][_col0][2]
+    cdef float _mat_11x = _mat[_row1][_col1][2]
+
+    if _mat_00x >= _inf or _mat_01x >= _inf or _mat_10x >= _inf or _mat_11x >= _inf:
+        # print _inf, _mat_00x, _mat_01x, _mat_10x, _mat_11x
+        # print _mat_00x >= _inf, _mat_01x >= _inf, _mat_10x >= _inf, _mat_11x >= _inf
+
+        raise Exception('exceeded the projection extent')
+
+    cdef float _pos_x0 = _mat_00x + _del_x * (_mat_01x - _mat_00x)
+    cdef float _pos_x1 = _mat_10x + _del_x * (_mat_11x - _mat_10x)
+    cdef float _x = _pos_x0 + (_pos_x1 - _pos_x0) * _del_y
+
+    cdef float _mat_00y = _mat[_row0][_col0][3]
+    cdef float _mat_01y = _mat[_row0][_col1][3]
+    cdef float _mat_10y = _mat[_row1][_col0][3]
+    cdef float _mat_11y = _mat[_row1][_col1][3]
+
+    cdef float _pos_y0 = _mat_00y + _del_y * (_mat_10y - _mat_00y)
+    cdef float _pos_y1 = _mat_01y + _del_y * (_mat_11y - _mat_01y)
+    cdef float _y = _pos_y0 + (_pos_y1 - _pos_y0) * _del_x
+
+    return _x, _y
 
 def to_dtype(pixel_type):
     if pixel_type == 1:
@@ -32,7 +98,7 @@ def to_dtype(pixel_type):
 
     raise Exception('unknown pixel type ' + pixel_type)
 
-cdef to_cell(tuple g, float x, float y):
+cdef (int, int) to_cell(tuple g, float x, float y):
     '''Convert coordinate to col and row'''
     return int((x - g[0]) / g[1]), int((y - g[3]) / g[5])
 
@@ -54,7 +120,7 @@ def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int noda
     cdef int _col_max = min(_cols_ot, ext.maxx + 1)
     cdef int _row_min = max(0, ext.miny)
     cdef int _row_max = min(_rows_ot, ext.maxy + 1)
-
+    
     for _row in xrange(_row_min, _row_max):
         for _col in xrange(_col_min, _col_max):
             _o = dat_out[_row, _col]
@@ -62,7 +128,8 @@ def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int noda
                 if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
                     continue
 
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -73,7 +140,7 @@ def read_block_uint8(np.ndarray[np.uint8_t, ndim=2] dat, ext, prj, geo, int noda
             _v = dat[_r, _c]
             if _v == nodata:
                 continue
-
+            
             # if (min_val is not None and _v < min_val):
             #     continue
             # if (max_val is not None and _v > max_val):
@@ -107,7 +174,8 @@ def read_block_uint16(np.ndarray[np.uint16_t, ndim=2] dat, ext, prj, geo, int no
                 if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
                     continue
 
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -152,7 +220,8 @@ def read_block_int16(np.ndarray[np.int16_t, ndim=2] dat, ext, prj, geo, int noda
                 if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
                     continue
 
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -197,7 +266,8 @@ def read_block_uint32(np.ndarray[np.uint32_t, ndim=2] dat, ext, prj, geo, int no
                 if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
                     continue
 
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -242,7 +312,8 @@ def read_block_int32(np.ndarray[np.int32_t, ndim=2] dat, ext, prj, geo, int noda
                 if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
                     continue
 
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -287,7 +358,8 @@ def read_block_float32(np.ndarray[np.float32_t, ndim=2] dat, ext, prj, geo, floa
                 if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
                     continue
 
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -332,7 +404,8 @@ def read_block_float64(np.ndarray[np.float64_t, ndim=2] dat, ext, prj, geo, floa
                 if (min_val is None or _o >= min_val) and (max_val is None or _o <= max_val):
                     continue
 
-            _x, _y = prj.project(_col, _row)
+            # _x, _y = prj.project(_col, _row)
+            _x, _y = project(prj, _col, _row)
 
             _c, _r = to_cell(geo, _x, _y)
             _r -= row_start
@@ -350,7 +423,6 @@ def read_block_float64(np.ndarray[np.float64_t, ndim=2] dat, ext, prj, geo, floa
             #     continue
 
             dat_out[_row, _col] = _v
-
 
 class geo_extent:
 
@@ -801,6 +873,7 @@ class geo_band_stack_zip:
         self.cell_size = _bnd.band.geo_transform[1]
         self.cell_size_y = _bnd.band.geo_transform[5]
         self.color_table = _bnd.band.color_table
+        self.band_num = _bnd.band.raster.band_num
         self.bands[0].clean()
 
     @staticmethod
@@ -1031,7 +1104,7 @@ class geo_band_stack_zip:
 
         _bnd = _bnd_info.get_band().band
         logging.debug('loading file %s' % _bnd_info.band_file.file)
-        _pol_s = gb.geo_polygon.from_raster(_bnd, div=100)
+        _pol_s = gb.geo_polygon.from_raster(_bnd, div=10)
 
         if _pol_s is None:
             logging.debug('skip file #1 %s' % _bnd_info.band_file.file)
@@ -1163,7 +1236,7 @@ class geo_band_stack_zip:
             _bnds = self.get_bands_pts(_pts_t1)
         else:
             _bnds = self.get_bands(_pol_t2)
-
+            
         logging.debug('found %s bands' % len(_bnds))
         for _bnd_info in _bnds:
             self._read_band(bnd, _bnd_info, _nodata, _pol_t1, _dat_out, min_val, max_val)
@@ -1280,7 +1353,7 @@ def read_block(f, bnd):
 
     return _bnd.read_block(bnd)
 
-def load(f, bnd=None):
+def load(f, bnd=None, band_idx=1):
     if not f:
         return None
 
@@ -1288,7 +1361,7 @@ def load(f, bnd=None):
     
     if _f.endswith('.shp') or _f.startswith('PG:'):
         logging.debug('loading geo_band_stack %s' % _f)
-        _shp = geo_band_stack_zip.from_shapefile(f, extent=bnd)
+        _shp = geo_band_stack_zip.from_shapefile(f, extent=bnd, band_idx=band_idx)
         return _shp
         
     if _f.endswith('.txt'):
@@ -1301,11 +1374,11 @@ def load(f, bnd=None):
             
         with open(_ff) as _fi:
             _ls = _fi.read().strip().splitlines()
-            _shp = geo_band_stack_zip.from_list(_ls)
+            _shp = geo_band_stack_zip.from_list(_ls, band_idx=band_idx)
             return _shp
 
     _img = ge.open(f)
     if _img is None:
         return None
 
-    return _img.get_band()
+    return _img.get_band(band_idx)
