@@ -302,7 +302,8 @@ class s3():
             _ps['MaxKeys'] = limit
             
         if 0 < limit <= 1000:
-            return self._get_s3_client().list_objects_v2(**_ps)
+            _rs = self._get_s3_client().list_objects_v2(**_ps).get('Contents', [])
+            return _rs
             
         _paginator = self._get_s3_client().get_paginator("list_objects_v2")
 
