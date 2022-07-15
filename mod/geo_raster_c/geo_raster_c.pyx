@@ -1068,8 +1068,8 @@ class geo_raster(geo_raster_info):
         else:
             _img = gdal.Open(f)
             
-        # retry 3 times for CEG
-        if _img is None and f.startswith('/vsi') and iteration < 3:
+        # retry another time for CEG
+        if _img is None and f.startswith('/vsi') and iteration < 1:
             return geo_raster._open_raster_file(f, update, iteration+1)
             
         return _img
@@ -1080,14 +1080,9 @@ class geo_raster(geo_raster_info):
         if _m is None:
             raise Exception('failed to parse S3 file %s' % f)
 
-        _f = file_mag.get(f)
-        
-        if not _f:
-            return None
-            
-        if not _f.exists():
-            logging.warning('%s does not exist' % f)
-            return None
+        # if not _f.exists():
+        #     logging.warning('%s does not exist' % f)
+        #     return None
             
         _cache = config.getboolean('conf', 'cache_s3_image', True)
         
@@ -1099,6 +1094,10 @@ class geo_raster(geo_raster_info):
             logging.debug('convert s3 file path to vsis3 path %s' % _f)
             return _f
 
+        _f = file_mag.get(f)
+        if not _f:
+            return None
+            
         return _f.get()
         
         # from gio import cache_mag
