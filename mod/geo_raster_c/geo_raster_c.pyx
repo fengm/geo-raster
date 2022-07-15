@@ -1062,11 +1062,33 @@ class geo_raster(geo_raster_info):
         self.cell_size = None
 
     @staticmethod
+    def _open_raster_file(f, update=False, iteration=0):
+        if update:
+            _img = gdal.Open(f, gdal.GA_Update)
+        else:
+            _img = gdal.Open(f)
+            
+        # retry 3 times for CEG
+        if _img is None and f.startswith('/vsi') and iteration < 3:
+            return geo_raster._open_raster_file(f, update, iteration+1)
+            
+        return _img
+        
+    @staticmethod
     def _load_s3_file(f):
         _m = re.match('s3://([^/]+)/(.+)', f)
         if _m is None:
             raise Exception('failed to parse S3 file %s' % f)
 
+        _f = file_mag.get(f)
+        
+        if not _f:
+            return None
+            
+        if not _f.exists():
+            logging.warning('%s does not exist' % f)
+            return None
+            
         _cache = config.getboolean('conf', 'cache_s3_image', True)
         
         if not _cache:
@@ -1077,10 +1099,6 @@ class geo_raster(geo_raster_info):
             logging.debug('convert s3 file path to vsis3 path %s' % _f)
             return _f
 
-        _f = file_mag.get(f)
-        
-        if not _f:
-            return None
         return _f.get()
         
         # from gio import cache_mag
@@ -1102,16 +1120,14 @@ class geo_raster(geo_raster_info):
             if _sf is None:
                 # logging.warning('invalid file name provided (%s)' % _f)
                 return None
+                
             _f = _sf
-
-        if not _f.startswith('/vsi') and (check_exist and (not os.path.exists(_f))):
-            logging.warning('failed to find the image %s' % f)
-            return None
-
-        if update:
-            _img = gdal.Open(_f, gdal.GA_Update)
         else:
-            _img = gdal.Open(_f)
+            if not _f.startswith('/vsi') and (check_exist and (not os.path.exists(_f))):
+                logging.warning('failed to find the image %s' % f)
+                return None
+
+        _img = geo_raster._open_raster_file(_f, update)
 
         if _img is None:
             raise Exception('failed to load file ' + f)

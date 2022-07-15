@@ -170,6 +170,9 @@ def main(opts):
     if not _f_mak.exists():
         raise Exception('failed to find the tile file')
 
+    if not opts.output.endswith('.shp'):
+        raise Exception('output needs to be a shapefile')
+
     _ts = global_task.load(_f_mak)
 
     from gio import multi_task
@@ -194,7 +197,7 @@ def main(opts):
 
         logging.info('added %s file' % _nu)
         print('added %s file' % _nu)
-
+        
         file_unzip.compress_folder(_d_tmp, os.path.dirname(opts.output), [])
 
 def usage():
