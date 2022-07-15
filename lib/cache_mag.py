@@ -290,8 +290,6 @@ class s3():
         return _ls
 
     def _list_by_client(self, k, recursive=True, limit=-1):
-        _paginator = self._get_s3_client().get_paginator("list_objects_v2")
-
         _ps = {'Bucket': self._t, 'Prefix': k}
         
         if not recursive:
@@ -302,6 +300,11 @@ class s3():
 
         if limit >= 0:
             _ps['MaxKeys'] = limit
+            
+        if limit >= 0 and limit <= 1000:
+            return self._get_s3_client().list_objects_v2(**_ps)
+            
+        _paginator = self._get_s3_client().get_paginator("list_objects_v2")
 
         _ts = []
         for _page in _paginator.paginate(**_ps):
@@ -329,7 +332,7 @@ class s3():
         if not k:
             return False
 
-        _os = self.list(k, limit=1)
+        _os = self.list(k, recursive=False, limit=1)
         return len(_os) > 0
 
     def remove(self, key):
