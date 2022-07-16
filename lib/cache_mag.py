@@ -223,10 +223,15 @@ class cache_mag():
         for _f in _fd:
             self._clean_file(_f)
 
-_get_cache_que = None
+# _get_cache_que = None
+
+import multiprocessing
 
 class s3():
     """manage Landsat cache files"""
+    
+    _s3_access_que = multiprocessing.Semaphore(value=config.getint('conf', 'max_access_rec_num', 2))
+    _enable_s3_lock = config.getboolean('conf', 'enable_s3_lock', True)
 
     def __init__(self, bucket, fzip=None):
         self._t = bucket
@@ -323,11 +328,18 @@ class s3():
 
         return _ts
 
-    def list(self, k, recursive=True, limit=-1):
+    def _list(self, k, recursive=True, limit=-1):
         if config.getboolean('aws', 's3_requester_pay', True):
             return self._list_by_client(k, recursive, limit)
 
         return [{'Key': _s.key} for _s in self._list_by_resource(k, recursive, limit)]
+        
+    def list(self, k, recursive=True, limit=-1):
+        if self._enable_s3_lock:
+            with self._s3_access_que:
+                return self._list(k, recursive, limit)
+            
+        return self._list(k, recursive, limit)
 
     def exists(self, k):
         if not k:
@@ -362,22 +374,10 @@ class s3():
         if k is None:
             return None
 
-        _enable_lock = config.getboolean('conf', 'enable_cache_lock', True)
-
-        if _enable_lock:
-            _num = config.getint('conf', 'max_cache_rec_num', 2)
+        if self._enable_s3_lock:
+            with self._s3_access_que:
+                return self._get(k, lock)
         else:
-            _num = 0
-
-        if _num <= 0:
-            return self._get(k, lock)
-
-        global _get_cache_que
-        if _get_cache_que is None:
-            import multiprocessing
-            _get_cache_que = multiprocessing.Semaphore(value=_num)
-
-        with _get_cache_que:
             return self._get(k, lock)
 
     def _get(self, k, lock=None):
