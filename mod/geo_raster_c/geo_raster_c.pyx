@@ -1070,6 +1070,10 @@ class geo_raster(geo_raster_info):
             
         # retry another time for CEG
         if _img is None and f.startswith('/vsi') and iteration < 1:
+            _f = file_mag.get(f)
+            if _f is None or not _f.exists():
+                return None
+                
             # wait for 1.5 sec before retrying
             import time
             time.sleep(1.5)
