@@ -161,7 +161,7 @@ class geo_raster_info:
         _geo[4] /= _r
         _geo[5] /= _r
 
-        return geo_raster_info(_geo, _cols, _rows, self.proj)
+        return geo_raster_info(tuple(_geo), _cols, _rows, self.proj)
 
     def subset(self, col, row, width, height):
         _geo = list(self.geo_transform)
@@ -317,7 +317,7 @@ class geo_band_info(geo_raster_info):
         _geo[4] /= _r
         _geo[5] /= _r
 
-        return geo_band_info(_geo, _cols, _rows, self.proj, self.nodata, self.pixel_type)
+        return geo_band_info(tuple(_geo), _cols, _rows, self.proj, self.nodata, self.pixel_type)
 
 class geo_band_cache(geo_band_info):
 
@@ -533,6 +533,9 @@ class geo_band_cache(geo_band_info):
         _dat_out = numpy.empty([bnd.height, bnd.width],
                 dtype=gb.to_dtype(self.pixel_type))
         _dat_out.fill(_nodata)
+        
+        if isinstance(_bnd.geo_transform, list):
+            _bnd.geo_transform = tuple(_bnd.geo_transform)
 
         if self.pixel_type == 1:
             gb.read_block_uint8(_dat, _ext_t_cs, _prj,
