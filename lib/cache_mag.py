@@ -229,9 +229,9 @@ import multiprocessing
 
 class s3():
     """manage Landsat cache files"""
-    
-    _s3_access_que = multiprocessing.Semaphore(value=config.getint('conf', 'max_access_rec_num', 2))
+
     _enable_s3_lock = config.getboolean('conf', 'enable_s3_lock', True)
+    _s3_access_que = multiprocessing.Semaphore(value=config.getint('conf', 'max_access_rec_num', 2)) if _enable_s3_lock > 1 else None
 
     def __init__(self, bucket, fzip=None):
         self._t = bucket
@@ -286,7 +286,7 @@ class s3():
         _ps = {'Prefix': k}
         if not recursive:
             _ps['Delimiter'] = '/'
-            
+
         _ss = boto3.resource('s3').Bucket(self._t)
         if limit >= 0:
             return list(_ss.objects.filter(**_ps).limit(limit))
@@ -296,7 +296,7 @@ class s3():
 
     def _list_by_client(self, k, recursive=True, limit=-1):
         _ps = {'Bucket': self._t, 'Prefix': k}
-        
+
         if not recursive:
             _ps['Delimiter'] = '/'
 
@@ -305,11 +305,11 @@ class s3():
 
         if limit >= 0:
             _ps['MaxKeys'] = limit
-            
+
         if 0 < limit <= 1000:
             _rs = self._get_s3_client().list_objects_v2(**_ps).get('Contents', [])
             return _rs
-            
+
         _paginator = self._get_s3_client().get_paginator("list_objects_v2")
 
         _ts = []
@@ -320,7 +320,7 @@ class s3():
                     # skip folders
                     continue
                 _ts.append(_k)
-            
+
             # include subfolders
             if not recursive:
                 for _k in _page.get('CommonPrefixes', []):
@@ -333,12 +333,12 @@ class s3():
             return self._list_by_client(k, recursive, limit)
 
         return [{'Key': _s.key} for _s in self._list_by_resource(k, recursive, limit)]
-        
+
     def list(self, k, recursive=True, limit=-1):
         if self._enable_s3_lock:
             with self._s3_access_que:
                 return self._list(k, recursive, limit)
-            
+
         return self._list(k, recursive, limit)
 
     def exists(self, k):
@@ -407,7 +407,7 @@ class s3():
 
             try:
                 (lambda x: os.path.exists(x) or os.makedirs(x))(os.path.dirname(_t))
-                
+
                 # write an empty file to prevent other process to use the same file name
                 with open(_t, 'w') as _fo:
                     _fo.write('')
@@ -454,7 +454,7 @@ class s3():
                             shutil.move(_t, _f)
 
                 return _f
-                
+
             except Exception:
                 pass
             finally:
