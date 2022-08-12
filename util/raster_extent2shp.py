@@ -122,6 +122,7 @@ def _split_polygons(ext, prj):
 def _generate_extent(f, proj):
     import gio.file_unzip
     import re
+    from gio import config
 
     _f = f
     _re = re.match('/a/[^/]+(/.+)', _f)
@@ -134,7 +135,7 @@ def _generate_extent(f, proj):
         _bnd = _img.get_band()
 
         from gio import geo_base as gb
-        _ext = gb.geo_polygon.from_raster(_bnd.raster).segment_ratio(10)
+        _ext = gb.geo_polygon.from_raster(_bnd.raster, div=config.getint('conf', 'vertex_num', 10))
         _geos = [_ext]
         _proj = parse_proj(proj, None)
 
@@ -309,6 +310,7 @@ def usage():
 
     _p.add_argument('-i', '--input', dest='input', nargs='+')
     _p.add_argument('-p', '--projection', dest='projection')
+    _p.add_argument('--vertex-num', dest='vertex_num', type=int, default=10)
     _p.add_argument('-n', '--dataset', dest='dataset')
     _p.add_argument('-o', '--ouput-file', dest='output')
     _p.add_argument('-a', '--absolute-path', dest='absolutepath',

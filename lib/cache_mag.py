@@ -231,7 +231,7 @@ class s3():
     """manage Landsat cache files"""
 
     _enable_s3_lock = config.getboolean('conf', 'enable_s3_lock', True)
-    _s3_access_que = multiprocessing.Semaphore(value=config.getint('conf', 'max_access_rec_num', 2)) if _enable_s3_lock > 1 else None
+    _s3_access_que = multiprocessing.Semaphore(value=config.getint('conf', 'max_access_rec_num', 2)) if _enable_s3_lock else None
 
     def __init__(self, bucket, fzip=None):
         self._t = bucket
