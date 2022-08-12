@@ -135,7 +135,7 @@ def _generate_extent(f, proj):
         _bnd = _img.get_band()
 
         from gio import geo_base as gb
-        _ext = gb.geo_polygon.from_raster(_bnd.raster, div=config.getint('conf', 'vertex_num', 10))
+        _ext = gb.geo_polygon.from_raster(_bnd.raster, div=config.getint('conf', 'segment_num', 10))
         _geos = [_ext]
         _proj = parse_proj(proj, None)
 
@@ -310,7 +310,7 @@ def usage():
 
     _p.add_argument('-i', '--input', dest='input', nargs='+')
     _p.add_argument('-p', '--projection', dest='projection')
-    _p.add_argument('--vertex-num', dest='vertex_num', type=int, default=10)
+    _p.add_argument('-s', '--segment-num', dest='segment_num', type=int, default=10)
     _p.add_argument('-n', '--dataset', dest='dataset')
     _p.add_argument('-o', '--ouput-file', dest='output')
     _p.add_argument('-a', '--absolute-path', dest='absolutepath',

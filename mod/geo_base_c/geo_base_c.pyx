@@ -446,6 +446,9 @@ class geo_polygon (geo_object):
 
     @classmethod
     def from_raster(cls, img, div=10):
+        if div <= 0:
+            raise Exception('segment number needs to be larger than 0')
+
         _ext = geo_extent.from_raster(img)
 
         _dis_x = _ext.width()
