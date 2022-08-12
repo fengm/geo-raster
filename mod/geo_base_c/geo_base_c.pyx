@@ -654,7 +654,6 @@ class geo_polygon (geo_object):
         _y = pt_s[1]
         _z = pt_s[2]
 
-        print('ratio', dis)
         for _p in range(dis):
             _ps.append((_x, _y, _z))
 
@@ -692,8 +691,6 @@ class geo_polygon (geo_object):
     def segment_ratio(self, rat):
         from osgeo import ogr
 
-        print('testsetest')
-
         _poly = ogr.Geometry(ogr.wkbPolygon)
 
         for _line in self.poly:
@@ -702,7 +699,6 @@ class geo_polygon (geo_object):
 
             _ps = []
 
-            print('count', _cc, rat)
             for i in xrange(_cc - 1):
                 _ps.extend(self.split_section_ratio(_line.GetPoint(i), _line.GetPoint(i + 1), rat))
 
