@@ -81,6 +81,10 @@ class file_mag(obj_mag):
 
         _fs = [file_mag(os.path.join(self._f, _f)) for _f in os.listdir(self._f)]
         return _fs
+        
+    def read(self):
+        with open(self._f, 'rb') as _fi:
+            return _fi.read()
 
     def remove(self):
         import os
@@ -166,6 +170,23 @@ class s3_mag(obj_mag):
                 _f = f[:-4] + _e
                 if os.path.exists(_f):
                     self._s3.put(self._path[:-4] + _e, _f)
+
+    def load(self):
+        import boto3
+        _i = boto3.client('s3').get_object(Bucket=self._bucket, Key=self._path)
+
+        if not _i:
+            import logging
+            logging.warning('failed to load resource (%s)' % (self._f))
+            return None
+
+        return _i['Body']
+
+    def read(self):
+        _o = self.load()
+        if not _o:
+            return None
+        return _o.read()
 
     def remove(self):
         return self._s3.remove(self._path)
