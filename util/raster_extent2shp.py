@@ -87,6 +87,9 @@ def _split_polygons(ext, prj):
     _prj2 = prj
 
     _ext = ext.project_to(_prj2)
+    if not _ext:
+        return []
+    
     _box = _ext.extent()
 
     _lin2 = _geo_line(_box, _prj2)
