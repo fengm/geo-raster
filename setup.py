@@ -43,6 +43,7 @@ setuptools.setup(name='geo-raster', version='2.1.0', description='', \
         packages=['gio'],
         package_dir={'gio': 'lib'},
         include_package_data=True,
+        install_requires=['awscli', 'boto3', 'cython', 'numpy', 'pandas', 'psycopg2', 'pillow'],
         cmdclass = {"build_ext": build_ext},
         ext_modules=_exts,
         scripts=_ss
