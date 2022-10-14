@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 File: copy_task_tiles.py
 Author: Min Feng

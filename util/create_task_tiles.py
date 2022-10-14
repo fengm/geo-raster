@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 def main(opts):
     from gio import config
     from gio import file_mag

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 File: extract_tile_records.py
 Author: Min Feng

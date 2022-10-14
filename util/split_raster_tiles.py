@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 File: split_raster_tiles.py
 Author: Min Feng

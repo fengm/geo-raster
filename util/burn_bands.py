@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 File: burn_bands.py
 Author: Min Feng
