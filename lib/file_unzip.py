@@ -405,6 +405,9 @@ class file_unzip:
         if isinstance(o, str):
             with open(_f_tmp, 'w') as _fo:
                 _fo.write(o)
+        elif isinstance(o, bytes):
+            with open(_f_tmp, 'wb') as _fo:
+                _fo.write(o)
         else:
             # from . import geo_raster as ge
             # if isinstance(o, ge.geo_band_cache):
