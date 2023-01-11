@@ -31,6 +31,21 @@ class obj_mag:
 
     def __exit__(self, type, value, traceback):
         pass
+    
+def read_bytes(b, f):
+    if b is None:
+        return None
+    
+    if not f.endswith('.gz'):
+        return b
+    
+    from gio import config
+    _auto = config.getboolean('conf', 'auto_gzip_file', True)
+    if not _auto:
+        return b
+    
+    import gzip
+    return gzip.decompress(b)
 
 class file_mag(obj_mag):
 
@@ -84,8 +99,12 @@ class file_mag(obj_mag):
         
     def read(self):
         with open(self._f, 'rb') as _fi:
-            return _fi.read()
-
+            return read_bytes(_fi.read(), self._f)
+        
+    def write(self, o):
+        from gio import file_unzip
+        return file_unzip.save(o, self._f)
+        
     def remove(self):
         import os
         if not os.path.exists(self._f):
@@ -186,8 +205,13 @@ class s3_mag(obj_mag):
         _o = self.load()
         if not _o:
             return None
-        return _o.read()
+        
+        return read_bytes(_o.read(), self._f)
 
+    def write(self, o):
+        from gio import file_unzip
+        return file_unzip.save(o, self._f)
+        
     def remove(self):
         return self._s3.remove(self._path)
 

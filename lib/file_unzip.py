@@ -402,12 +402,21 @@ class file_unzip:
         _f_tmp = os.path.join(_d_tmp, os.path.basename(f_out))
 
         os.makedirs(_d_tmp)
-        if isinstance(o, str):
-            with open(_f_tmp, 'w') as _fo:
-                _fo.write(o)
-        elif isinstance(o, bytes):
+        
+        _b = o
+        if isinstance(_b, str):
+            _b = o.encode('utf-8')
+            
+        if f_out.endswith('.gz'):
+            from gio import config
+            _auto = config.getboolean('conf', 'auto_gzip_file', True)
+            if _auto:
+                import gzip
+                _b = gzip.compress(_b)
+            
+        if isinstance(_b, bytes):
             with open(_f_tmp, 'wb') as _fo:
-                _fo.write(o)
+                _fo.write(_b)
         else:
             # from . import geo_raster as ge
             # if isinstance(o, ge.geo_band_cache):

@@ -33,7 +33,9 @@ def output_shp(f_inp, b, d_out, f_out, ext):
 
     _shp = _drv.CreateDataSource(f_out)
     _nam = os.path.basename(f_out)
-    _lyr = _shp.CreateLayer(os.path.basename(_nam)[:-4] if _nam.lower().endswith('.shp') else _nam, _yyy.GetSpatialRef(), ogr.wkbPolygon)
+    _lyr = _shp.CreateLayer(os.path.basename(_nam)[:-4] if \
+                        _nam.lower().endswith('.shp') else _nam, \
+                            _yyy.GetSpatialRef(), ogr.wkbPolygon)
 
     _fld = ogr.FieldDefn('FILE', ogr.OFTString)
     _fld.SetWidth(254)
@@ -59,8 +61,8 @@ def output_shp(f_inp, b, d_out, f_out, ext):
         _ftr.Destroy()
 
 def update_path(p, b, d_out):
-    from gio import file_mag
-    _p = file_mag.get(p).get()
+    # from gio import file_mag
+    _p = p #file_mag.get(p).get()
     
     if b and p.startswith(b):
         _p = p[len(b):]
@@ -97,6 +99,14 @@ def upload_file(f, b, d_out):
     from gio import file_mag
     
     _out = update_path(f, b, d_out)
+    if file_mag.get(_out).exists():
+        return _out
+    
+    _cmd = 'aws s3 cp %s %s' % (f, _out)
+    
+    from gio import run_commands
+    return run_commands.run(_cmd)
+    
     _key = file_mag.get(_out)
     
     import logging
@@ -200,7 +210,7 @@ def usage():
     _p.add_argument('-e', '--extent', dest='extent')
     _p.add_argument('-ak', '--access-key', dest='access_key', default=None)
     _p.add_argument('-sk', '--secret-key', dest='secret_key', default=None)
-    _p.add_argument('-p', '--base-path', dest='base_path')
+    _p.add_argument('-b', '--base-path', dest='base_path')
     _p.add_argument('-c', '--compress', dest='compress', type='bool')
     _p.add_argument('-o', '--output', dest='output', required=True)
 
