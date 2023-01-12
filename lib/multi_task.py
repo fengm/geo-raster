@@ -97,13 +97,18 @@ def _list_sub_list(ls, opts):
 def load(ls, opts):
     import os
 
-    if isinstance(ls, str) and os.path.exists(ls):
-        with open(ls) as _fi:
-            _ls = _fi.read().strip().splitlines()
-            return _list_sub_list(_ls, opts)
-
     if isinstance(ls, list) or isinstance(ls, tuple):
         return _list_sub_list(ls, opts)
+
+    if isinstance(ls, str):
+        from gio import file_mag
+        
+        _bb = file_mag.get(ls).read()
+        if _bb is None:
+            return []
+        
+        _ls = _bb.decode('utf-8').strip().splitlines()
+        return _list_sub_list(_ls, opts)
 
     raise Exception('unsupported list type %r' % ls)
 
