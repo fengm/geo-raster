@@ -1095,7 +1095,7 @@ class geo_raster(geo_raster_info):
         #     logging.warning('%s does not exist' % f)
         #     return None
             
-        _cache = config.getboolean('conf', 'cache_s3_image', True)
+        _cache = config.getboolean('conf', 'cache_s3_image', False)
         
         if not _cache:
             _bucket = _m.group(1)
