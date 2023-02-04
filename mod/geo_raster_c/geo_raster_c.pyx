@@ -1102,7 +1102,6 @@ class geo_raster(geo_raster_info):
             _path = _m.group(2)
 
             _f = '/vsis3/%s/%s' % (_bucket, _path)
-            logging.debug('convert s3 file path to vsis3 path %s' % _f)
             return _f
 
         _f = file_mag.get(f)
