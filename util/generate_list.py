@@ -19,23 +19,23 @@ def format_path(f):
     return f
 
 def output_list(f, ls):
-	from gio import file_unzip
-	import os
-	
-	with file_unzip.file_unzip() as _zip:
-		_d_out = _zip.generate_file()
-		os.makedirs(_d_out)
-		
-		_f_out = os.path.join(_d_out, os.path.basename(f))
-		
-		with open(_f_out, 'w') as _fo:
-		    _fo.write('\n'.join(ls))
-		    
-		_d_ttt = os.path.dirname(f)
-		if not _d_ttt:
-			_d_ttt = os.path.dirname(os.path.abspath(f))
-			
-		file_unzip.compress_folder(_d_out, _d_ttt, [])
+    from gio import file_unzip
+    import os
+    
+    with file_unzip.file_unzip() as _zip:
+        _d_out = _zip.generate_file()
+        os.makedirs(_d_out)
+        
+        _f_out = os.path.join(_d_out, os.path.basename(f))
+        
+        with open(_f_out, 'w') as _fo:
+            _fo.write('\n'.join(ls))
+            
+        _d_ttt = os.path.dirname(f)
+        if not _d_ttt:
+            _d_ttt = os.path.dirname(os.path.abspath(f))
+            
+        file_unzip.compress_folder(_d_out, _d_ttt, [])
 
 def main(opts):
     import os
@@ -85,6 +85,9 @@ def main(opts):
             opts.instance_num, opts.instance_pos, opts.task_num, \
                     '-se' if opts.skip_error else '', opts.time_wait, opts.task_order)
 
+    if opts.extent_type:
+        opts.extent_type = opts.extent_type.lower()
+        
     if opts.extent_type == 'wrs2':
         print('generate WRS2 raster extent')
         
@@ -95,6 +98,15 @@ def main(opts):
         run_commands.run(_cmd)
         return
 
+    if opts.extent_type in ['mgrs', 's2', 'sentinel-2']:
+        print('generate MGRS raster extent')
+        
+        _cmd = 'retrieve_sentinel2_tiles.py -i %s -e true -ts %s' % \
+                    (opts.output, opts.task_num)
+        run_commands.run(_cmd)        
+        return
+
+    print('generate raster extent from files')
     _cmd = 'raster_extent2shp.py -i %s ' % opts.output
 
     if opts.extent_type == 'gcs':
