@@ -214,12 +214,13 @@ def main(opts):
         return
     
     print('build index file ({}.tif)'.format(opts.tag))
-    _f_idx = os.path.join(_d_out, 'list.shp')
+    _f_idx = os.path.join(_d_out, 'list', '%s.shp' % opts.tag)
     
     from gio import run_commands
-    _cmd = 'generate_tiles_extent.py -i {} -e {}.tif -o {}'.format(_d_out, opts.tag, _f_idx)
-    run_commands.run(_cmd)
+    _cmd = 'generate_tiles_extent.py -i {} -e {}.tif -o {}'.format(\
+                       _d_out, opts.tag, _f_idx)
     
+    run_commands.run(_cmd)
     print('index file: %s' % _f_idx)
 
 def usage():
@@ -241,7 +242,7 @@ def usage():
     _p.add_argument('--min-value', dest='min_value', type=float)
     _p.add_argument('--max-value', dest='max_value', type=float)
     _p.add_argument('--keep-empty', dest='keep_empty', type='bool')
-    _p.add_argument('-b', '--build-index', dest='build_index', type='bool', default=True)
+    _p.add_argument('-b', '--build-index', dest='build_index', type='bool')
     
     _p.add_argument('--data-cell-size', dest='data_cell_size', type=float)
     _p.add_argument('--data-agg', dest='data_agg', default='median')
