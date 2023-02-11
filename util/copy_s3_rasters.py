@@ -9,6 +9,8 @@ Create: 2018-02-27 13:25:48
 Description:
 '''
 
+import logging
+
 def output_shp(f_inp, b, d_out, f_out, ext):
     from osgeo import ogr
     from gio import file_mag
@@ -150,29 +152,38 @@ def load_list(f, b, d_out, ext):
             _ext = load_exts(ext)
 
         _yyy.SetSpatialFilter(_ext.project_to(_yyy.GetSpatialRef()).poly)
-
-    _ls = []
+        
+    _fs = []
     for _r in _yyy:
-        _f = _r.items()['FILE']
-        # _o = update_path(_f, b, d_out)
-        # print _f, '|', _o
+        _fs.append(_r.items()['FILE'])
 
-        # _ls.append((_f, _o))
-        # if not file_mag.get(_f).exists():
-        #     _f = None
-            
+    if not b:
+        import os
+        import re
+        
+        b = os.path.commonpath(_fs)
+        _m = re.match('s3:/([^/].+)', b)
+        if _m:
+            b = 's3://' + _m.group(1)
+        logging.info('identified path prefix: %s' % b)
+        
+    _ls = []
+    for _f in _fs:
         _ls.append((_f, b, d_out))
-
+        
     return _ls
 
 def main(opts):
     from gio import multi_task
     import os
+    
+    _fs = load_list(opts.input, opts.base_path, \
+            (opts.output + ('data' if opts.output.endswith('/') else '/data')), \
+            opts.extent)
 
     _ps = []
     _s = 0.0
-    for _f, _b, _d_out in multi_task.load(load_list(opts.input, opts.base_path, \
-            (opts.output + ('data' if opts.output.endswith('/') else '/data')), opts.extent), opts):
+    for _f, _b, _d_out in multi_task.load(_fs, opts):
 
         if not _f:
             continue
