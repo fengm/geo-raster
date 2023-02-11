@@ -203,13 +203,17 @@ def main(opts):
     print('size', '%0.3fGb' % _s)
     _rs = multi_task.run(upload_file, _ps, opts)
     del _rs
+    
+    if not opts.build_index:
+        return
 
     from gio import file_unzip
     with file_unzip.file_unzip() as _zip:
         _d_tmp = _zip.generate_file()
         os.makedirs(_d_tmp)
 
-        output_shp(opts.input, opts.base_path, opts.output + '/data', os.path.join(_d_tmp, 'list.shp'), opts.extent)
+        output_shp(opts.input, opts.base_path, opts.output + '/data', \
+                   os.path.join(_d_tmp, 'list.shp'), opts.extent)
         file_unzip.compress_folder(_d_tmp, opts.output, [])
 
     print('done')
@@ -221,9 +225,10 @@ def usage():
     _p.add_argument('-e', '--extent', dest='extent')
     _p.add_argument('-ak', '--access-key', dest='access_key', default=None)
     _p.add_argument('-sk', '--secret-key', dest='secret_key', default=None)
-    _p.add_argument('-b', '--base-path', dest='base_path')
+    _p.add_argument('-p', '--base-path', dest='base_path')
     _p.add_argument('-c', '--compress', dest='compress', type='bool')
     _p.add_argument('-o', '--output', dest='output', required=True)
+    _p.add_argument('-b', '--build-index', dest='build_index', type='bool')
 
     return _p
 
