@@ -901,16 +901,16 @@ class geo_band(geo_band_info):
         _h = min(_h, self.height - _off_y1, _rows)
 
         if _w <= 0 or _h <= 0:
-            logging.warning('the size of the target arrange is too small (%s, %s)' % (_w, _h))
+            logging.info('the target array is too small (%s, %s)' % (_w, _h))
             return None
 
         _ddd = self.read_rows(_off_y1, _h)
         if _ddd is None:
-            logging.warning('failed to return arrange for the target')
+            logging.info('failed to return array for the target')
             return None
 
         if _ddd.shape[0] <= 0 or _ddd.shape[1] <= 0:
-            logging.warning('the size of the returned arrange is too small (%s, %s)' % (_w, _h))
+            logging.info('the returned array is too small (%s, %s)' % (_w, _h))
             return None
 
         if _off_y2 + _h > _dat.shape[0]:
