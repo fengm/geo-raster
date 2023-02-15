@@ -129,7 +129,7 @@ def usage():
     _p.add_argument('-o', '--output', dest='output')
     _p.add_argument('-p', '--pattern', dest='pattern')
 
-    _p.add_argument('-e', '--extent', dest='extent', action='store_true', \
+    _p.add_argument('-e', '--extent', dest='extent', type='bool', \
             help='run raster_extent2shp after the list is generated')
 
     _p.add_argument('-t', '--extent-type', dest='extent_type')
