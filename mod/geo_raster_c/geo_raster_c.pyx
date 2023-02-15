@@ -425,7 +425,8 @@ class geo_band_cache(geo_band_info):
             raise Exception('The extent is supposed to be in the same CRS as the band does')
 
         _ext1 = self.extent()
-        if _ext1.minx == ext.minx and _ext1.maxy == ext.maxy and _ext1.maxx == ext.maxx and _ext1.miny == ext.miny:
+        if _ext1.minx == ext.minx and _ext1.maxy == ext.maxy \
+            and _ext1.maxx == ext.maxx and _ext1.miny == ext.miny:
             # if the band has same size and extent then return without
             # adjustment
             return self
@@ -858,7 +859,8 @@ class geo_band(geo_band_info):
             raise Exception('The extent is supposed to be in the same CRS as the band does')
 
         _ext1 = self.extent()
-        if _ext1.minx == ext.minx and _ext1.maxy == ext.maxy and _ext1.maxx == ext.maxx and _ext1.miny == ext.miny:
+        if _ext1.minx == ext.minx and _ext1.maxy == ext.maxy \
+                and _ext1.maxx == ext.maxx and _ext1.miny == ext.miny:
             # if the band has same size and extent then return without
             # adjustment
             return self.cache()
