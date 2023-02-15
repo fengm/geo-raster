@@ -1077,9 +1077,15 @@ def load_shp(f, ext=None, layer_name=None):
     _lyr = _shp.GetLayer(layer_name) if layer_name else _shp.GetLayer()
 
     if ext:
-        _lyr.SetSpatialFilter(ext.project_to(_lyr.GetSpatialRef()).poly)
+        _ext = ext.project_to(_lyr.GetSpatialRef())
+        if _ext is None:
+            raise Exception('failed to reproject the extent')
+        _lyr.SetSpatialFilter(_ext.poly)
 
     for _r in _lyr:
+        if _r is None:
+            continue
+            
         _g = _r.geometry()
         if _g is None:
             continue
