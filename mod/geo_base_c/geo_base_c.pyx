@@ -1079,7 +1079,8 @@ def load_shp(f, ext=None, layer_name=None):
     if ext:
         _ext = ext.project_to(_lyr.GetSpatialRef())
         if _ext is None:
-            raise Exception('failed to reproject the extent')
+            logging.warning('failed to reproject the query extent')
+            return
         _lyr.SetSpatialFilter(_ext.poly)
 
     for _r in _lyr:

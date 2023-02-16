@@ -169,21 +169,21 @@ def load_list(f, b, d_out, ext):
         
     _ls = []
     for _f in _fs:
-        _ls.append((_f, b, d_out))
+        _ls.append((_f, d_out))
         
-    return _ls
+    return _ls, b
 
 def main(opts):
     from gio import multi_task
     import os
     
-    _fs = load_list(opts.input, opts.base_path, \
+    _fs, _b = load_list(opts.input, opts.base_path, \
             (opts.output + ('data' if opts.output.endswith('/') else '/data')), \
             opts.extent)
 
     _ps = []
     _s = 0.0
-    for _f, _b, _d_out in multi_task.load(_fs, opts):
+    for _f, _d_out in multi_task.load(_fs, opts):
 
         if not _f:
             continue
@@ -200,9 +200,10 @@ def main(opts):
     for _i in range(min(len(_ps), 3)):
         print('...', _ps[_i])
 
-    print('size', '%0.3fGb' % _s)
-    _rs = multi_task.run(upload_file, _ps, opts)
-    del _rs
+    if not opts.skip_copying:
+        print('size', '%0.3fGb' % _s)
+        _rs = multi_task.run(upload_file, _ps, opts)
+        del _rs
     
     if not opts.build_index:
         return
@@ -212,7 +213,7 @@ def main(opts):
         _d_tmp = _zip.generate_file()
         os.makedirs(_d_tmp)
 
-        output_shp(opts.input, opts.base_path, opts.output + '/data', \
+        output_shp(opts.input, _b, opts.output + '/data', \
                    os.path.join(_d_tmp, 'list.shp'), opts.extent)
         file_unzip.compress_folder(_d_tmp, opts.output, [])
 
@@ -229,6 +230,7 @@ def usage():
     _p.add_argument('-c', '--compress', dest='compress', type='bool')
     _p.add_argument('-o', '--output', dest='output', required=True)
     _p.add_argument('-b', '--build-index', dest='build_index', type='bool')
+    _p.add_argument('--skip-copying', dest='skip_copying', type='bool')
 
     return _p
 
