@@ -173,6 +173,10 @@ def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include
 
     logging.debug('compress results from %s to %s' % (fd_in, fd_ot))
 
+    if not os.path.exists(fd_in):
+        logging.info('the input folder does not exist %s' % fd_in)
+        return
+    
     for _file in os.listdir(fd_in):
         _ff = os.path.join(fd_in, _file)
 
