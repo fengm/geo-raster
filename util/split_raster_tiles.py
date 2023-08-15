@@ -22,7 +22,7 @@ def _load(fs, bnd, opts):
     for _f in fs:
         _bnd = gx.read_block(_f, _inp)
         if _bnd:
-            _bnd.data[_bnd.data == 0] = 255
+            # _bnd.data[_bnd.data == 0] = 255
             
             if opts.nodata is not None:
                 _bnd.nodata = opts.nodata
