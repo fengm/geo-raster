@@ -713,6 +713,12 @@ def perc(bnd_in, bnd_ot, val, valid_values=None, excluded_values=None, nodata=25
     from . import geo_base as gb
 
     _pt = ge.pixel_type(pixel_type)
+
+    from osgeo import gdal
+    if _pt not in (gdal.GDT_Float32, gdal.GDT_Float64):
+        # if the output is not float type, use ceil to keep the values between 0 and 1
+        _dat = np.ceil(_dat)
+
     return ge.geo_band_cache(_dat.astype(gb.to_dtype(_pt)), _geo_ot, bnd_ot.proj, 
                 nodata, _pt)
 
