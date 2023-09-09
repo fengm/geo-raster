@@ -371,7 +371,8 @@ def dominated(bnd_in, bnd_ot, weights=None):
 cdef np.ndarray[np.int32_t, ndim=2] dominated_pixels(np.ndarray[np.int32_t, ndim=2] dat,
         float off_y, float off_x, float scale,
         int nodata, unsigned int rows, unsigned int cols, weights):
-
+    from gio import config
+    
     cdef unsigned int _rows_o, _cols_o
     cdef unsigned int _rows_n, _cols_n
 
@@ -474,7 +475,7 @@ cdef np.ndarray[np.int32_t, ndim=2] dominated_pixels(np.ndarray[np.int32_t, ndim
             _vv == _nodata
             for _kk in _vs:
                 if _kk == _nodata:
-                    _vs[_kk] /= 3
+                    _vs[_kk] *= config.getint('conf', 'dominated_nodata_scaling', 0.2)
                     
                 if _vs[_kk] > _mx:
                     _mx = _vs[_kk]
