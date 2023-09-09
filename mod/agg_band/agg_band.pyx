@@ -354,21 +354,21 @@ def dominated(bnd_in, bnd_ot, weights=None):
     _nodata = bnd_in.get_nodata()
     _dat = bnd_in.data
 
-    if bnd_in.data.dtype != np.int16:
-        _dat = _dat.astype(np.int16)
+    if bnd_in.data.dtype != np.int32:
+        _dat = _dat.astype(np.int32)
 
     _dat = dominated_pixels(_dat,
             _offs[0], _offs[1], _dive,
             _nodata, _size[0], _size[1], weights)
 
-    if bnd_in.data.dtype != np.int16:
+    if bnd_in.data.dtype != np.int32:
         _dat = _dat.astype(bnd_in.data.dtype)
 
     from . import geo_raster as ge
     return ge.geo_band_cache(_dat, _geo_ot, bnd_ot.proj,
                 _nodata, bnd_in.pixel_type)
 
-cdef np.ndarray[np.int16_t, ndim=2] dominated_pixels(np.ndarray[np.int16_t, ndim=2] dat,
+cdef np.ndarray[np.int32_t, ndim=2] dominated_pixels(np.ndarray[np.int32_t, ndim=2] dat,
         float off_y, float off_x, float scale,
         int nodata, unsigned int rows, unsigned int cols, weights):
 
@@ -397,7 +397,7 @@ cdef np.ndarray[np.int16_t, ndim=2] dominated_pixels(np.ndarray[np.int16_t, ndim
     cdef int _nodata
     _nodata = nodata
 
-    _dat = np.empty([_rows_n, _cols_n], np.int16)
+    _dat = np.empty([_rows_n, _cols_n], np.int32)
     _dat.fill(_nodata)
 
     _row_min_f = off_y - scale
@@ -473,6 +473,9 @@ cdef np.ndarray[np.int16_t, ndim=2] dominated_pixels(np.ndarray[np.int16_t, ndim
             _mx = 0
             _vv == _nodata
             for _kk in _vs:
+                if _kk == _nodata:
+                    _vs[_kk] /= 3
+                    
                 if _vs[_kk] > _mx:
                     _mx = _vs[_kk]
                     _vv = _kk
@@ -481,7 +484,7 @@ cdef np.ndarray[np.int16_t, ndim=2] dominated_pixels(np.ndarray[np.int16_t, ndim
 
     return _dat
 
-cdef np.ndarray[np.int16_t, ndim=2] median_pixels(np.ndarray[np.float32_t, ndim=2] dat,
+cdef np.ndarray[np.float32_t, ndim=2] median_pixels(np.ndarray[np.float32_t, ndim=2] dat,
         float off_y, float off_x, float scale,
         int nodata, unsigned int rows, unsigned int cols, min_rate, pval=50):
             
