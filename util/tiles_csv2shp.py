@@ -40,6 +40,9 @@ def load_landsat_tile(f_shp, tile_col='PATHROW'):
 
     _drv = ogr.GetDriverByName("ESRI Shapefile")
     _shp = _drv.Open(file_mag.get(f_shp).get())
+    if not _shp:
+        raise Exception('failed to load %s' % f_shp)
+        
     _lyr = _shp.GetLayer(os.path.basename(f_shp)[:-4])
 
     _vs = {}

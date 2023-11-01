@@ -1345,8 +1345,8 @@ def modis_projection():
 
     return _modis_proj
 
-def read_block(f, bnd):
-    _bnd = load(f, bnd)
+def read_block(f, bnd, band_idx=1):
+    _bnd = load(f, bnd, band_idx)
 
     if _bnd is None:
         return None
