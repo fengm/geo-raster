@@ -230,7 +230,7 @@ class geo_band_info(geo_raster_info):
             return _nodata
             
         if _nodata is None:
-            _default_nodata = {1: 255, 2: 65535, 3: -9999, 4: (2 ** 32) - 1, 5: -9999, 6: -9999}
+            _default_nodata = {1: 255, 2: 65535, 3: -9999, 4: (2 ** 32) - 1, 5: -9999, 6: -9999, 7: -9999}
             if self.pixel_type not in _default_nodata.keys():
                 raise Exception('Unsupport data type %s' % self.pixel_type)
 
