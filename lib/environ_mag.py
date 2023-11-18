@@ -5,6 +5,7 @@ Version: 0.1
 Create: 2016-09-01 13:56:39
 Description: provide functions to help commands to setup the environments
 '''
+
 def bool_type(v):
     return v.lower() in ("yes", "true", "t", "1")
 
@@ -123,12 +124,15 @@ def _parse_env(opts, log=False):
             config.set(_n0, _n1, _es[1])
 
 def run(func, opts):
+    import os
+    import sys
     import logging
     from . import config
-    import os
     from . import file_unzip
-    import sys
     from . import logging_util
+
+    # from osgeo import gdal
+    # gdal.UseExceptions()
 
     logging_util.info(('CMD (%s): ' % os.getcwd()) + ' '.join(['"%s"' % x if ' ' in x else x for x in sys.argv]))
     _parse_env(opts[0], log=True)
