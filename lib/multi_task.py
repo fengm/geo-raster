@@ -18,6 +18,22 @@ def _default_task_pos():
 
     return 0
 
+def task_params(task_num=1):
+    from gio import obj
+
+    _obj = obj.obj()
+    
+    _obj.instance_num = 1
+    _obj.instance_pos = 0
+    _obj.task_num = task_num
+    _obj.skip_error = True
+    _obj.time_wait = 1
+    _obj.task_order = 0
+    _obj.task_type = 0
+    _obj.use_process_temp = True
+
+    return _obj
+
 def init(opts):
     from . import config
     _tt = config.getint('conf', 'task_type')

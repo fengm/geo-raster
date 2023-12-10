@@ -245,9 +245,15 @@ class tile:
     def file(self, d_out, t, geo_tile=None):
         _col, _row = self._tile(geo_tile if geo_tile is not None else self.geo_tile)
         _tag = '%s%s' % (_col, _row)
-        
+
         import os
-        _d_out = os.path.join(d_out, _col, _row, _tag)
+
+        _d_out = d_out
+        if os.path.basename(_d_out) != 'data' and \
+                config.getboolean('conf', 'task_use_data_path', True):
+            _d_out = os.path.join(_d_out, 'data')
+        
+        _d_out = os.path.join(_d_out, _col, _row, _tag)
         _f_out = os.path.join(_d_out, '%s_%s' % (_tag, t))
         
         return _f_out
