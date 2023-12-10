@@ -55,7 +55,7 @@ if _ms:
     # _exts = cythonize(_ms, compiler_directives={'language_level': 3})
     # _exts = cythonize(_ms, compiler_directives={'language_level': 3, 'boundscheck': False, 'wraparound': False})
         
-setuptools.setup(name='geo-raster', version='2.2.0', description='', \
+setuptools.setup(name='geo-raster', version='2.3.0', description='', \
         author='Min Feng', author_email='mfeng.geo@gmail.com', \
         # packages=['gio', 'gio/data/landsat'],
         # package_dir={'gio': 'lib', 'gio/data/landsat': 'lib/data/landsat'},
