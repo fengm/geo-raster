@@ -132,7 +132,7 @@ def load_exts(f):
 
     return None
 
-def load_list(f, b, d_out, ext):
+def load_list(f, b, auto_base_path, d_out, ext):
     from osgeo import ogr
     from gio import file_mag
 
@@ -157,7 +157,7 @@ def load_list(f, b, d_out, ext):
     for _r in _yyy:
         _fs.append(_r.items()['FILE'])
 
-    if not b:
+    if not b and auto_base_path:
         import os
         import re
         
@@ -177,9 +177,11 @@ def main(opts):
     from gio import multi_task
     import os
     
-    _fs, _b = load_list(opts.input, opts.base_path, \
-            (opts.output + ('data' if opts.output.endswith('/') else '/data')), \
-            opts.extent)
+    _fs, _b = load_list(opts.input, opts.base_path, opts.auto_base_path, \
+            # (opts.output + ('data' if opts.output.endswith('/') else '/data')), \
+            opts.output, opts.extent)
+            
+    print('base path', _b)
 
     _ps = []
     _s = 0.0
@@ -227,6 +229,7 @@ def usage():
     _p.add_argument('-ak', '--access-key', dest='access_key', default=None)
     _p.add_argument('-sk', '--secret-key', dest='secret_key', default=None)
     _p.add_argument('-p', '--base-path', dest='base_path')
+    _p.add_argument('-a', '--auto-base-path', dest='auto_base_path', type='bool')
     _p.add_argument('-c', '--compress', dest='compress', type='bool')
     _p.add_argument('-o', '--output', dest='output', required=True)
     _p.add_argument('-b', '--build-index', dest='build_index', type='bool')
