@@ -130,7 +130,9 @@ def run(func, opts):
     from . import config
     from . import file_unzip
     from . import logging_util
-
+    
+    from osgeo import osr
+    osr.UseExceptions()
     # from osgeo import gdal
     # gdal.UseExceptions()
 
