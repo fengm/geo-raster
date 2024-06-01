@@ -13,7 +13,7 @@ class metadata(dict):
 
     def __getitem__(self, idx):
         from gio import config
-        if config.cfg.has_option('conf', 'debug') and config.cfg.getboolean('conf', 'debug'):
+        if config.has_option('conf', 'debug') and config.getboolean('conf', 'debug'):
             import sys
             sys.stdout.write('[%s].' % idx)
 
