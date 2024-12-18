@@ -34,14 +34,33 @@ def task_params(task_num=1):
 
     return _obj
 
+options=task_params
+
+def _sagemaker_task_config():
+    import os
+    
+    _f_cfg = config.get('conf', 'sagemaker_res', '/opt/ml/config/resourceconfig.json')
+    if not os.path.exists(_f_cfg):
+        return -1, 0
+
+    import json
+    import re
+    
+    with open(_f_cfg) as _fi:
+        _cfg = json.load(_fi)
+        _num = len(_ids['hosts'])
+        _idx = int(re.search('.+\-(\d+)', _ids['current_host']).group(1)) - 1
+        
+        return _idx, _num
+
 def init(opts):
     from . import config
     _tt = config.getint('conf', 'task_type')
 
     if _tt == 0:
         return True
-
-    if _tt == 1:
+        
+    elif _tt == 1:
         from mpi4py import MPI
 
         _comm=MPI.COMM_WORLD
@@ -50,16 +69,23 @@ def init(opts):
         _rank=_comm.rank
 
         logging.info('use MPI task pos %s/%s' % (_rank, _size))
+        
+    elif _tt == 2:
+        _rank, _size = _sagemaker_task_config()
+        if _rank < 0:
+            raise Exception('failed to load SageMaker info')
+            
+        logging.info('use SageMaker task pos %s/%s' % (_rank, _size))
+    else:
+        raise Exception('unsupported task type %s' % _tt)    
 
-        opts.instance_num = _size
-        opts.instance_pos = _rank
+    opts.instance_num = _size
+    opts.instance_pos = _rank
 
-        config.set('conf', 'instance_num', _size)
-        config.set('conf', 'instance_pos', _rank)
+    config.set('conf', 'instance_num', _size)
+    config.set('conf', 'instance_pos', _rank)
 
-        return True
-
-    raise Exception('unsupported task type %s' % _tt)
+    return True
 
 def add_task_opts(p):
     p.add_argument('-in', '--instance-num', dest='instance_num', type=int, default=1)
@@ -68,7 +94,7 @@ def add_task_opts(p):
     p.add_argument('-se', '--skip-error', dest='skip_error', default=False, action='store_true')
     p.add_argument('-tw', '--time-wait', dest='time_wait', type=int, default=1)
     p.add_argument('-to', '--task-order', dest='task_order', type=int, default=0)
-    p.add_argument('-tt', '--task-type', dest='task_type', type=int, default=0, help='0: default; 1: mpi')
+    p.add_argument('-tt', '--task-type', dest='task_type', type=int, default=0, help='0: default; 1: mpi; 2: SageMaker')
     p.add_argument('--use-process-temp', dest='use_process_temp', type='bool', default=True, \
         help='use seperated temporary path for each process and clean up after each task is completed')
 
@@ -90,15 +116,6 @@ def _list_sub_list(ls, opts):
 
     if _to <= 1:
         return [_ls[i] for i in range(_get_task_pos(opts), len(_ls), opts.instance_num)]
-
-    # if opts.task_order == 1:
-    #     import math
-    #     _sz = int(math.ceil(len(_ls) / float(opts.instance_num)))
-
-    #     _ns = _sz * opts.instance_pos
-    #     _ne = min(_ns + _sz, len(_ls))
-
-    #     return _ls[_ns: _ne]
 
     import math
     _nd = int(math.ceil(float(len(_ls)) / _to))
@@ -176,10 +193,6 @@ def print_percent(nu, tn, perc_step, end=False):
             text('\r+ \t\t\t|  %3.1f%%(%d/%d)     ' % ((_p2 * perc_step) if nu < tn else 100.0, nu, tn))
         else:
             text('\r+ %3.1f%%(%d/%d)     ' % ((_p2 * perc_step) if nu < tn else 100.0, nu, tn))
-        # if end:
-        #     print '--> %3d/%d,%3d%%\r' % (nu, tn, _p2 * perc_step)
-        # else:
-        #     print '<-- %3d/%d,%3d%%\r' % (nu, tn, _p2 * perc_step)
 
 def work_function(obj, job_queue, vs, mag, res, t_lock, pos):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
