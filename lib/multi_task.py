@@ -37,6 +37,7 @@ def task_params(task_num=1):
 options=task_params
 
 def _sagemaker_task_config():
+    from . import config
     import os
     
     _f_cfg = config.get('conf', 'sagemaker_res', '/opt/ml/config/resourceconfig.json')
