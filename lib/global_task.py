@@ -396,26 +396,24 @@ def save(rs, f_out, ms=None):
 def load(f_inp):
     import json
 
-    with open(file_obj(f_inp).get(), 'r') as _f:
-        _rs = json.load(_f)
-        if isinstance(_rs, list):
-            # compatible to the older version
-            return [tile.from_obj(_r) for _r in _rs]
+    _rs = json.loads(file_obj(f_inp).read().decode('utf-8'))
+    if isinstance(_rs, list):
+        # compatible to the older version
+        return [tile.from_obj(_r) for _r in _rs]
 
-        _ts = [tile.from_obj(_r) for _r in _rs['tiles']]
-        return _ts
+    _ts = [tile.from_obj(_r) for _r in _rs['tiles']]
+    return _ts
 
 def loads(f_inp):
     import json
 
-    with open(file_obj(f_inp).get(), 'r') as _f:
-        _rs = json.load(_f)
-        if isinstance(_rs, list):
-            _ts = [tile.from_obj(_r) for _r in _rs]
-            return {'tiles': _ts, 'params': {}}
+    _rs = json.loads(file_obj(f_inp).read().decode('utf-8'))
+    if isinstance(_rs, list):
+        _ts = [tile.from_obj(_r) for _r in _rs]
+        return {'tiles': _ts, 'params': {}}
 
-        _ts = [tile.from_obj(_r) for _r in _rs['tiles']]
-        return {'tiles': _ts, 'params': _rs['params']}
+    _ts = [tile.from_obj(_r) for _r in _rs['tiles']]
+    return {'tiles': _ts, 'params': _rs['params']}
 
 def filter_tiles(ts, f, f_shp=None, column=None):
     from gio import global_task
