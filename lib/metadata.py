@@ -144,12 +144,9 @@ class metadata_v0(object):
 
 def load(f):
     from gio import file_mag
-    with open(file_mag.get(f).get()) as _fi:
-        import json
-        # import collections
-        # _obj = json.load(_fi, object_hook=_to_obj, object_pairs_hook=collections.OrderedDict)
-        _obj = json.load(_fi, object_hook=_to_obj, object_pairs_hook=metadata)
-        return _obj
+    import json
+
+    return json.loads(file_mag.get(f).read().decode('utf-8'), object_hook=_to_obj, object_pairs_hook=metadata)
 
 def _to_obj_ex(v):
     _ds = {}
