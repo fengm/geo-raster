@@ -370,8 +370,19 @@ def read_block_float64(np.ndarray[np.float64_t, ndim=2] dat, ext, prj, geo, floa
 
 class geo_object:
 
-    def __init__(self):
-        pass
+    def __init__(self, proj):
+        self._proj = None if proj is None else proj.ExportToProj4()
+
+    @property
+    def proj(self):
+        return proj_from_proj4(self._proj)
+    
+    @proj.setter
+    def proj(self, val):
+        if val is None:
+            self._proj = None
+        else:
+            self._proj = fix_geog_axis(val).ExportToProj4()
 
 class geo_extent (geo_object):
 
@@ -385,12 +396,12 @@ class geo_extent (geo_object):
         return cls(_pt1[0], _pt2[1], _pt2[0], _pt1[1], img.proj)
 
     def __init__(self, x1=-180, y1=-90, x2=180, y2=90, proj=None):
+        geo_object.__init__(self, proj)
+        
         self.minx = min(x1, x2)
         self.maxx = max(x1, x2)
         self.miny = min(y1, y2)
         self.maxy = max(y1, y2)
-
-        self.proj = fix_geog_axis(proj)
 
     def __str__(self):
         return '%f, %f, %f, %f' % (self.minx, self.miny, self.maxx, self.maxy)
@@ -440,9 +451,14 @@ class geo_extent (geo_object):
 
 class geo_polygon (geo_object):
 
-    def __init__(self, poly):
+    def __init__(self, poly, proj=None):
+        _proj = poly.GetSpatialReference()
+        if proj is not None:
+            _proj = proj
+            poly.AssignSpatialReference(_proj)
+            
+        geo_object.__init__(self, _proj)
         self.poly = poly
-        self.proj = fix_geog_axis(poly.GetSpatialReference()) if poly is not None else None
 
     @classmethod
     def from_raster(cls, img, div=10):
@@ -602,8 +618,7 @@ class geo_polygon (geo_object):
         return geo_polygon(_poly)
 
     def set_proj(self, proj):
-        self.poly.AssignSpatialReference(fix_geog_axis(proj))
-        self.proj = fix_geog_axis(proj)
+        self.proj = proj
 
     def union(self, poly):
         return geo_polygon(self.poly.Union(poly.poly))
@@ -762,8 +777,8 @@ class geo_point (geo_object):
         return cls(_x, _y, raster.proj)
 
     def __init__(self, x, y, proj=None):
+        geo_object.__init__(self, proj)
         self.put_pt(x, y)
-        self.proj = fix_geog_axis(proj)
 
     def put_pt(self, x, y):
         self.x = x

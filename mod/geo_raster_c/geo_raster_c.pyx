@@ -108,7 +108,7 @@ class geo_raster_info:
         self.geo_transform = geo_transform
         self.width = width
         self.height = height
-        self.proj = proj
+        self._proj = None if proj is None else proj.ExportToProj4()
         self.cell_size = self.geo_transform[1]
 
     def __del__(self):
@@ -117,6 +117,17 @@ class geo_raster_info:
         self.height = None
         self.proj = None
 
+    @property
+    def proj(self):
+        return gb.proj_from_proj4(self._proj)
+    
+    @proj.setter
+    def proj(self, val):
+        if val is None:
+            self._proj = None
+            return
+        self._proj = val.ExportToProj4()
+    
     def to_cell(self, float x, float y):
         return to_cell(self.geo_transform, x, y)
 
@@ -651,7 +662,7 @@ class geo_band(geo_band_info):
 
     def __init__(self, raster, band, convert_list=False):
         geo_band_info.__init__(self, raster.geo_transform, band.XSize, band.YSize,
-                raster.projection_obj, band.GetNoDataValue(), band.DataType)
+                raster.proj, band.GetNoDataValue(), band.DataType)
 
         self.raster = raster
         self.band = band
@@ -1043,7 +1054,7 @@ class geo_raster(geo_raster_info):
 
         geo_raster_info.__init__(self, raster.GetGeoTransform(), _cols, _rows, _proj)
 
-        self.projection_obj = _proj
+        # self.projection_obj = _proj
         self.filepath = f
         self.raster = raster
 
@@ -1057,7 +1068,7 @@ class geo_raster(geo_raster_info):
         geo_raster_info.__del__(self)
 
         self.projection = None
-        self.projection_obj = None
+        # self.projection_obj = None
         self.filepath = None
         self.raster = None
         self.band_num = None
@@ -1250,7 +1261,7 @@ class geo_raster(geo_raster_info):
         _pt = ogr.Geometry(ogr.wkbPoint)
 
         _pt.SetPoint_2D(0, x, y)
-        _pt.AssignSpatialReference(self.projection_obj)
+        _pt.AssignSpatialReference(self.proj)
         _pt.TransformTo(proj)
         _pt = _pt.GetPoint_2D()
 
@@ -1261,7 +1272,7 @@ class geo_raster(geo_raster_info):
 
         _pt.SetPoint_2D(0, x, y)
         _pt.AssignSpatialReference(proj)
-        _pt.TransformTo(self.projection_obj)
+        _pt.TransformTo(self.proj)
         _pt = _pt.GetPoint_2D()
 
         return _pt
