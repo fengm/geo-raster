@@ -371,18 +371,18 @@ def read_block_float64(np.ndarray[np.float64_t, ndim=2] dat, ext, prj, geo, floa
 class geo_object:
 
     def __init__(self, proj):
-        self._proj = None if proj is None else proj.ExportToProj4()
+        self.proj = proj
 
     @property
     def proj(self):
-        return proj_from_proj4(self._proj)
+        return proj_from_wkt(self._proj)
     
     @proj.setter
     def proj(self, val):
         if val is None:
             self._proj = None
         else:
-            self._proj = fix_geog_axis(val).ExportToProj4()
+            self._proj = val.ExportToWkt()
 
 class geo_extent (geo_object):
 
@@ -983,8 +983,11 @@ class projection_transform:
 
         return _x, _y
 
+def modis_proj():
+    return '+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs'
+
 def modis_projection():
-    return fix_geog_axis(proj_from_proj4('+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs'))
+    return proj_from_proj4(modis_proj())
 
 def proj_from_proj4(txt):
     if not txt:
@@ -1003,6 +1006,15 @@ def proj_from_proj4(txt):
 def proj_from_epsg(code=4326):
     _proj = osr.SpatialReference()
     _proj.ImportFromEPSG(code)
+
+    return fix_geog_axis(_proj)
+
+def proj_from_wkt(txt):
+    if not txt:
+        return None
+    
+    _proj = osr.SpatialReference()
+    _proj.ImportFromWkt(txt)
 
     return fix_geog_axis(_proj)
 

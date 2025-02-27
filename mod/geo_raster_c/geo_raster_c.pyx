@@ -108,25 +108,25 @@ class geo_raster_info:
         self.geo_transform = geo_transform
         self.width = width
         self.height = height
-        self._proj = None if proj is None else proj.ExportToProj4()
+        self.proj = proj
         self.cell_size = self.geo_transform[1]
 
     def __del__(self):
         self.geo_transform = None
         self.width = None
         self.height = None
-        self.proj = None
+        self._proj = None
 
     @property
     def proj(self):
-        return gb.proj_from_proj4(self._proj)
+        return gb.proj_from_wkt(self._proj)
     
     @proj.setter
     def proj(self, val):
         if val is None:
             self._proj = None
-            return
-        self._proj = val.ExportToProj4()
+        else:
+            self._proj = val.ExportToWkt()
     
     def to_cell(self, float x, float y):
         return to_cell(self.geo_transform, x, y)
