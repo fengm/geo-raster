@@ -1077,6 +1077,10 @@ class geo_raster(geo_raster_info):
         self.cell_size_y = None
         self.cell_size = None
 
+    @property
+    def projection_obj(self):
+        return self.proj
+
     @staticmethod
     def _open_raster_file(f, update=False, iteration=0):
         if update:
