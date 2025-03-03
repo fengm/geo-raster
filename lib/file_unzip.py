@@ -191,23 +191,24 @@ def compress_folder(fd_in, fd_ot, compress_exts=None, exclude_exts=None, include
 
         copy_file(_f_in, _f_ot, compress_exts, exclude_exts, include_exts)
 
+def generate_random_string(length):
+    import string
+    import random
+    
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for _ in range(length))
+
 def generate_id(fd_out, prefix='', subfix=''):
-    import random, os
+    import os
 
-    _id = [''] * 10
-    for i in range(len(_id)):
-        _id[i] = chr(int(random.random() * 26) + 97)
-
-    _id = ''.join(_id)
-    _id = '%s%s%s' % (prefix, _id, subfix)
-
+    _id = '%s%s%s' % (prefix, generate_random_string(10), subfix)
     if fd_out and os.path.exists(os.path.join(fd_out, _id)):
         return generate_id(fd_out, prefix, subfix)
 
     return _id
 
 def generate_file(fd_out, prefix='', subfix=''):
-    if fd_out == None:
+    if not fd_out:
         raise Exception('invalid path parameter')
 
     import os
