@@ -123,7 +123,7 @@ class geo_raster_info:
     
     @proj.setter
     def proj(self, val):
-        if val is None:
+        if not val:
             self._proj = None
         else:
             self._proj = val.ExportToWkt()
@@ -1045,9 +1045,12 @@ class geo_raster(geo_raster_info):
             raise Exception('failed to load raster')
 
         self.projection = raster.GetProjection()
-
-        _proj = osr.SpatialReference()
-        _proj.ImportFromWkt(self.projection)
+        if not self.projection:
+            _proj = None 
+            self.projection = None
+        else:
+            _proj = osr.SpatialReference()
+            _proj.ImportFromWkt(self.projection)
 
         _cols = raster.RasterXSize
         _rows = raster.RasterYSize
