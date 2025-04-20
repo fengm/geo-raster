@@ -128,7 +128,7 @@ def _generate_extent(f, proj):
     from gio import config
 
     _f = f
-    _re = re.match('/a/[^/]+(/.+)', _f)
+    _re = re.match(r'/a/[^/]+(/.+)', _f)
 
     if _re:
         _f = _re.group(1)
@@ -192,7 +192,7 @@ def parse_proj(p, d=None):
     if p in ['geo']:
         return gb.proj_from_epsg()
 
-    _m = re.match('(\d+)', p) or re.match('epsg:(\d+)', p)
+    _m = re.match(r'(\d+)', p) or re.match(r'epsg:(\d+)', p)
     if _m:
         return gb.proj_from_epsg(int(_m.group(1)))
 

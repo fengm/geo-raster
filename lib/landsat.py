@@ -132,62 +132,62 @@ def band_to_text(b):
     return band_txts[band_vals.index(b)]
 
 def parseLandsatId(id):
-    _m = re.search('(L)(\d)(\w?)_(p\d{3}r\d{3})_(\d{8})', id)
+    _m = re.search(r'(L)(\d)(\w?)_(p\d{3}r\d{3})_(\d{8})', id)
     if _m:
         return _m.group(1) + _m.group(3), _m.group(4), _m.group(5), int(_m.group(2))
 
-    _m = re.search('(L\w)(\d+)_L(\d)[^_]+_(\d{3})(\d{3})_(\d{8})', id)
+    _m = re.search(r'(L\w)(\d+)_L(\d)[^_]+_(\d{3})(\d{3})_(\d{8})', id)
     if _m:
         return _m.group(1), 'p%sr%s' % (_m.group(4), _m.group(5)), _m.group(6), int(_m.group(2)), int(_m.group(3))
         
-    _m = re.search('(L\w)(\d+)_L[^_]+_(\d{3})(\d{3})_(\d{8})', id)
+    _m = re.search(r'(L\w)(\d+)_L[^_]+_(\d{3})(\d{3})_(\d{8})', id)
     if _m:
         return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _m.group(5), int(_m.group(2))
 
-    _m = re.search('(L\w)(\d{2})(\d{3})(\d{3})(\d{8})\d{2}T\d', id)
+    _m = re.search(r'(L\w)(\d{2})(\d{3})(\d{3})(\d{8})\d{2}T\d', id)
     if _m:
         return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _m.group(5), int(_m.group(2))
 
-    _m = re.search('(p\d{3}r\d{3})_(\d)\w+(\d{8})', id)
+    _m = re.search(r'(p\d{3}r\d{3})_(\d)\w+(\d{8})', id)
     if _m:
         return '', _m.group(1), _m.group(3), '', int(_m.group(2))
 
-    _m = re.search('[lL](\d)_(p\d{3}r\d{3})_(\d{8})', id)
+    _m = re.search(r'[lL](\d)_(p\d{3}r\d{3})_(\d{8})', id)
     if _m:
         return 'L', _m.group(2), _m.group(3), int(_m.group(1))
 
-    _m = re.search('(\w+)(\d)_(p\d{3}r\d{3})_(\d{8})', id)
+    _m = re.search(r'(\w+)(\d)_(p\d{3}r\d{3})_(\d{8})', id)
     if _m:
         return _m.group(1), _m.group(3), _m.group(4), int(_m.group(2))
 
-    _m = re.search('L(\d)\d?(\d{3})(\d{3})_\d{3}(\d{8})', id)
+    _m = re.search(r'L(\d)\d?(\d{3})(\d{3})_\d{3}(\d{8})', id)
     if _m:
         return 'L', 'p%sr%s' % (_m.group(2), _m.group(3)), _m.group(4), int(_m.group(1))
 
-    _m = re.search('(L\w)(\d)(\d{3})(\d{3})(\d{7})', id)
+    _m = re.search(r'(L\w)(\d)(\d{3})(\d{3})(\d{7})', id)
     if _m:
         import datetime
         _date = datetime.datetime.strptime(_m.group(5), '%Y%j')
         return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _date.strftime('%Y%m%d'), int(_m.group(2))
 
-    _m = re.search('(\d)(\w?)_(p\d{3}r\d{3})_(\d{8})', id)
+    _m = re.search(r'(\d)(\w?)_(p\d{3}r\d{3})_(\d{8})', id)
     if _m:
         return 'L' + _m.group(2), _m.group(3), _m.group(4), int(_m.group(1))
 
-    _m = re.search('w2(p\d{3}r\d{3})_(\d{7})(\w{2})(\d)', id)
+    _m = re.search(r'w2(p\d{3}r\d{3})_(\d{7})(\w{2})(\d)', id)
     if _m:
         import datetime
         _date = datetime.datetime.strptime(_m.group(2), '%Y%j')
         return _m.group(3), _m.group(1), _date.strftime('%Y%m%d'), int(_m.group(4))
 
-    _m = re.search('w2(p\d{3}r\d{3})_(\d{7})L(\w{2})', id)
+    _m = re.search(r'w2(p\d{3}r\d{3})_(\d{7})L(\w{2})', id)
     if _m:
         import datetime
         _date = datetime.datetime.strptime(_m.group(2), '%Y%j')
 
         return _m.group(3), _m.group(1), _date.strftime('%Y%m%d'), None
 
-    _m = re.search('(L\w)(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
+    _m = re.search(r'(L\w)(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
     if _m:
         _year = int(_m.group(4))
         _day = int(_m.group(5))
@@ -208,14 +208,14 @@ def parseLandsatId(id):
 
         return _m.group(1), 'p%sr%s' % (_m.group(3), _m.group(4)), _date.strftime('%Y%m%d'), _m.group(2)
 
-    _m = re.search('(p\d{3}r\d{3})_(\d{8})', id)
+    _m = re.search(r'(p\d{3}r\d{3})_(\d{8})', id)
     if _m:
         return None, _m.group(1), _m.group(2), None
 
     return None
 
 def parseHLSId(sid):
-    _m = re.search('HLS\.(\w\d{2})\.([^\.]+)\.(\d{7})\.', sid)
+    _m = re.search(r'HLS\.(\w\d{2})\.([^\.]+)\.(\d{7})\.', sid)
     if _m:
         import datetime
         _date = datetime.datetime.strptime(_m.group(3), '%Y%j')
@@ -225,15 +225,15 @@ def parseHLSId(sid):
     return None
 
 def parseLandsatCode(id):
-    _m = re.search('p\d{3}r\d{3}_\d+\w+\d{8}', id)
+    _m = re.search(r'p\d{3}r\d{3}_\d+\w+\d{8}', id)
     if _m:
         return _m.group()
 
-    _m = re.search('L\d\d?\d{3}\d{3}_\d{3}\d{8}', id)
+    _m = re.search(r'L\d\d?\d{3}\d{3}_\d{3}\d{8}', id)
     if _m:
         return _m.group()
 
-    _m = re.search('L\w(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
+    _m = re.search(r'L\w(\d)(\d{3})(\d{3})(\d{4})(\d{3})', id)
     if _m:
         return _m.group()
 

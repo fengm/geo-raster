@@ -48,7 +48,7 @@ def _detect_file(f_cfg):
         _f = f_cfg
     else:
         _f = os.path.basename(sys.argv[0])
-        _m = re.match('(.+)\.[^\.]+$', _f)
+        _m = re.match(r'(.+)\.[^\.]+$', _f)
         if _m:
             _f = _m.group(1)
 
@@ -154,7 +154,7 @@ def load(f_cfg=None, defaults=None, dict_type=collections.OrderedDict, allow_no_
     from . import config
     
     for _k in os.environ:
-        _m = re.match('^G_(.+)$', _k)
+        _m = re.match(r'^G_(.+)$', _k)
         if _m:
             logging.debug('add sys var %s' % _m.group(1).upper())
             _set('sys', _m.group(1).upper(), os.environ[_k])

@@ -71,11 +71,11 @@ def _format_url(inp, f):
 def _get_tag(f):
     import re
 
-    _m = re.search('h\d+v\d+', f)
+    _m = re.search(r'h\d+v\d+', f)
     if _m:
         return _m.group()
 
-    _m = re.search('p\d+r\d+', f)
+    _m = re.search(r'p\d+r\d+', f)
     if _m:
         return _m.group()
 

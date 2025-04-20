@@ -994,7 +994,7 @@ def proj_from_proj4(txt):
         return None
 
     import re
-    _m = re.match('EPSG:(\d+)', txt.upper())
+    _m = re.match(r'EPSG:(\d+)', txt.upper())
     if _m:
         return proj_from_epsg(int(_m.group(1)))
 

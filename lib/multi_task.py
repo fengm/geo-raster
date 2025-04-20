@@ -50,7 +50,7 @@ def _sagemaker_task_config():
     with open(_f_cfg) as _fi:
         _cfg = json.load(_fi)
         _num = len(_cfg['hosts'])
-        _idx = int(re.search('.+\-(\d+)', _cfg['current_host']).group(1)) - 1
+        _idx = int(re.search(r'.+\-(\d+)', _cfg['current_host']).group(1)) - 1
         
         return _idx, _num
 

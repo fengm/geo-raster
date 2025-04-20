@@ -1107,7 +1107,7 @@ class geo_raster(geo_raster_info):
         
     @staticmethod
     def _load_s3_file(f):
-        _m = re.match('s3://([^/]+)/(.+)', f)
+        _m = re.match(r's3://([^/]+)/(.+)', f)
         if _m is None:
             raise Exception('failed to parse S3 file %s' % f)
 

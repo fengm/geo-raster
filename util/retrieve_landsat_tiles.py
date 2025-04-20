@@ -8,7 +8,7 @@ import os
 def retrieve_tile(l):
     _file = l.replace(',', '_')
 
-    _m = re.search('p\d{3}r\d{3}', l)
+    _m = re.search(r'p\d{3}r\d{3}', l)
     if _m:
         return _m.group(), _file
 
@@ -17,7 +17,7 @@ def retrieve_tile(l):
     if _cs is not None:
         return _cs.tile, _file
         
-    _m = re.search('_T(\d{2}\w{3})', os.path.basename(l))
+    _m = re.search(r'_T(\d{2}\w{3})', os.path.basename(l))
     if _m:
         return _m.group(1), _file
     

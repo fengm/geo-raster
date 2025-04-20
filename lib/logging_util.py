@@ -33,7 +33,7 @@ def find_log(f=None):
     _f = f
     if not _f:
         _f = os.path.basename(sys.argv[0])
-        _m = re.match('(.+)\.[^\.]+$', _f)
+        _m = re.match(r'(.+)\.[^\.]+$', _f)
         if _m:
             _f = _m.group(1)
 

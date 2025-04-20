@@ -8,9 +8,9 @@ import os
 def retrieve_tile(l):
     _file = l.replace(',', '_')
 
-    _m = re.search('_T(\d{2}\w{3})_', l) \
-            or re.search('S2\w_(\d{2}\w{3})_', l) \
-            or re.search('S2\w_(\d\w{3})_', l)
+    _m = re.search(r'_T(\d{2}\w{3})_', l) \
+            or re.search(r'S2\w_(\d{2}\w{3})_', l) \
+            or re.search(r'S2\w_(\d\w{3})_', l)
     
     if not _m:
         return None, _file

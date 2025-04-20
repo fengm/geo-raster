@@ -9,17 +9,17 @@ Description: read CSV files
 def estimate_type(vals):
     import re
 
-    _vs = [x == '' or re.match('^-?[0-9]+$', x) != None for x in vals]
+    _vs = [x == '' or re.match(r'^-?[0-9]+$', x) != None for x in vals]
     if False not in _vs:
         return 'int', 4
 
     _vs = [x == '' or x == 'NaN' or \
-            re.match('^-?\d*\.?\d+E-?\d+$', x) != None or \
-            re.match('^-?\d*\.?\d+$', x) != None for x in vals]
+            re.match(r'^-?\d*\.?\d+E-?\d+$', x) != None or \
+            re.match(r'^-?\d*\.?\d+$', x) != None for x in vals]
     if False not in _vs:
         return 'float', 4
 
-    _vs = [x == '' or re.match('^-?\d*\.?\d+E-?\d+$', x) != None for x in vals]
+    _vs = [x == '' or re.match(r'^-?\d*\.?\d+E-?\d+$', x) != None for x in vals]
     if False not in _vs:
         return 'float', 4
 

@@ -46,7 +46,7 @@ class modis_info:
 	def extent(self, tile):
 		import re
 
-		_m = re.match('h(\d{2})v(\d{2})', tile)
+		_m = re.match(r'h(\d{2})v(\d{2})', tile)
 		if not _m:
 			raise Exception('failed parse the MODIS tile')
 

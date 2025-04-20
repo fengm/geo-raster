@@ -83,7 +83,7 @@ def upload_file(f, k):
     import re
     from gio import config
 
-    _mm = re.match('s3://([^/]+)/(.+)', k)
+    _mm = re.match(r's3://([^/]+)/(.+)', k)
     if not _mm:
         raise Exception('failed to parse the output folder')
 

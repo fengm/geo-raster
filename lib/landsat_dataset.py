@@ -146,7 +146,7 @@ class sr_dir(sr):
         for _f in file_mag.get(p).list():
             _p = str(_f)
             
-            _m = self._is_img(_p) and re.search('sr_band(\d+)\.', _p)
+            _m = self._is_img(_p) and re.search(r'sr_band(\d+)\.', _p)
             if _m:
                 _fs['sr_b%s' % _m.group(1)] = _p
                 _b = int(_m.group(1))
@@ -154,8 +154,8 @@ class sr_dir(sr):
                     _bs.append(_b)
                 continue
 
-            _m = self._is_img(_p) and (re.search('toa_band(\d+)\.', _p) or \
-                    re.search('toa_b(\d+)\.', str(_f)))
+            _m = self._is_img(_p) and (re.search(r'toa_band(\d+)\.', _p) or \
+                    re.search(r'toa_b(\d+)\.', str(_f)))
             if _m:
                 _fs['toa_b%s' % _m.group(1)] = _p
                 _b = int(_m.group(1))
@@ -163,7 +163,7 @@ class sr_dir(sr):
                     _bs.append(_b)
                 continue
 
-            _m = self._is_img(_p) and re.search('bt_band(\d+)\.', _p)
+            _m = self._is_img(_p) and re.search(r'bt_band(\d+)\.', _p)
             if _m:
                 _fs['toa_b%s' % _m.group(1)] = _p
                 _b = int(_m.group(1))
@@ -171,12 +171,12 @@ class sr_dir(sr):
                     _bs.append(_b)
                 continue
 
-            _m = self._is_img(_p) and re.search('_cfmask\.', _p)
+            _m = self._is_img(_p) and re.search(r'_cfmask\.', _p)
             if _m:
                 _fs['cfmask'] = _p
                 continue
 
-            _m = (not _p.startswith('lnd')) and re.search('_mtl.txt', _p.lower())
+            _m = (not _p.startswith('lnd')) and re.search(r'_mtl.txt', _p.lower())
             if _m:
                 _fs['mtl'] = _p
                 continue
@@ -305,7 +305,7 @@ class sr_hdf(sr):
 
         _bs = []
         for _s, _d in _img.sub_datasets():
-            _d = re.search('(\d+)$', _s)
+            _d = re.search(r'(\d+)$', _s)
             if _d:
                 _bs = int(_d.group(1))
 

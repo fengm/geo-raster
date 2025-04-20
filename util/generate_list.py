@@ -12,7 +12,7 @@ Description: generate list of files in a folder
 def format_path(f):
     import re
 
-    _m = re.match('/a/[^/]+(/.+)', f)
+    _m = re.match(r'/a/[^/]+(/.+)', f)
     if _m:
         return _m.group(1)
 

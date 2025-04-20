@@ -124,7 +124,7 @@ class s3_mag(obj_mag):
     def __init__(self, f, s3=None):
         import re
 
-        _m = re.match('s3://([^/]+)/(.*)', f)
+        _m = re.match(r's3://([^/]+)/(.*)', f)
         if _m is None:
             raise Exception('failed to parse S3 file %s' % f)
 

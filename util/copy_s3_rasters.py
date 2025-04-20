@@ -162,7 +162,7 @@ def load_list(f, b, auto_base_path, d_out, ext):
         import re
         
         b = os.path.commonpath(_fs)
-        _m = re.match('s3:/([^/].+)', b)
+        _m = re.match(r's3:/([^/].+)', b)
         if _m:
             b = 's3://' + _m.group(1)
         logging.info('identified path prefix: %s' % b)

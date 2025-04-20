@@ -536,7 +536,7 @@ class s3():
 def parse_s3(f):
     import re
 
-    _m = re.match('s3://([^/]+)/(.+)', f)
+    _m = re.match(r's3://([^/]+)/(.+)', f)
     if _m is None:
         raise Exception('failed to parse S3 file %s' % f)
 
