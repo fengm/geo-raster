@@ -621,10 +621,16 @@ class geo_polygon (geo_object):
         self.proj = proj
 
     def union(self, poly):
-        return geo_polygon(self.poly.Union(poly.poly))
+        _g = self.poly.Union(poly.poly)
+        if _g is None:
+            return None
+        return geo_polygon(_g)
 
     def intersect(self, poly):
-        return geo_polygon(self.poly.Intersection(poly.poly))
+        _g = self.poly.Intersection(poly.poly)
+        if _g is None:
+            return None
+        return geo_polygon(_g)
 
     def center(self):
         _pt = self.poly.Centroid().GetPoint_2D()

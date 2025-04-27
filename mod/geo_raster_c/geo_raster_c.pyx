@@ -508,7 +508,7 @@ class geo_band_cache(geo_band_info):
 
         # calculate the intersection area for both data sets
         _pol_c_s = _pol_s.intersect(_pol_t2)
-        if _pol_c_s.poly is None:
+        if _pol_c_s is None or _pol_c_s.poly is None:
             logging.debug('The raster does not cover the request bnd')
             return None
 
