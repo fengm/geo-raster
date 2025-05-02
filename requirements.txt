@@ -1,8 +1,0 @@
-
-awscli
-boto3
-cython
-numpy
-pandas
-psycopg2
-pillow

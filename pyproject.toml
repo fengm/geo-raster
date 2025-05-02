@@ -1,0 +1,35 @@
+[project]
+name = "geo-raster"
+version = "2.3.0"
+description = "A Python package for geospatial raster processing"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+authors = [
+    {name = "Min Feng", email = "mfeng.geo@gmail.com"}
+]
+dependencies = [
+    "awscli>=1.29.0",
+    "boto3>=1.26.0",
+    "cython>=3.0.0",
+    "numpy>=1.21.0",
+    "pandas>=1.5.0",
+#    "psycopg2>=2.9.0",
+    "pillow>=9.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "cython>=3.0.0", "numpy>=1.21.0", "wheel>=0.37.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["gio"]
+package-dir = { "gio" = "lib" }
+include-package-data = true
+
+[tool.setuptools.package-data]
+gio = ["*.so", "*.pyd"]
+
+[tool.cython]
+compile-time-env = { CYTHON_TRACE="1" }
+compiler-directives = { language_level = "3", boundscheck = false, wraparound = false }
