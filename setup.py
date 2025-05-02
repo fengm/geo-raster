@@ -5,7 +5,7 @@ import numpy
 import os
 
 # Set up logging
-logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 def walk_files(d):
@@ -47,8 +47,8 @@ logger.debug(f"Registered {len(scripts)} scripts: {[os.path.basename(s) for s in
 setup(
     ext_modules=cythonize(
         extensions,
-        compiler_directives={'language_level': '3', 'boundscheck': False, 'wraparound': False},
-        annotate=True,
+        # compiler_directives={'language_level': '3', 'boundscheck': False, 'wraparound': False},
+        # annotate=True,
         build_dir="build/cython",
     ),
     scripts=scripts,
