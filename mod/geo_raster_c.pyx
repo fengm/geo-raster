@@ -221,7 +221,10 @@ class geo_band_info(geo_raster_info):
         self.nodata = self.est_nodata(nodata)
 
     def __del__(self):
-        geo_raster_info.__del__(self)
+        try:
+            super().__del__()
+        except AttributeError:
+            pass
 
         self.pixel_type = None
         self.nodata = None
@@ -338,7 +341,11 @@ class geo_band_cache(geo_band_info):
         self.color_table = color_table
 
     def __del__(self):
-        geo_band_info.__del__(self)
+        try:
+            super().__del__()
+        except AttributeError:
+            pass
+        
         self.data = None
 
     @property
@@ -686,8 +693,11 @@ class geo_band(geo_band_info):
         self.convert_list = convert_list
 
     def __del__(self):
-        geo_band_info.__del__(self)
-
+        try:
+            super().__del__()
+        except AttributeError:
+            pass
+        
         self.raster = None
         self.band = None
         self.description = None
