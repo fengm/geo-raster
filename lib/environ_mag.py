@@ -32,8 +32,10 @@ def usage(multi_task=True):
     return _p
 
 def init_path():
-    import os, sys
+    from osgeo import osr
+    osr.UseExceptions()
 
+    import os, sys
     _dirs = ['lib', 'libs']
     _d_ins = [os.path.join(sys.path[0], _d) for _d in _dirs if \
             os.path.exists(os.path.join(sys.path[0], _d))]
@@ -131,11 +133,6 @@ def run(func, opts):
     from . import file_unzip
     from . import logging_util
     
-    from osgeo import osr
-    osr.UseExceptions()
-    # from osgeo import gdal
-    # gdal.UseExceptions()
-
     logging_util.info(('CMD (%s): ' % os.getcwd()) + ' '.join(['"%s"' % x if ' ' in x else x for x in sys.argv]))
     _parse_env(opts[0], log=True)
 
