@@ -34,7 +34,7 @@ def _walk_files(d, fs):
         fs.append((d, _f))
         
 def walk_files(d):
-    if not os.path.exists(d):
+    if d.startswith('.') or (not os.path.exists(d)):
         return []
     
     _fs = []

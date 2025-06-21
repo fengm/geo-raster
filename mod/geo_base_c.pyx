@@ -810,11 +810,13 @@ class geo_point (geo_object):
         return geo_point(_pt[0], _pt[1], proj=_proj)
 
     def to_geometry(self):
-        if self.geom is None:
-            from osgeo import ogr
-            self.geom = ogr.Geometry(ogr.wkbPoint)
-
+        if self.geom is not None:
+            return self.geom
+        
+        from osgeo import ogr
+        self.geom = ogr.Geometry(ogr.wkbPoint)
         self.geom.SetPoint_2D(0, self.x, self.y)
+        
         if self.proj is not None:
             self.geom.AssignSpatialReference(self.proj)
 
@@ -823,6 +825,12 @@ class geo_point (geo_object):
     def distance_to(self, pt):
         _pt = pt.project_to(self.proj)
         return ((self.x - _pt.x) ** 2 + (self.y - _pt.y) ** 2) ** 0.5
+
+    def buffer(self, dis, nsegs=30):
+        _poly = geo_polygon(self.to_geometry().Buffer(dis, nsegs))
+        if self.proj is not None:
+            _poly.set_proj(self.proj)
+        return _poly
 
     def __str__(self):
         return '%f, %f' % (self.x, self.y)
