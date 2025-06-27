@@ -1184,6 +1184,9 @@ class geo_raster(geo_raster_info):
         _size = [1] + size if len(size) == 2 else size
 
         _img = _driver.Create(f, _size[2], _size[1], _size[0], pixel_type, opts)
+        if _img is None:
+            return None
+        
         for _b in xrange(_size[0]):
             _band = _img.GetRasterBand(_b + 1)
 

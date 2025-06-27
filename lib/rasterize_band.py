@@ -40,7 +40,9 @@ def rasterize(bnd, polys, f_img=None, f_shp=None, touched=True, pixel_type=None)
         _pixel_type = ge.pixel_type() if pixel_type is None else pixe_type
         _img = ge.geo_raster.create(_f_img, [bnd.height, bnd.width], bnd.geo_transform, \
                     bnd.proj.ExportToWkt(), pixel_type=_pixel_type)
-        
+        if _img is None:
+            return None
+            
         _opts = []
         if touched:
             _opts.append('ALL_TOUCHED=TRUE')
