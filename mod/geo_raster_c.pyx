@@ -762,7 +762,7 @@ class geo_band(geo_band_info):
             return None
 
         if _s == 2 or self.data is None:
-            self.read_rows(max(0, row - row_num / 3), row_num)
+            self.read_rows(max(0, int(row - row_num / 3)), row_num)
 
         if self.data is None:
             return None
@@ -802,7 +802,7 @@ class geo_band(geo_band_info):
         if _cols <= 0 or _rows <= 0 or row < 0:
             return None
 
-        _d = self.band.ReadAsArray(col, row, _cols, _rows, _cols, _rows)
+        _d = self.band.ReadAsArray(int(col), int(row), _cols, _rows, _cols, _rows)
         if _d is None:
             return None
 
