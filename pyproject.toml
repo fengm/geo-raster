@@ -4,7 +4,7 @@ version = "3.0.0"
 description = "A Python package for geospatial raster processing"
 readme = "README.md"
 requires-python = ">=3.8"
-license = "MIT"
+license = {text = "MIT"}
 authors = [
     {name = "Min Feng", email = "mfeng.geo@gmail.com"}
 ]
