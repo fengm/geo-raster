@@ -69,7 +69,7 @@ class cache_mag():
 
     def _format_str(self, t):
         import re
-        _k = list(re.sub('[^\w\d_]', '_', t))
+        _k = list(re.sub(r'[^\w\d_]', '_', t))
 
         for i in range(len(_k)):
             if t[i] in ['\\', '/', '.', '-']:

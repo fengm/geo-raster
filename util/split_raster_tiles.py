@@ -117,27 +117,27 @@ def _task(tile, t, f_inp, d_out, opts):
     with file_unzip.zip() as _zip:
         from gio import metadata
         
+        # try:
         _met = metadata.metadata()
-        try:
-            _met.tile = _tag
+        _met.tile = _tag
+        
+        _bnd = _load(f_inp, tile.extent(), opts)
+        if _bnd is None:
+            logging.info('skip tile %s' % _tag)
+            return
+        
+        _mask_band(_bnd)
+
+        _f_clr = config.get('conf', 'color_table')
+        if _f_clr:
+            from gio import geo_raster as ge
+            _clr = ge.load_colortable(_f_clr)
+            _bnd.color_table = _clr
+
+        _zip.save(_bnd, _f_out)
             
-            _bnd = _load(f_inp, tile.extent(), opts)
-            if _bnd is None:
-                logging.info('skip tile %s' % _tag)
-                return
-            
-            _mask_band(_bnd)
-    
-            _f_clr = config.get('conf', 'color_table')
-            if _f_clr:
-                from gio import geo_raster as ge
-                _clr = ge.load_colortable(_f_clr)
-                _bnd.color_table = _clr
-    
-            _zip.save(_bnd, _f_out)
-            
-        finally:
-            _met.save(_f_met)
+        # finally:
+        _met.save(_f_met)
 
 def main(opts):
     import os
@@ -217,7 +217,7 @@ def main(opts):
     _f_idx = os.path.join(_d_out, 'list', '%s.shp' % opts.tag)
     
     from gio import run_commands
-    _cmd = 'generate_tiles_extent.py -i {} -e {}.tif -o {}'.format(\
+    _cmd = 'generate_tiles_extent.py -i {} -e {}.tif -o {} --over-write true'.format(\
                        _d_out, opts.tag, _f_idx)
     
     run_commands.run(_cmd)
