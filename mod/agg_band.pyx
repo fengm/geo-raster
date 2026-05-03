@@ -461,9 +461,9 @@ cdef np.ndarray[np.int32_t, ndim=2] dominated_pixels(np.ndarray[np.int32_t, ndim
             if _ns <= 0 or _tp:
                 continue
             
-            # if len(_vs.keys()) == 1:
-            #     _dat[_row_n, _col_n] = list(_vs.values())[0]
-            #     continue
+            if len(_vs) == 1:
+                _dat[_row_n, _col_n] = list(_vs.values())[0]
+                continue
 
             if weights is not None and len(weights) > 0:
                 for _w_min, _w_max, _w_wet in weights:
@@ -472,7 +472,7 @@ cdef np.ndarray[np.int32_t, ndim=2] dominated_pixels(np.ndarray[np.int32_t, ndim
                             _vs[_kk] *= _w_wet
 
             _mx = 0
-            _vv == _nodata
+            _vv = _nodata
             for _kk in _vs:
                 if _kk == _nodata:
                     _vs[_kk] *= config.getint('conf', 'dominated_nodata_scaling', 0.2)
@@ -572,7 +572,7 @@ cdef np.ndarray[np.float32_t, ndim=2] median_pixels(np.ndarray[np.float32_t, ndi
                 continue
 
             _mx = 0
-            _vv == _nodata
+            _vv = _nodata
 
             _len = len(_vs)
             if _len > 0:
